@@ -25,6 +25,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Windows.Ink;
+using System.Windows.Input;
 
 namespace FlipsiInk;
 
@@ -646,10 +647,10 @@ public class NoteFileManager : IDisposable
 
         foreach (var savedStroke in savedStrokes)
         {
-            var points = new System.Windows.Ink.StylusPointCollection(savedStroke.Points.Count);
+            var points = new System.Windows.Input.StylusPointCollection(savedStroke.Points.Count);
             foreach (var p in savedStroke.Points)
             {
-                points.Add(new System.Windows.Ink.StylusPoint(p.X, p.Y, p.PressureFactor));
+                points.Add(new System.Windows.Input.StylusPoint(p.X, p.Y, p.PressureFactor));
             }
 
             var stroke = new Stroke(points);
