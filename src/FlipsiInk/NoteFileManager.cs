@@ -646,10 +646,10 @@ public class NoteFileManager : IDisposable
 
         foreach (var savedStroke in savedStrokes)
         {
-            var points = new StylusPointCollection(savedStroke.Points.Count);
+            var points = new System.Windows.Ink.StylusPointCollection(savedStroke.Points.Count);
             foreach (var p in savedStroke.Points)
             {
-                points.Add(new StylusPoint(p.X, p.Y, p.PressureFactor));
+                points.Add(new System.Windows.Ink.StylusPoint(p.X, p.Y, p.PressureFactor));
             }
 
             var stroke = new Stroke(points);
