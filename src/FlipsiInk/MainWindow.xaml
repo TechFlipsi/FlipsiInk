@@ -105,7 +105,7 @@
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnTemplate" Content="📄" Style="{StaticResource ToolButton}" ToolTip="Seitenvorlage"/>
                 <Separator Margin="4,8"/>
-                <Button x:Name="BtnAutoTidy" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
+                <Button x:Name="BtnAutoTidy_C" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen"/>
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnInputMode" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
             </StackPanel>

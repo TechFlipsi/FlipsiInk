@@ -735,6 +735,7 @@ public partial class MainWindow : Window
     private void SetupAutoTidy()
     {
         BtnAutoTidy.Click += async (s, e) => await AutoTidy();
+        BtnAutoTidy_C.Click += async (s, e) => await AutoTidy();
         BtnAutoTidy_M.Click += async (s, e) => await AutoTidy();
     }
 
@@ -855,7 +856,7 @@ public partial class MainWindow : Window
     /// </summary>
     private Stroke? TryStraightenLine(Stroke stroke)
     {
-        var points = stroke.StylusPoints.Select(p => new Point(p.X, p.Y)).ToArray();
+        var points = stroke.StylusPoints.Select(p => new System.Windows.Point(p.X, p.Y)).ToArray();
         if (points.Length < 3) return null;
 
         var start = points[0];
@@ -1056,7 +1057,7 @@ public partial class MainWindow : Window
 
         // Koordinaten relativ zum CanvasGrid
         var transform = MainCanvas.TransformToAncestor(CanvasGrid);
-        var canvasOrigin = transform.Transform(new Point(0, 0));
+        var canvasOrigin = transform.Transform(new System.Windows.Point(0, 0));
 
         ContextActionPopup.HorizontalOffset = canvasOrigin.X + popupX;
         ContextActionPopup.VerticalOffset = canvasOrigin.Y + popupY;
