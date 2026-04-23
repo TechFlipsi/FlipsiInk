@@ -22,6 +22,7 @@ using System.Windows.Ink;
 namespace FlipsiInk;
 
 /// <summary>
+
 /// Repräsentiert eine einzelne Seite in einem Notizbuch.
 /// </summary>
 public class NotePage

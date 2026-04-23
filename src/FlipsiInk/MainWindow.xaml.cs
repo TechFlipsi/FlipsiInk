@@ -66,7 +66,7 @@ public partial class MainWindow : Window
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
-        MainCanvas.Strokes.StrokesChanged += OnStrokesChanged;
+        MainCanvas.StrokeErasing += (s, e) => { /* stroke removed */ };
     }
 
     #region Canvas Setup
@@ -107,7 +107,7 @@ public partial class MainWindow : Window
         _strokesBeforeChange = MainCanvas.Strokes.Clone();
     }
 
-    private void OnStrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
+    private void OnStrokesChanged(object? sender, EventArgs e)
     {
         // Track changes for undo
     }

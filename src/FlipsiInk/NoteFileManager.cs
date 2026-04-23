@@ -87,7 +87,7 @@ public class SavedNotebook
 /// <summary>
 /// Eine einzelne Seite innerhalb eines Notizbuchs.
 /// </summary>
-public class SavedNotebookPage
+public class FileNotebookPage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public int PageNumber { get; set; }
