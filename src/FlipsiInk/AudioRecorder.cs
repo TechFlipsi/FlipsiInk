@@ -152,7 +152,7 @@ public class AudioRecorder
         // _waveOut.Play();
 
         // Position-Timer
-        _positionTimer = new Timer(100);
+        _positionTimer = new System.Timers.Timer(100);
         _positionTimer.Elapsed += (s, e) =>
         {
             if (_isPlaying)

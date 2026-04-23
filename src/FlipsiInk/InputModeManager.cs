@@ -80,8 +80,8 @@ public class InputModeManager
         _canvas.PreviewTouchDown += OnPreviewTouchDown;
         _canvas.PreviewMouseDown += OnPreviewMouseDown;
 
-        // Stylus-Events für automatische Erkennung
-        Stylus.CurrentStylusDevice?.StateChanged += OnStylusStateChanged;
+        // Stylus-Events für automatische Erkennung (StateChanged not available in WPF)
+        // Stylus detection is handled via StylusDown/Up events instead
 
         ApplyMode();
     }

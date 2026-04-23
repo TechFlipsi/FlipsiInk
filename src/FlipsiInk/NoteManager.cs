@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Ink;
@@ -53,7 +54,7 @@ public class Notebook
     /// <summary>Zeitstempel der letzten Aktualisierung.</summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public int PageCount { get; set; }
-    public PageTemplateType Template { get; set; } = PageTemplateType.Lined;
+    public PageTemplateType Template { get; set; } = PageTemplateType.LinedWide;
     public DateTime LastOpened { get; set; } = DateTime.UtcNow;
     /// <summary>Cover-Farbe als Hex-String (z.B. "#FF9500", "#34C759").</summary>
     public string Color { get; set; } = "#FF9500";

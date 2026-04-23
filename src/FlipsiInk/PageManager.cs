@@ -18,6 +18,7 @@
 
 using System.Collections.ObjectModel;
 using System.Drawing;
+using System.IO;
 using System.Windows.Ink;
 
 namespace FlipsiInk;

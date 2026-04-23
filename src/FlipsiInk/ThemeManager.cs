@@ -40,7 +40,10 @@ public class ThemeManager
         var effectiveTheme = theme == Theme.System ? GetSystemTheme() : theme;
         var colors = GetCurrentColors(theme);
 
-        root.Background = new SolidColorBrush(colors.Background);
+        if (root is Control rootControl)
+            rootControl.Background = new SolidColorBrush(colors.Background);
+        else if (root is Panel rootPanel)
+            rootPanel.Background = new SolidColorBrush(colors.Background);
         ApplyThemeRecursive(root, colors);
         ThemeChanged?.Invoke(this, new ThemeChangedEventArgs(theme, effectiveTheme, colors));
     }
@@ -53,7 +56,7 @@ public class ThemeManager
             if (child is Control control)
             {
                 control.Foreground = new SolidColorBrush(colors.Foreground);
-                if (control is not TextBox and not InkCanvas)
+                if (control is not TextBox)
                 {
                     control.Background = new SolidColorBrush(colors.PanelBg);
                 }

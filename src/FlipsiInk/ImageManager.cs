@@ -71,10 +71,10 @@ namespace FlipsiInk
             InsertImage(bitmap, position, canvas);
 
             // FilePath nachträglich setzen
-            var lastKey = GetLastInsertedId();
-            if (lastKey != null)
+            var lastImage = Images.LastOrDefault();
+            if (lastImage.Value != null)
             {
-                Images[lastKey].FilePath = filePath;
+                lastImage.Value.FilePath = filePath;
             }
         }
 
@@ -363,7 +363,7 @@ namespace FlipsiInk
             if (canvasImage.Rotation != 0)
             {
                 image.RenderTransform = new RotateTransform(canvasImage.Rotation);
-                image.RenderTransformOrigin = new Point(0.5, 0.5);
+                image.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
             }
 
             return image;

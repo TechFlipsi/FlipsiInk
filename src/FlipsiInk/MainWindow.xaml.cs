@@ -26,7 +26,7 @@ public partial class MainWindow : Window
 {
     // Tools
     private InkCanvasEditingMode _currentTool = InkCanvasEditingMode.Ink;
-    private System.Windows.Media.Color _currentColor = Colors.Black;
+    private System.Windows.Media.Color _currentColor = System.Windows.Media.Colors.Black;
     private double _currentSize = 2;
 
     // Undo/Redo stacks (Issue #24)
@@ -202,7 +202,7 @@ public partial class MainWindow : Window
         ZoomLabel.Foreground = new SolidColorBrush(colors.Foreground);
 
         // Canvas stays white always (better for writing)
-        MainCanvas.Background = Brushes.White;
+        MainCanvas.Background = System.Windows.Media.Brushes.White;
 
         // Update all ToolButtons
         foreach (var btn in FindVisualChildren<Button>(this))
@@ -220,17 +220,17 @@ public partial class MainWindow : Window
             {
                 tx.Background = new SolidColorBrush(colors.Background);
                 tx.Foreground = tx.Name == "MathResult"
-                    ? new SolidColorBrush(colors.Foreground == Colors.White ? Colors.LightGreen : Colors.DarkGreen)
+                    ? new SolidColorBrush(colors.Foreground == System.Windows.Media.Colors.White ? System.Windows.Media.Colors.LightGreen : System.Windows.Media.Colors.DarkGreen)
                     : new SolidColorBrush(colors.Foreground);
                 tx.BorderBrush = new SolidColorBrush(colors.Border);
             }
         }
 
         // Version label
-        VersionLabel.Foreground = new SolidColorBrush(colors.Foreground == Colors.White ? Colors.Gray : Colors.DarkGray);
+        VersionLabel.Foreground = new SolidColorBrush(colors.Foreground == System.Windows.Media.Colors.White ? System.Windows.Media.Colors.Gray : System.Windows.Media.Colors.DarkGray);
 
         // Status texts
-        StatusText.Foreground = new SolidColorBrush(colors.Foreground == Colors.White ? Colors.Gray : Colors.DarkGray);
+        StatusText.Foreground = new SolidColorBrush(colors.Foreground == System.Windows.Media.Colors.White ? System.Windows.Media.Colors.Gray : System.Windows.Media.Colors.DarkGray);
     }
 
     private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
@@ -296,10 +296,10 @@ public partial class MainWindow : Window
         BtnCircle.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnCircle);
 
         // Colors
-        BtnBlack.Click += (s, e) => SetColor(Colors.Black, BtnBlack);
-        BtnBlue.Click += (s, e) => SetColor(Colors.Blue, BtnBlue);
-        BtnRed.Click += (s, e) => SetColor(Colors.Red, BtnRed);
-        BtnGreen.Click += (s, e) => SetColor(Colors.Green, BtnGreen);
+        BtnBlack.Click += (s, e) => SetColor(System.Windows.Media.Colors.Black, BtnBlack);
+        BtnBlue.Click += (s, e) => SetColor(System.Windows.Media.Colors.Blue, BtnBlue);
+        BtnRed.Click += (s, e) => SetColor(System.Windows.Media.Colors.Red, BtnRed);
+        BtnGreen.Click += (s, e) => SetColor(System.Windows.Media.Colors.Green, BtnGreen);
 
         // Sizes
         BtnThin.Click += (s, e) => SetSize(1, BtnThin);
@@ -337,22 +337,22 @@ public partial class MainWindow : Window
         }
         var allToolBtns = new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
         foreach (var btn in allToolBtns)
-            btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+            btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
+        activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
         _currentTool = mode;
     }
 
     private void SetHighlighter(Button activeBtn)
     {
         MainCanvas.EditingMode = InkCanvasEditingMode.Ink;
-        MainCanvas.DefaultDrawingAttributes.Color = Colors.Yellow;
+        MainCanvas.DefaultDrawingAttributes.Color = System.Windows.Media.Colors.Yellow;
         MainCanvas.DefaultDrawingAttributes.Width = 16;
         MainCanvas.DefaultDrawingAttributes.Height = 16;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = true;
         var allToolBtns = new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
         foreach (var btn in allToolBtns)
-            btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+            btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
+        activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
     }
 
     private void SetColor(System.Windows.Media.Color color, Button activeBtn)
@@ -363,8 +363,8 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
         MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
         foreach (var btn in new[] { BtnBlack, BtnBlue, BtnRed, BtnGreen })
-            btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+            btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
+        activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
     }
 
     private void SetSize(double size, Button activeBtn)
@@ -374,8 +374,8 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Height = size;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         foreach (var btn in new[] { BtnThin, BtnMedium, BtnThick })
-            btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+            btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
+        activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
     }
 
     #endregion
@@ -386,7 +386,7 @@ public partial class MainWindow : Window
     {
         StatusText.Text = "Lade KI-Modell...";
         ModelStatus.Text = "Modell: wird geladen...";
-        ModelStatus.Foreground = System.Windows.Media.Brushes.Orange;
+        ModelStatus.Foreground = System.Windows.Media.System.Windows.Media.Brushes.Orange;
 
         try
         {
@@ -394,14 +394,14 @@ public partial class MainWindow : Window
             await Task.Run(() => _ocrEngine.LoadModel());
             _modelLoaded = true;
             ModelStatus.Text = $"Modell: geladen ✓ ({_ocrEngine.ModelName})";
-            ModelStatus.Foreground = System.Windows.Media.Brushes.LightGreen;
+            ModelStatus.Foreground = System.Windows.Media.System.Windows.Media.Brushes.LightGreen;
             StatusText.Text = "Bereit – schreibe und klicke 🔤 oder 🧮";
         }
         catch (Exception ex)
         {
             _modelLoaded = false;
             ModelStatus.Text = $"Modell: Fehler – {ex.Message}";
-            ModelStatus.Foreground = System.Windows.Media.Brushes.Red;
+            ModelStatus.Foreground = System.Windows.Media.System.Windows.Media.Brushes.Red;
             StatusText.Text = "KI nicht verfügbar – Stift funktioniert trotzdem";
         }
     }
