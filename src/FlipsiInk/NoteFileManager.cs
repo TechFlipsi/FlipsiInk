@@ -76,12 +76,12 @@ public class SavedNotebook
     public string Name { get; set; } = "Unbenannt";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
-    public List<SavedNotebookPage> Pages { get; set; } = [];
+    public List<FileNotebookPage> Pages { get; set; } = [];
 
     /// <summary>
     /// Bequemer Zugriff: Striche der aktuellen Seite.
     /// </summary>
-    public SavedNotebookPage CurrentPage => Pages.Count > 0 ? Pages[0] : new SavedNotebookPage();
+    public FileNotebookPage CurrentPage => Pages.Count > 0 ? Pages[0] : new FileNotebookPage();
 }
 
 /// <summary>
@@ -96,7 +96,7 @@ public class FileNotebookPage
     public string Theme { get; set; } = "system";
     public StrokeCollection Strokes { get; set; } = [];
 
-    public static implicit operator NotePage(SavedNotebookPage saved)
+    public static implicit operator NotePage(FileNotebookPage saved)
     {
         return new NotePage
         {
@@ -126,7 +126,7 @@ public class NoteFileManager : IDisposable
     };
 
     private readonly object _lock = new();
-    private Timer? _autoSaveTimer;
+    private System.Threading.Timer? _autoSaveTimer;
     private Notebook? _autoSaveTarget;
     private bool _disposed;
 
@@ -213,7 +213,7 @@ public class NoteFileManager : IDisposable
         {
             _autoSaveTarget = notebook;
             _autoSaveTimer?.Dispose();
-            _autoSaveTimer = new Timer(_ =>
+            _autoSaveTimer = new System.Threading.Timer(_ =>
             {
                 if (_autoSaveTarget is not null)
                 {
@@ -305,7 +305,7 @@ public class NoteFileManager : IDisposable
                     var savedPage = JsonSerializer.Deserialize<SavedPage>(json, JsonOptions);
                     if (savedPage is null) continue;
 
-                    var page = new SavedNotebookPage
+                    var page = new FileNotebookPage
                     {
                         Id = savedPage.Id,
                         PageNumber = savedPage.PageNumber,
