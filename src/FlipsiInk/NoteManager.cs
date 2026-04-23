@@ -16,6 +16,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Ink;
 
 namespace FlipsiInk;
 
@@ -31,6 +32,12 @@ public class NotePage
     public string StrokesJson { get; set; } = string.Empty;
     /// <summary>Pfad zur .png Thumbnail-Datei.</summary>
     public string Thumbnail { get; set; } = string.Empty;
+    /// <summary>Stroke-Daten der Seite.</summary>
+    public StrokeCollection Strokes { get; set; } = [];
+    /// <summary>Zoom-Faktor der Seite.</summary>
+    public double Zoom { get; set; } = 1.0;
+    /// <summary>Theme der Seite (z.B. "Light", "Dark", "system").</summary>
+    public string Theme { get; set; } = "system";
 }
 
 /// <summary>
@@ -43,6 +50,8 @@ public class Notebook
     public Guid? FolderId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>Zeitstempel der letzten Aktualisierung.</summary>
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public int PageCount { get; set; }
     public PageTemplateType Template { get; set; } = PageTemplateType.Lined;
     public DateTime LastOpened { get; set; } = DateTime.UtcNow;

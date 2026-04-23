@@ -95,6 +95,19 @@ public class SavedNotebookPage
     public double Zoom { get; set; } = 1.0;
     public string Theme { get; set; } = "system";
     public StrokeCollection Strokes { get; set; } = [];
+
+    public static implicit operator NotePage(SavedNotebookPage saved)
+    {
+        return new NotePage
+        {
+            Id = saved.Id,
+            PageNumber = saved.PageNumber,
+            Template = saved.Template,
+            Strokes = saved.Strokes,
+            Zoom = saved.Zoom,
+            Theme = saved.Theme
+        };
+    }
 }
 
 // ─────────────────────────── NoteFileManager ──────────────────────────
