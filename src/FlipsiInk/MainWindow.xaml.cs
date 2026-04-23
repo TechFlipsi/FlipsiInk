@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     // Initialization flag – prevents events firing before UI is ready
     private bool _initialized = false;
 
+    // Layout mode
+    private string _currentLayout = "modern"; // "modern" or "classic"
+
     // Auto-Updater
     private readonly AutoUpdater _autoUpdater = new();
     private System.Threading.Timer? _updateCheckTimer;
@@ -71,6 +74,7 @@ public partial class MainWindow : Window
         try { SetupTemplateCombo(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTemplateCombo: {ex}"); }
         try { SetupInputMode(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupInputMode: {ex}"); }
         try { LoadModelAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"LoadModelAsync: {ex}"); }
+        try { ApplyLayout(App.Config.ToolbarLayout); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ApplyLayout: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
@@ -267,14 +271,23 @@ public partial class MainWindow : Window
     {
         TemplateCombo.SelectedIndex = 0; // Blank
         TemplateCombo.SelectionChanged += TemplateCombo_SelectionChanged;
+        TemplateCombo_M.SelectedIndex = 0; // Blank
+        TemplateCombo_M.SelectionChanged += TemplateCombo_SelectionChanged;
     }
 
     private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_initialized) return;
-        if (TemplateCombo.SelectedIndex < 0) return;
+        var combo = (ComboBox)sender;
+        if (combo.SelectedIndex < 0) return;
 
-        _currentTemplate = (PageTemplateType)TemplateCombo.SelectedIndex;
+        _currentTemplate = (PageTemplateType)combo.SelectedIndex;
+
+        // Sync both combos
+        if (combo == TemplateCombo && TemplateCombo_M.SelectedIndex != combo.SelectedIndex)
+            TemplateCombo_M.SelectedIndex = combo.SelectedIndex;
+        else if (combo == TemplateCombo_M && TemplateCombo.SelectedIndex != combo.SelectedIndex)
+            TemplateCombo.SelectedIndex = combo.SelectedIndex;
         var brush = PageTemplate.GetBackgroundBrush(_currentTemplate);
         MainCanvas.Background = brush;
 
@@ -301,7 +314,14 @@ public partial class MainWindow : Window
 
     private void SetupToolButtons()
     {
-        // Tools
+        // Layout switch button
+        BtnLayout.Click += (s, e) =>
+        {
+            var newLayout = _currentLayout == "modern" ? "classic" : "modern";
+            ApplyLayout(newLayout);
+        };
+
+        // Classic tools
         BtnPen.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnPen);
         BtnHighlighter.Click += (s, e) => SetHighlighter(BtnHighlighter);
         BtnEraser.Click += (s, e) => SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser);
@@ -310,16 +330,32 @@ public partial class MainWindow : Window
         BtnRect.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnRect);
         BtnCircle.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnCircle);
 
-        // Colors
+        // Modern tools (duplicate buttons with _M suffix)
+        BtnPen_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnPen_M);
+        BtnHighlighter_M.Click += (s, e) => SetHighlighter(BtnHighlighter_M);
+        BtnEraser_M.Click += (s, e) => SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser_M);
+        BtnSelect_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Select, BtnSelect_M);
+        BtnLine_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnLine_M);
+        BtnRect_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnRect_M);
+        BtnCircle_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnCircle_M);
+
+        // Colors – both layouts
         BtnBlack.Click += (s, e) => SetColor(System.Windows.Media.Colors.Black, BtnBlack);
         BtnBlue.Click += (s, e) => SetColor(System.Windows.Media.Colors.Blue, BtnBlue);
         BtnRed.Click += (s, e) => SetColor(System.Windows.Media.Colors.Red, BtnRed);
         BtnGreen.Click += (s, e) => SetColor(System.Windows.Media.Colors.Green, BtnGreen);
+        BtnBlack_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Black, BtnBlack_M);
+        BtnBlue_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Blue, BtnBlue_M);
+        BtnRed_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Red, BtnRed_M);
+        BtnGreen_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Green, BtnGreen_M);
 
-        // Sizes
+        // Sizes – both layouts
         BtnThin.Click += (s, e) => SetSize(1, BtnThin);
         BtnMedium.Click += (s, e) => SetSize(2.5, BtnMedium);
         BtnThick.Click += (s, e) => SetSize(5, BtnThick);
+        BtnThin_M.Click += (s, e) => SetSize(1, BtnThin_M);
+        BtnMedium_M.Click += (s, e) => SetSize(2.5, BtnMedium_M);
+        BtnThick_M.Click += (s, e) => SetSize(5, BtnThick_M);
 
         // Actions
         BtnUndo.Click += (s, e) => Undo();
@@ -350,7 +386,10 @@ public partial class MainWindow : Window
             MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
             MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         }
-        var allToolBtns = new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
+        // Reset all tool buttons in both layouts
+        var allToolBtns = _currentLayout == "modern"
+            ? new[] { BtnPen_M, BtnHighlighter_M, BtnEraser_M, BtnSelect_M, BtnLine_M, BtnRect_M, BtnCircle_M }
+            : new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
         foreach (var btn in allToolBtns)
             btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
         activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
@@ -364,7 +403,9 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = 16;
         MainCanvas.DefaultDrawingAttributes.Height = 16;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = true;
-        var allToolBtns = new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
+        var allToolBtns = _currentLayout == "modern"
+            ? new[] { BtnPen_M, BtnHighlighter_M, BtnEraser_M, BtnSelect_M, BtnLine_M, BtnRect_M, BtnCircle_M }
+            : new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
         foreach (var btn in allToolBtns)
             btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
         activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
@@ -377,7 +418,10 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
         MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
-        foreach (var btn in new[] { BtnBlack, BtnBlue, BtnRed, BtnGreen })
+        var colorBtns = _currentLayout == "modern"
+            ? new[] { BtnBlack_M, BtnBlue_M, BtnRed_M, BtnGreen_M }
+            : new[] { BtnBlack, BtnBlue, BtnRed, BtnGreen };
+        foreach (var btn in colorBtns)
             btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
         activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
     }
@@ -388,9 +432,41 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = size;
         MainCanvas.DefaultDrawingAttributes.Height = size;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        foreach (var btn in new[] { BtnThin, BtnMedium, BtnThick })
+        var sizeBtns = _currentLayout == "modern"
+            ? new[] { BtnThin_M, BtnMedium_M, BtnThick_M }
+            : new[] { BtnThin, BtnMedium, BtnThick };
+        foreach (var btn in sizeBtns)
             btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
         activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+    }
+
+    #endregion
+
+    #region Layout Switching
+
+    private void ApplyLayout(string layout)
+    {
+        _currentLayout = layout;
+
+        if (layout == "modern")
+        {
+            ModernToolbar.Visibility = Visibility.Visible;
+            LeftToolbar.Visibility = Visibility.Collapsed;
+            ClassicTemplatePanel.Visibility = Visibility.Collapsed;
+            BtnLayout.ToolTip = "Layout: Modern (Klicken für Klassisch)";
+        }
+        else
+        {
+            ModernToolbar.Visibility = Visibility.Collapsed;
+            LeftToolbar.Visibility = Visibility.Visible;
+            ClassicTemplatePanel.Visibility = Visibility.Visible;
+            BtnLayout.ToolTip = "Layout: Klassisch (Klicken für Modern)";
+        }
+
+        // Save preference
+        App.Config.ToolbarLayout = layout;
+        App.Config.Save();
+        StatusText.Text = layout == "modern" ? "📐 Modern-Layout" : "📐 Klassisch-Layout";
     }
 
     #endregion
@@ -504,15 +580,20 @@ public partial class MainWindow : Window
         {
             BtnInputMode.Content = _inputModeManager.GetModeEmoji();
             BtnInputMode.ToolTip = _inputModeManager.GetModeDescription();
+            BtnInputMode_M.Content = _inputModeManager.GetModeEmoji();
+            BtnInputMode_M.ToolTip = _inputModeManager.GetModeDescription();
             StatusText.Text = _inputModeManager.GetModeDescription();
         };
 
         // Initial button state
         BtnInputMode.Content = _inputModeManager.GetModeEmoji();
-        BtnInputMode.ToolTip = _inputModeManager.GetModeDescription();
+            BtnInputMode.ToolTip = _inputModeManager.GetModeDescription();
+            BtnInputMode_M.Content = _inputModeManager.GetModeEmoji();
+            BtnInputMode_M.ToolTip = _inputModeManager.GetModeDescription();
 
         // Cycle input mode on button click
         BtnInputMode.Click += (s, e) => _inputModeManager.CycleMode();
+        BtnInputMode_M.Click += (s, e) => _inputModeManager.CycleMode();
     }
 
     #endregion

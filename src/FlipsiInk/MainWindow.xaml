@@ -30,13 +30,57 @@
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
                 <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
+                <Button x:Name="BtnLayout" Content="📐" Style="{StaticResource ToolButton}" ToolTip="Layout wechseln (Klassisch/Modern)"/>
                 <Button x:Name="BtnSettings" Content="⚙️" Style="{StaticResource ToolButton}" ToolTip="Einstellungen"/>
                 <Button x:Name="BtnCheckUpdate" Content="🔄" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen"/>
             </StackPanel>
         </DockPanel>
 
-        <!-- Left Toolbar -->
-        <Border DockPanel.Dock="Left" Background="#252525" Width="56" Padding="4" x:Name="LeftToolbar">
+        <!-- ========== MODERN LAYOUT: Horizontal Toolbar ========== -->
+        <Border DockPanel.Dock="Top" Background="#252525" Padding="8,4" x:Name="ModernToolbar" Visibility="Visible">
+            <StackPanel Orientation="Horizontal">
+                <!-- Drawing Tools -->
+                <Button x:Name="BtnPen_M" Content="✏️" Style="{StaticResource ToolButton}" ToolTip="Stift" Background="#0078D7"/>
+                <Button x:Name="BtnHighlighter_M" Content="🖍️" Style="{StaticResource ToolButton}" ToolTip="Textmarker"/>
+                <Button x:Name="BtnEraser_M" Content="🧹" Style="{StaticResource ToolButton}" ToolTip="Radierer"/>
+                <Button x:Name="BtnSelect_M" Content="👆" Style="{StaticResource ToolButton}" ToolTip="Auswählen"/>
+                <Separator Margin="4,4"/>
+                <!-- Shapes -->
+                <Button x:Name="BtnLine_M" Content="📏" Style="{StaticResource ToolButton}" ToolTip="Linie"/>
+                <Button x:Name="BtnRect_M" Content="⬜" Style="{StaticResource ToolButton}" ToolTip="Rechteck"/>
+                <Button x:Name="BtnCircle_M" Content="⭕" Style="{StaticResource ToolButton}" ToolTip="Kreis"/>
+                <Separator Margin="4,4"/>
+                <!-- Colors -->
+                <Button x:Name="BtnBlack_M" Content="⚫" Style="{StaticResource ToolButton}" ToolTip="Schwarz"/>
+                <Button x:Name="BtnBlue_M" Content="🔵" Style="{StaticResource ToolButton}" ToolTip="Blau"/>
+                <Button x:Name="BtnRed_M" Content="🔴" Style="{StaticResource ToolButton}" ToolTip="Rot"/>
+                <Button x:Name="BtnGreen_M" Content="🟢" Style="{StaticResource ToolButton}" ToolTip="Grün"/>
+                <Separator Margin="4,4"/>
+                <!-- Sizes -->
+                <Button x:Name="BtnThin_M" Content="▪️" Style="{StaticResource ToolButton}" ToolTip="Dünn" FontSize="10"/>
+                <Button x:Name="BtnMedium_M" Content="◼️" Style="{StaticResource ToolButton}" ToolTip="Mittel"/>
+                <Button x:Name="BtnThick_M" Content="⬛" Style="{StaticResource ToolButton}" ToolTip="Dick"/>
+                <Separator Margin="4,4"/>
+                <!-- Template & Input Mode -->
+                <ComboBox x:Name="TemplateCombo_M" Width="140" Margin="4,0" ToolTip="Seitenvorlage">
+                    <ComboBoxItem Content="Blanko" IsSelected="True"/>
+                    <ComboBoxItem Content="Liniert (breit)"/>
+                    <ComboBoxItem Content="Liniert (schmal)"/>
+                    <ComboBoxItem Content="Kariert (klein)"/>
+                    <ComboBoxItem Content="Kariert (mittel)"/>
+                    <ComboBoxItem Content="Kariert (groß)"/>
+                    <ComboBoxItem Content="Punktiert (klein)"/>
+                    <ComboBoxItem Content="Punktiert (mittel)"/>
+                    <ComboBoxItem Content="Punktiert (groß)"/>
+                    <ComboBoxItem Content="Cornell Notes"/>
+                    <ComboBoxItem Content="Isometrisch"/>
+                </ComboBox>
+                <Button x:Name="BtnInputMode_M" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ========== CLASSIC LAYOUT: Left Toolbar ========== -->
+        <Border DockPanel.Dock="Left" Background="#252525" Width="56" Padding="4" x:Name="LeftToolbar" Visibility="Collapsed">
             <StackPanel>
                 <Button x:Name="BtnPen" Content="✏️" Style="{StaticResource ToolButton}" ToolTip="Stift" Background="#0078D7"/>
                 <Button x:Name="BtnHighlighter" Content="🖍️" Style="{StaticResource ToolButton}" ToolTip="Textmarker"/>
@@ -56,10 +100,8 @@
                 <Button x:Name="BtnMedium" Content="◼️" Style="{StaticResource ToolButton}" ToolTip="Mittel"/>
                 <Button x:Name="BtnThick" Content="⬛" Style="{StaticResource ToolButton}" ToolTip="Dick"/>
                 <Separator Margin="4,8"/>
-                <!-- Page Template Button -->
                 <Button x:Name="BtnTemplate" Content="📄" Style="{StaticResource ToolButton}" ToolTip="Seitenvorlage"/>
                 <Separator Margin="4,8"/>
-                <!-- Input Mode Button -->
                 <Button x:Name="BtnInputMode" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
             </StackPanel>
         </Border>
@@ -84,21 +126,23 @@
 
                 <TextBlock x:Name="ModelStatus" Text="Modell: nicht geladen" Foreground="#FF6600" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
 
-                <!-- Template Preview -->
-                <TextBlock Text="📄 Vorlage" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,16,0,8"/>
-                <ComboBox x:Name="TemplateCombo" SelectionChanged="TemplateCombo_SelectionChanged" Margin="0,0,0,4">
-                    <ComboBoxItem Content="Blanko" IsSelected="True"/>
-                    <ComboBoxItem Content="Liniert (breit)"/>
-                    <ComboBoxItem Content="Liniert (schmal)"/>
-                    <ComboBoxItem Content="Kariert (klein)"/>
-                    <ComboBoxItem Content="Kariert (mittel)"/>
-                    <ComboBoxItem Content="Kariert (groß)"/>
-                    <ComboBoxItem Content="Punktiert (klein)"/>
-                    <ComboBoxItem Content="Punktiert (mittel)"/>
-                    <ComboBoxItem Content="Punktiert (groß)"/>
-                    <ComboBoxItem Content="Cornell Notes"/>
-                    <ComboBoxItem Content="Isometrisch"/>
-                </ComboBox>
+                <!-- Template Preview (Classic only – Modern has it in toolbar) -->
+                <StackPanel x:Name="ClassicTemplatePanel" Visibility="Collapsed">
+                    <TextBlock Text="📄 Vorlage" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,16,0,8"/>
+                    <ComboBox x:Name="TemplateCombo" Margin="0,0,0,4">
+                        <ComboBoxItem Content="Blanko" IsSelected="True"/>
+                        <ComboBoxItem Content="Liniert (breit)"/>
+                        <ComboBoxItem Content="Liniert (schmal)"/>
+                        <ComboBoxItem Content="Kariert (klein)"/>
+                        <ComboBoxItem Content="Kariert (mittel)"/>
+                        <ComboBoxItem Content="Kariert (groß)"/>
+                        <ComboBoxItem Content="Punktiert (klein)"/>
+                        <ComboBoxItem Content="Punktiert (mittel)"/>
+                        <ComboBoxItem Content="Punktiert (groß)"/>
+                        <ComboBoxItem Content="Cornell Notes"/>
+                        <ComboBoxItem Content="Isometrisch"/>
+                    </ComboBox>
+                </StackPanel>
             </StackPanel>
         </Border>
 
