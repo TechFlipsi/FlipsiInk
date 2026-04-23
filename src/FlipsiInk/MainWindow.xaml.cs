@@ -29,6 +29,9 @@ public partial class MainWindow : Window
     private System.Windows.Media.Color _currentColor = System.Windows.Media.Colors.Black;
     private double _currentSize = 2;
 
+    // Initialization flag – prevents events firing before UI is ready
+    private bool _initialized = false;
+
     // Undo/Redo stacks (Issue #24)
     private readonly Stack<StrokeCollection> _undoStack = new();
     private readonly Stack<StrokeCollection> _redoStack = new();
@@ -68,6 +71,9 @@ public partial class MainWindow : Window
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
         MainCanvas.StrokeErasing += (s, e) => { /* stroke removed */ };
+
+        // UI is now fully initialized – enable event handlers
+        _initialized = true;
     }
 
     #region Canvas Setup
@@ -258,6 +264,7 @@ public partial class MainWindow : Window
 
     private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!_initialized) return;
         if (TemplateCombo.SelectedIndex < 0) return;
 
         _currentTemplate = (PageTemplateType)TemplateCombo.SelectedIndex;
