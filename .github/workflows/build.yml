@@ -26,17 +26,31 @@ jobs:
         run: Compress-Archive -Path publish\* -DestinationPath FlipsiInk_win-x64.zip
         shell: pwsh
 
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+        shell: pwsh
+
+      - name: Build Installer
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v',''
+          iscc installer.iss /DAppVersion=$version /Ooutput
+        shell: pwsh
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: FlipsiInk-win-x64
-          path: FlipsiInk_win-x64.zip
+          path: |
+            FlipsiInk_win-x64.zip
+            output\FlipsiInk_Setup_*.exe
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: FlipsiInk_win-x64.zip
+          files: |
+            FlipsiInk_win-x64.zip
+            output\FlipsiInk_Setup_*.exe
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
