@@ -27,6 +27,7 @@
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnRecognize" Content="🔤" Style="{StaticResource ToolButton}" ToolTip="Text erkennen (Ctrl+Shift+R)" Background="#0078D7"/>
                 <Button x:Name="BtnCalc" Content="🧮" Style="{StaticResource ToolButton}" ToolTip="Mathe berechnen (Ctrl+Shift+M)" Background="#0078D7"/>
+                <Button x:Name="BtnAutoTidy" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
                 <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
@@ -75,6 +76,8 @@
                     <ComboBoxItem Content="Cornell Notes"/>
                     <ComboBoxItem Content="Isometrisch"/>
                 </ComboBox>
+                <Button x:Name="BtnAutoTidy_M" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
+                <Separator Margin="4,4"/>
                 <Button x:Name="BtnInputMode_M" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
             </StackPanel>
         </Border>
@@ -101,6 +104,8 @@
                 <Button x:Name="BtnThick" Content="⬛" Style="{StaticResource ToolButton}" ToolTip="Dick"/>
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnTemplate" Content="📄" Style="{StaticResource ToolButton}" ToolTip="Seitenvorlage"/>
+                <Separator Margin="4,8"/>
+                <Button x:Name="BtnAutoTidy" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnInputMode" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
             </StackPanel>
@@ -150,6 +155,12 @@
         <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <Grid x:Name="CanvasGrid">
                 <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
+                <!-- Kontext-sensitive Aktionsleiste (Issue #35) -->
+                <Popup x:Name="ContextActionPopup" Placement="Relative" PlacementTarget="{Binding ElementName=CanvasGrid}" AllowsTransparency="True" StaysOpen="False">
+                    <Border Background="#2D2D2D" CornerRadius="6" Padding="4,2" BorderBrush="#0078D7" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" x:Name="ContextActionPanel"/>
+                    </Border>
+                </Popup>
             </Grid>
         </ScrollViewer>
     </DockPanel>

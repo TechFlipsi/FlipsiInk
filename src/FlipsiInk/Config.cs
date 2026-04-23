@@ -28,6 +28,7 @@ public class Config
     public double DefaultPenSize { get; set; } = 2;
     public string DefaultPenColor { get; set; } = "Black";
     public bool AutoRecognize { get; set; } = false;
+    public bool AutoCalcEnabled { get; set; } = true;
     public string ToolbarLayout { get; set; } = "modern"; // "classic" = vertical left, "modern" = horizontal top
 
     private string ConfigPath => Path.Combine(ConfigDir, "config.json");

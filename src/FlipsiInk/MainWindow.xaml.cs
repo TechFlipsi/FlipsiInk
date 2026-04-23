@@ -62,6 +62,12 @@ public partial class MainWindow : Window
     private OcrEngine? _ocrEngine;
     private bool _modelLoaded = false;
 
+    // ShapeRecognizer für Auto-Tidy (Issue #34)
+    private readonly ShapeRecognizer _shapeRecognizer = new();
+
+    // Kontext-Aktionsleiste (Issue #35)
+    private ContextActionBar? _contextActionBar;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -75,6 +81,8 @@ public partial class MainWindow : Window
         try { SetupInputMode(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupInputMode: {ex}"); }
         try { LoadModelAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"LoadModelAsync: {ex}"); }
         try { ApplyLayout(App.Config.ToolbarLayout); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ApplyLayout: {ex}"); }
+        try { SetupAutoTidy(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupAutoTidy: {ex}"); }
+        try { SetupContextActionBar(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupContextActionBar: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
@@ -718,6 +726,489 @@ public partial class MainWindow : Window
             }
             catch { }
         }, null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
+    }
+
+    #endregion
+
+    #region Auto-Tidy (Issue #34)
+
+    private void SetupAutoTidy()
+    {
+        BtnAutoTidy.Click += async (s, e) => await AutoTidy();
+        BtnAutoTidy_M.Click += async (s, e) => await AutoTidy();
+    }
+
+    /// <summary>
+    /// Intelligente Layout-Reinigung:
+    /// - Handgezeichnete Formen → perfekte Formen
+    /// - Krumme Linien ausrichten
+    /// - Gleichmäßige Abstände zwischen Textblöcken
+    /// </summary>
+    private async Task AutoTidy()
+    {
+        if (MainCanvas.Strokes.Count == 0)
+        {
+            StatusText.Text = "⚠️ Nichts zum Aufräumen!";
+            return;
+        }
+
+        StatusText.Text = "✨ Auto-Tidy: Räume auf...";
+        int shapesTidied = 0;
+        int linesStraightened = 0;
+
+        // Undo-Vorbehalte speichern
+        _undoStack.Push(MainCanvas.Strokes.Clone());
+        _redoStack.Clear();
+
+        var newStrokes = new StrokeCollection();
+        var strokeGroups = GroupStrokesByProximity();
+
+        foreach (var group in strokeGroups)
+        {
+            // 1. Formen erkennen und begradigen
+            foreach (Stroke? stroke in group)
+            {
+                if (stroke == null) continue;
+                var shape = _shapeRecognizer.RecognizeAndStraighten(stroke);
+                if (shape != null && shape.StraightenedStroke != null)
+                {
+                    // Form erkannt → perfekten Stroke verwenden, Original-Attribute beibehalten
+                    var tidyStroke = shape.StraightenedStroke;
+                    tidyStroke.DrawingAttributes = stroke.DrawingAttributes.Clone();
+                    newStrokes.Add(tidyStroke);
+                    shapesTidied++;
+                }
+                else
+                {
+                    // Keine Form → Linie begradigen wenn möglich
+                    var straightened = TryStraightenLine(stroke);
+                    if (straightened != null)
+                    {
+                        straightened.DrawingAttributes = stroke.DrawingAttributes.Clone();
+                        newStrokes.Add(straightened);
+                        linesStraightened++;
+                    }
+                    else
+                    {
+                        newStrokes.Add(stroke);
+                    }
+                }
+            }
+        }
+
+        // 2. Gleichmäßige Abstände zwischen Gruppen
+        var spacedStrokes = EqualizeSpacing(newStrokes, strokeGroups);
+
+        // Strokes ersetzen
+        MainCanvas.Strokes.Clear();
+        MainCanvas.Strokes.Add(spacedStrokes);
+
+        StatusText.Text = $"✨ Auto-Tidy fertig: {shapesTidied} Formen begradigt, {linesStraightened} Linien ausgerichtet";
+    }
+
+    /// <summary>
+    /// Gruppiert Strokes nach räumlicher Nähe (Textblöcke erkennen).
+    /// </summary>
+    private List<StrokeCollection> GroupStrokesByProximity()
+    {
+        var groups = new List<StrokeCollection>();
+        var assigned = new HashSet<Stroke>();
+        double threshold = 50; // Pixel-Abstand für Gruppierung
+
+        foreach (Stroke? stroke in MainCanvas.Strokes)
+        {
+            if (stroke == null || assigned.Contains(stroke)) continue;
+
+            var group = new StrokeCollection();
+            var queue = new Queue<Stroke>();
+            queue.Enqueue(stroke);
+            assigned.Add(stroke);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                group.Add(current);
+                var currentBounds = current.GetBounds();
+                var searchBounds = new Rect(
+                    currentBounds.X - threshold, currentBounds.Y - threshold,
+                    currentBounds.Width + 2 * threshold, currentBounds.Height + 2 * threshold);
+
+                foreach (Stroke? other in MainCanvas.Strokes)
+                {
+                    if (other == null || assigned.Contains(other)) continue;
+                    if (searchBounds.IntersectsWith(other.GetBounds()))
+                    {
+                        assigned.Add(other);
+                        queue.Enqueue(other);
+                    }
+                }
+            }
+
+            groups.Add(group);
+        }
+
+        return groups;
+    }
+
+    /// <summary>
+    /// Versucht eine krumme Linie zu begradigen (einfache Heuristik).
+    /// </summary>
+    private Stroke? TryStraightenLine(Stroke stroke)
+    {
+        var points = stroke.StylusPoints.Select(p => new Point(p.X, p.Y)).ToArray();
+        if (points.Length < 3) return null;
+
+        var start = points[0];
+        var end = points[points.Length - 1];
+        double length = Distance(start, end);
+        if (length < 20) return null; // Zu kurz
+
+        // Durchschnittliche Abweichung von der Geraden
+        double totalDev = 0;
+        foreach (var pt in points)
+        {
+            double dx = end.X - start.X;
+            double dy = end.Y - start.Y;
+            double lenSq = dx * dx + dy * dy;
+            if (lenSq < 0.001) continue;
+            double cross = Math.Abs((pt.X - start.X) * dy - (pt.Y - start.Y) * dx);
+            totalDev += cross / Math.Sqrt(lenSq);
+        }
+
+        double avgDev = totalDev / points.Length;
+        // Nur begradigen wenn die Abweichung klein genug ist (sonst ist es keine Linie)
+        if (avgDev > _shapeRecognizer.SnapTolerance) return null;
+
+        var sp = new StylusPointCollection();
+        sp.Add(new StylusPoint(start.X, start.Y));
+        sp.Add(new StylusPoint(end.X, end.Y));
+        return new Stroke(sp);
+    }
+
+    private static double Distance(Point a, Point b)
+    {
+        double dx = a.X - b.X;
+        double dy = a.Y - b.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    /// <summary>
+    /// Gleichmäßige Abstände zwischen Stroke-Gruppen.
+    /// Sortiert Gruppen vertikal und setzt gleichmäßige Abstände.
+    /// </summary>
+    private StrokeCollection EqualizeSpacing(StrokeCollection strokes, List<StrokeCollection> groups)
+    {
+        if (groups.Count < 3) return strokes;
+
+        // Gruppenschwerpunkte sortieren (vertikal)
+        var sortedGroups = groups
+            .Select(g =>
+            {
+                double avgY = 0;
+                int count = 0;
+                foreach (Stroke? s in g) { if (s != null) { avgY += s.GetBounds().Y + s.GetBounds().Height / 2; count++; } }
+                return (Group: g, CenterY: count > 0 ? avgY / count : 0);
+            })
+            .OrderBy(g => g.CenterY)
+            .ToList();
+
+        // Zielabstand: Durchschnitt der aktuellen Abstände
+        var gaps = new List<double>();
+        for (int i = 1; i < sortedGroups.Count; i++)
+        {
+            double prevBottom = 0;
+            foreach (Stroke? s in sortedGroups[i - 1].Group) { if (s != null) prevBottom = Math.Max(prevBottom, s.GetBounds().Bottom); }
+            double currTop = double.MaxValue;
+            foreach (Stroke? s in sortedGroups[i].Group) { if (s != null) currTop = Math.Min(currTop, s.GetBounds().Top); }
+            if (currTop > prevBottom) gaps.Add(currTop - prevBottom);
+        }
+
+        if (gaps.Count == 0) return strokes;
+        double targetGap = gaps.Average();
+
+        // Gruppen verschieben
+        var result = new StrokeCollection();
+        double currentY = sortedGroups[0].CenterY; // Erste Gruppe bleibt
+
+        for (int i = 0; i < sortedGroups.Count; i++)
+        {
+            if (i > 0)
+            {
+                // Verschiebe die Gruppe
+                double groupTop = double.MaxValue;
+                foreach (Stroke? s in sortedGroups[i].Group) { if (s != null) groupTop = Math.Min(groupTop, s.GetBounds().Top); }
+                double prevGroupBottom = 0;
+                foreach (Stroke? s in sortedGroups[i - 1].Group) { if (s != null) prevGroupBottom = Math.Max(prevGroupBottom, s.GetBounds().Bottom); }
+
+                double desiredTop = prevGroupBottom + targetGap;
+                double offsetY = desiredTop - groupTop;
+
+                if (Math.Abs(offsetY) > 2) // Nur wenn nennenswerte Verschiebung
+                {
+                    foreach (Stroke? s in sortedGroups[i].Group)
+                    {
+                        if (s == null) continue;
+                        var newPoints = new StylusPointCollection();
+                        foreach (var sp in s.StylusPoints)
+                            newPoints.Add(new StylusPoint(sp.X, sp.Y + offsetY, sp.PressureFactor));
+                        var moved = new Stroke(newPoints);
+                        moved.DrawingAttributes = s.DrawingAttributes.Clone();
+                        result.Add(moved);
+                    }
+                    continue;
+                }
+            }
+
+            // Keine Verschiebung nötig
+            foreach (Stroke? s in sortedGroups[i].Group)
+            {
+                if (s != null) result.Add(s);
+            }
+        }
+
+        return result;
+    }
+
+    #endregion
+
+    #region Kontext-sensitive Aktionsleiste (Issue #35)
+
+    private void SetupContextActionBar()
+    {
+        _contextActionBar = new ContextActionBar();
+
+        // Aktionen registrieren
+        _contextActionBar.AddAction("text", "📝 Zusammenfassen", async () => await SummarizeSelection());
+        _contextActionBar.AddAction("text", "✅ In Todo verwandeln", () => ConvertSelectionToTodo());
+        _contextActionBar.AddAction("math", "📈 Graph zeichnen", () => DrawGraph());
+        _contextActionBar.AddAction("math", "💱 Währung umrechnen", () => ConvertCurrency());
+
+        // Selektionsänderungen überwachen
+        MainCanvas.SelectionChanged += OnSelectionChanged;
+        MainCanvas.SelectionMoving += OnSelectionMoving;
+        MainCanvas.SelectionResizing += OnSelectionResizing;
+    }
+
+    private void OnSelectionChanged(object? sender, EventArgs e)
+    {
+        if (!_initialized) return;
+        ShowContextActionBar();
+    }
+
+    private void OnSelectionMoving(object? sender, InkCanvasSelectionEditingEventArgs e)
+    {
+        // Popup verschieben sich mit
+    }
+
+    private void OnSelectionResizing(object? sender, InkCanvasSelectionEditingEventArgs e)
+    {
+        // Popup anpassen
+    }
+
+    /// <summary>
+    /// Zeigt die kontext-sensitive Aktionsleiste nahe der Selektion an.
+    /// </summary>
+    private void ShowContextActionBar()
+    {
+        var selected = MainCanvas.GetSelectedStrokes();
+        if (selected.Count == 0)
+        {
+            ContextActionPopup.IsOpen = false;
+            return;
+        }
+
+        // Bounding Box der Selektion
+        Rect bounds = Rect.Empty;
+        foreach (Stroke? s in selected)
+        {
+            if (s != null) bounds.Union(s.GetBounds());
+        }
+
+        if (bounds == Rect.Empty)
+        {
+            ContextActionPopup.IsOpen = false;
+            return;
+        }
+
+        // Kontext bestimmen: Text oder Rechnung?
+        string context = DetectSelectionContext(selected);
+
+        // Buttons im Panel aktualisieren
+        ContextActionPanel.Children.Clear();
+        var actions = _contextActionBar!.GetActionsForContext(context);
+        foreach (var action in actions)
+        {
+            var btn = new Button
+            {
+                Content = action.Label,
+                Style = (Style)FindResource("ToolButton"),
+                Margin = new Thickness(2, 0, 2, 0),
+                FontSize = 12
+            };
+            btn.Click += (s, e) => action.Execute();
+            ContextActionPanel.Children.Add(btn);
+        }
+
+        // Position: oberhalb der Selektion, zentriert
+        double popupX = bounds.X + bounds.Width / 2 - 80;
+        double popupY = bounds.Y - 40;
+        if (popupY < 0) popupY = bounds.Bottom + 5; // Unterhalb falls zu nah am Rand
+
+        // Koordinaten relativ zum CanvasGrid
+        var transform = MainCanvas.TransformToAncestor(CanvasGrid);
+        var canvasOrigin = transform.Transform(new Point(0, 0));
+
+        ContextActionPopup.HorizontalOffset = canvasOrigin.X + popupX;
+        ContextActionPopup.VerticalOffset = canvasOrigin.Y + popupY;
+        ContextActionPopup.IsOpen = true;
+    }
+
+    /// <summary>
+    /// Erkennt den Kontext der Selektion: "text" oder "math".
+    /// </summary>
+    private string DetectSelectionContext(StrokeCollection selected)
+    {
+        // Einfache Heuristik: Wenn OCR Text mit Zahlen/Operatoren enthält → "math"
+        // Sonst → "text"
+        // Da wir nicht live OCR machen, nutzen wir eine Form-basierte Heuristik:
+        // Viele kleine Strokes in einer Zeile → eher Text
+        // Enthält der Stroke schmale vertikale Elemente (Ziffern) → eher Rechnung
+
+        // Für jetzt: Beide Kontexte anbieten, je nach Erkennung
+        // Prüfe ob Strokes wie eine Rechnung aussehen (zahlenlastig)
+        if (_modelLoaded && _ocrEngine != null && selected.Count > 0)
+        {
+            try
+            {
+                // Quick-OCR der Selektion
+                var bitmap = RenderSelectedStrokesToBitmap(selected);
+                if (bitmap != null)
+                {
+                    var text = _ocrEngine.Recognize(bitmap);
+                    // Prüfe auf Zahlen/Operatoren
+                    if (System.Text.RegularExpressions.Regex.IsMatch(text, @"[\d+\-*/=]"))
+                        return "math";
+                }
+            }
+            catch { }
+        }
+
+        return "text";
+    }
+
+    /// <summary>
+    /// Rendert nur die selektierten Strokes in ein Bitmap.
+    /// </summary>
+    private System.Drawing.Bitmap? RenderSelectedStrokesToBitmap(StrokeCollection selected)
+    {
+        if (selected.Count == 0) return null;
+        Rect bounds = Rect.Empty;
+        foreach (Stroke? s in selected)
+        {
+            if (s != null) bounds.Union(s.GetBounds());
+        }
+        if (bounds == Rect.Empty) return null;
+
+        int w = Math.Max(1, (int)bounds.Width + 20);
+        int h = Math.Max(1, (int)bounds.Height + 20);
+
+        var ink = new InkCanvas { Width = w, Height = h, Background = System.Windows.Media.Brushes.White };
+        var offsetStrokes = new StrokeCollection();
+        foreach (Stroke? s in selected)
+        {
+            if (s == null) continue;
+            var pts = new StylusPointCollection();
+            foreach (var sp in s.StylusPoints)
+                pts.Add(new StylusPoint(sp.X - bounds.X + 10, sp.Y - bounds.Y + 10, sp.PressureFactor));
+            var moved = new Stroke(pts) { DrawingAttributes = s.DrawingAttributes.Clone() };
+            offsetStrokes.Add(moved);
+        }
+        ink.Strokes.Add(offsetStrokes);
+
+        ink.Measure(new Size(w, h));
+        ink.Arrange(new Rect(0, 0, w, h));
+
+        var rtb = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+        rtb.Render(ink);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(rtb));
+        using var stream = new MemoryStream();
+        encoder.Save(stream);
+        stream.Position = 0;
+        return new System.Drawing.Bitmap(stream);
+    }
+
+    // Kontext-Aktionen
+    private async Task SummarizeSelection()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (!_modelLoaded || _ocrEngine == null) { StatusText.Text = "⚠️ Modell nicht geladen!"; return; }
+        var selected = MainCanvas.GetSelectedStrokes();
+        if (selected.Count == 0) return;
+
+        StatusText.Text = "📝 Fasse zusammen...";
+        try
+        {
+            var bitmap = RenderSelectedStrokesToBitmap(selected);
+            if (bitmap == null) return;
+            var text = await Task.Run(() => _ocrEngine.Recognize(bitmap));
+            if (string.IsNullOrWhiteSpace(text)) { StatusText.Text = "⚠️ Kein Text erkannt"; return; }
+            // Einfache Zusammenfassung: Sätze komprimieren
+            var summary = SimpleSummarize(text);
+            RecognizedText.Text = $"Zusammenfassung:\n{summary}";
+            StatusText.Text = "✓ Zusammenfassung erstellt";
+        }
+        catch (Exception ex) { StatusText.Text = $"✗ Fehler: {ex.Message}"; }
+    }
+
+    private void ConvertSelectionToTodo()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (!_modelLoaded || _ocrEngine == null) { StatusText.Text = "⚠️ Modell nicht geladen!"; return; }
+        var selected = MainCanvas.GetSelectedStrokes();
+        if (selected.Count == 0) return;
+
+        StatusText.Text = "✅ Wandle in Todo um...";
+        try
+        {
+            var bitmap = RenderSelectedStrokesToBitmap(selected);
+            if (bitmap == null) return;
+            var text = _ocrEngine.Recognize(bitmap);
+            if (string.IsNullOrWhiteSpace(text)) { StatusText.Text = "⚠️ Kein Text erkannt"; return; }
+            // Jede Zeile als Todo-Eintrag formatieren
+            var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var todo = string.Join("\n", lines.Select((l, i) => $"☐ {l.Trim()}"));
+            RecognizedText.Text = $"Todo:\n{todo}";
+            StatusText.Text = "✓ In Todo verwandelt";
+        }
+        catch (Exception ex) { StatusText.Text = $"✗ Fehler: {ex.Message}"; }
+    }
+
+    private void DrawGraph()
+    {
+        ContextActionPopup.IsOpen = false;
+        StatusText.Text = "📈 Graph zeichnen – Coming Soon";
+        // TODO: Graph-Zeichnung auf Basis erkannter Funktion implementieren
+    }
+
+    private void ConvertCurrency()
+    {
+        ContextActionPopup.IsOpen = false;
+        StatusText.Text = "💱 Währung umrechnen – Coming Soon";
+        // TODO: Währungsumrechnung auf Basis erkannter Beträge implementieren
+    }
+
+    /// <summary>
+    /// Einfache Zusammenfassung: Sätze kürzen, Duplikate entfernen.
+    /// </summary>
+    private static string SimpleSummarize(string text)
+    {
+        var sentences = text.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 5)
+            .Distinct()
+            .Take(5);
+        return string.Join(". ", sentences) + ".";
     }
 
     #endregion
