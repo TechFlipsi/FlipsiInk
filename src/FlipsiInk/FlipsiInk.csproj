@@ -4,7 +4,6 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <Version>0.1.0</Version>
-    <ApplicationIcon>Resources\flipsiink.ico</ApplicationIcon>
     <AssemblyName>FlipsiInk</AssemblyName>
     <RootNamespace>FlipsiInk</RootNamespace>
     <Nullable>enable</Nullable>
