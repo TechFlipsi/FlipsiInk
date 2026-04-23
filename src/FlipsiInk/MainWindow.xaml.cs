@@ -29,17 +29,25 @@ public partial class MainWindow : Window
     private System.Windows.Media.Color _currentColor = Colors.Black;
     private double _currentSize = 2;
 
-    // Undo/Redo stacks
+    // Undo/Redo stacks (Issue #24)
     private readonly Stack<StrokeCollection> _undoStack = new();
-    private readonly Stack<StrokeCollection> _undoRedoStack = new();
+    private readonly Stack<StrokeCollection> _redoStack = new();
     private const int MaxUndoSteps = 50;
+    private bool _isUndoRedoing = false;
+
+    // Zoom (Issue #25)
+    private readonly ZoomManager _zoomManager = new();
+
+    // Theme (Issue #8)
+    private readonly ThemeManager _themeManager = new();
+    private Theme _currentTheme = Theme.System;
+
+    // Page template (Issue #17)
+    private PageTemplateType _currentTemplate = PageTemplateType.Blank;
 
     // OCR
     private OcrEngine? _ocrEngine;
     private bool _modelLoaded = false;
-
-    // Theme
-    private string _currentTheme = "system";
 
     public MainWindow()
     {
@@ -47,7 +55,9 @@ public partial class MainWindow : Window
         VersionLabel.Text = $"v{App.Version}";
         SetupToolButtons();
         SetupCanvas();
-        ApplyTheme(App.Config.Theme);
+        SetupZoom();
+        SetupTheme();
+        SetupTemplateCombo();
         LoadModelAsync();
 
         // Track strokes for undo
@@ -76,14 +86,13 @@ public partial class MainWindow : Window
 
     private void OnStrokeCollected(object sender, InkCanvasStrokeCollectedEventArgs e)
     {
-        // Push to undo stack on new stroke
+        if (_isUndoRedoing) return;
         if (_strokesBeforeChange != null)
         {
             _undoStack.Push(_strokesBeforeChange.Clone());
-            _undoRedoStack.Clear();
+            _redoStack.Clear();
             if (_undoStack.Count > MaxUndoSteps)
             {
-                // Remove oldest entry by converting to list and back
                 var temp = _undoStack.ToList();
                 temp.RemoveAt(0);
                 _undoStack.Clear();
@@ -91,38 +100,180 @@ public partial class MainWindow : Window
                     _undoStack.Push(item);
             }
         }
+        _strokesBeforeChange = MainCanvas.Strokes.Clone();
     }
 
     private void OnStrokesChanged(object sender, StrokeCollectionChangeEventArgs e)
     {
-        if (e.Action == StrokeCollectionChangeAction.Add && _strokesBeforeChange == null)
-        {
-            _strokesBeforeChange = MainCanvas.Strokes.Clone();
-        }
+        // Track changes for undo
     }
 
     private void Undo()
     {
         if (_undoStack.Count > 0)
         {
-            _undoRedoStack.Push(MainCanvas.Strokes.Clone());
+            _isUndoRedoing = true;
+            _redoStack.Push(MainCanvas.Strokes.Clone());
             var previous = _undoStack.Pop();
             MainCanvas.Strokes.Clear();
             MainCanvas.Strokes.Add(previous);
+            _isUndoRedoing = false;
             StatusText.Text = "↩ Rückgängig";
         }
     }
 
     private void Redo()
     {
-        if (_undoRedoStack.Count > 0)
+        if (_redoStack.Count > 0)
         {
+            _isUndoRedoing = true;
             _undoStack.Push(MainCanvas.Strokes.Clone());
-            var next = _undoRedoStack.Pop();
+            var next = _redoStack.Pop();
             MainCanvas.Strokes.Clear();
             MainCanvas.Strokes.Add(next);
+            _isUndoRedoing = false;
             StatusText.Text = "↪ Wiederholt";
         }
+    }
+
+    #endregion
+
+    #region Zoom (Issue #25)
+
+    private void SetupZoom()
+    {
+        _zoomManager.ZoomChanged += (s, e) =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ZoomLabel.Text = $"{e.NewZoomPercentage:F0}%";
+                _zoomManager.ApplyZoom(MainCanvas);
+            });
+        };
+
+        BtnZoomIn.Click += (s, e) => _zoomManager.ZoomIn();
+        BtnZoomOut.Click += (s, e) => _zoomManager.ZoomOut();
+        BtnZoomReset.Click += (s, e) => _zoomManager.ResetZoom();
+
+        // Ctrl+MouseWheel zoom
+        _zoomManager.AttachMouseWheelZoom(MainCanvas);
+    }
+
+    #endregion
+
+    #region Theme (Issue #8)
+
+    private void SetupTheme()
+    {
+        _currentTheme = App.Config.Theme == "dark" ? Theme.Dark
+                      : App.Config.Theme == "light" ? Theme.Light
+                      : Theme.System;
+        ApplyTheme(_currentTheme);
+
+        BtnTheme.Click += (s, e) =>
+        {
+            // Cycle: System → Light → Dark → System
+            _currentTheme = _currentTheme switch
+            {
+                Theme.System => Theme.Light,
+                Theme.Light => Theme.Dark,
+                _ => Theme.System
+            };
+            ApplyTheme(_currentTheme);
+            App.Config.Theme = _currentTheme.ToString().ToLower();
+            App.Config.Save();
+        };
+    }
+
+    private void ApplyTheme(Theme theme)
+    {
+        var colors = ThemeManager.GetCurrentColors(theme);
+        _themeManager.ApplyTheme(this, theme);
+
+        // Apply to specific named elements
+        TopBar.Background = new SolidColorBrush(colors.TopBarBg);
+        LeftToolbar.Background = new SolidColorBrush(colors.PanelBg);
+        RightPanel.Background = new SolidColorBrush(colors.PanelBg);
+        AppTitle.Foreground = new SolidColorBrush(colors.Foreground);
+        ZoomLabel.Foreground = new SolidColorBrush(colors.Foreground);
+
+        // Canvas stays white always (better for writing)
+        MainCanvas.Background = Brushes.White;
+
+        // Update all ToolButtons
+        foreach (var btn in FindVisualChildren<Button>(this))
+        {
+            if (btn.Style == (Style)FindResource("ToolButton"))
+            {
+                btn.Foreground = new SolidColorBrush(colors.Foreground);
+            }
+        }
+
+        // Update TextBoxes
+        foreach (var tx in FindVisualChildren<TextBox>(this))
+        {
+            if (tx.Name == "RecognizedText" || tx.Name == "MathResult")
+            {
+                tx.Background = new SolidColorBrush(colors.Background);
+                tx.Foreground = tx.Name == "MathResult"
+                    ? new SolidColorBrush(colors.Foreground == Colors.White ? Colors.LightGreen : Colors.DarkGreen)
+                    : new SolidColorBrush(colors.Foreground);
+                tx.BorderBrush = new SolidColorBrush(colors.Border);
+            }
+        }
+
+        // Version label
+        VersionLabel.Foreground = new SolidColorBrush(colors.Foreground == Colors.White ? Colors.Gray : Colors.DarkGray);
+
+        // Status texts
+        StatusText.Foreground = new SolidColorBrush(colors.Foreground == Colors.White ? Colors.Gray : Colors.DarkGray);
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+    {
+        if (parent == null) yield break;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T typed) yield return typed;
+            foreach (var grandChild in FindVisualChildren<T>(child))
+                yield return grandChild;
+        }
+    }
+
+    #endregion
+
+    #region Page Templates (Issue #17)
+
+    private void SetupTemplateCombo()
+    {
+        TemplateCombo.SelectedIndex = 0; // Blank
+        TemplateCombo.SelectionChanged += TemplateCombo_SelectionChanged;
+    }
+
+    private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TemplateCombo.SelectedIndex < 0) return;
+
+        _currentTemplate = (PageTemplateType)TemplateCombo.SelectedIndex;
+        var brush = PageTemplate.GetBackgroundBrush(_currentTemplate);
+        MainCanvas.Background = brush;
+
+        StatusText.Text = _currentTemplate switch
+        {
+            PageTemplateType.Blank => "📄 Blanko",
+            PageTemplateType.LinedWide => "📄 Liniert (breit)",
+            PageTemplateType.LinedNarrow => "📄 Liniert (schmal)",
+            PageTemplateType.GridSmall => "📄 Kariert (klein)",
+            PageTemplateType.GridMedium => "📄 Kariert (mittel)",
+            PageTemplateType.GridLarge => "📄 Kariert (groß)",
+            PageTemplateType.DotGridSmall => "📄 Punktiert (klein)",
+            PageTemplateType.DotGridMedium => "📄 Punktiert (mittel)",
+            PageTemplateType.DotGridLarge => "📄 Punktiert (groß)",
+            PageTemplateType.CornellNotes => "📄 Cornell Notes",
+            PageTemplateType.Isometric => "📄 Isometrisch",
+            _ => "📄 Blanko"
+        };
     }
 
     #endregion
@@ -159,7 +310,7 @@ public partial class MainWindow : Window
             if (MainCanvas.Strokes.Count > 0)
             {
                 _undoStack.Push(MainCanvas.Strokes.Clone());
-                _undoRedoStack.Clear();
+                _redoStack.Clear();
                 MainCanvas.Strokes.Clear();
                 StatusText.Text = "🗑️ Alles gelöscht";
             }
@@ -172,10 +323,7 @@ public partial class MainWindow : Window
 
     private void SetTool(InkCanvasEditingMode mode, Button activeBtn)
     {
-        // Save state for undo before switching away from ink
         MainCanvas.EditingMode = mode;
-
-        // Reset highlighter
         if (mode == InkCanvasEditingMode.Ink)
         {
             MainCanvas.DefaultDrawingAttributes.Color = _currentColor;
@@ -183,8 +331,6 @@ public partial class MainWindow : Window
             MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
             MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         }
-
-        // Highlight active button
         var allToolBtns = new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
         foreach (var btn in allToolBtns)
             btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
@@ -199,7 +345,6 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = 16;
         MainCanvas.DefaultDrawingAttributes.Height = 16;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = true;
-
         var allToolBtns = new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
         foreach (var btn in allToolBtns)
             btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
@@ -213,7 +358,6 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
         MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
-
         foreach (var btn in new[] { BtnBlack, BtnBlue, BtnRed, BtnGreen })
             btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
         activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
@@ -225,91 +369,9 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = size;
         MainCanvas.DefaultDrawingAttributes.Height = size;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-
         foreach (var btn in new[] { BtnThin, BtnMedium, BtnThick })
             btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
         activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-    }
-
-    #endregion
-
-    #region Theme (Issue #8)
-
-    private void ApplyTheme(string theme)
-    {
-        _currentTheme = theme;
-        bool isDark;
-
-        if (theme == "system")
-        {
-            // Check Windows registry for system theme
-            try
-            {
-                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                    @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-                isDark = key?.GetValue("AppsUseLightTheme") is int val && val == 0;
-            }
-            catch
-            {
-                isDark = false;
-            }
-        }
-        else
-        {
-            isDark = theme == "dark";
-        }
-
-        // Apply colors
-        var bg = isDark ? "#1E1E1E" : "#F5F5F5";
-        var panelBg = isDark ? "#252525" : "#E8E8E8";
-        var topBg = isDark ? "#2D2D2D" : "#DCDCDC";
-        var fg = isDark ? "#FFFFFF" : "#1E1E1E";
-        var border = isDark ? "#444444" : "#CCCCCC";
-
-        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bg));
-
-        // Top bar
-        var topBar = (DockPanel)((DockPanel)Content).Children[0];
-        topBar.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(topBg));
-
-        // Left toolbar
-        var leftBorder = (Border)((DockPanel)Content).Children[1];
-        leftBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(panelBg));
-
-        // Right panel
-        var rightBorder = (Border)((DockPanel)Content).Children[2];
-        rightBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(panelBg));
-
-        // Canvas stays light always (better for writing)
-        MainCanvas.Background = new SolidColorBrush(Colors.White);
-
-        // Update text colors
-        foreach (var tb in FindVisualChildren<TextBlock>(this))
-        {
-            if (tb.Name != "VersionLabel")
-                tb.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fg));
-        }
-        VersionLabel.Foreground = new SolidColorBrush(isDark ? Colors.Gray : Colors.DarkGray);
-
-        // TextBox styling
-        foreach (var tx in FindVisualChildren<TextBox>(this))
-        {
-            tx.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bg));
-            tx.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fg));
-            tx.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(border));
-        }
-    }
-
-    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
-    {
-        if (parent == null) yield break;
-        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
-        {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-            if (child is T typed) yield return typed;
-            foreach (var grandChild in FindVisualChildren<T>(child))
-                yield return grandChild;
-        }
     }
 
     #endregion
@@ -352,10 +414,8 @@ public partial class MainWindow : Window
             StatusText.Text = "⚠️ Nichts zu erkennen – zuerst schreiben!";
             return;
         }
-
         StatusText.Text = "🔤 Erkenne Text...";
         RecognizedText.Text = "";
-
         try
         {
             var bitmap = RenderStrokesToBitmap();
@@ -381,16 +441,13 @@ public partial class MainWindow : Window
             StatusText.Text = "⚠️ Nichts zu berechnen – zuerst schreiben!";
             return;
         }
-
         StatusText.Text = "🧮 Erkenne und berechne...";
         MathResult.Text = "";
-
         try
         {
             var bitmap = RenderStrokesToBitmap();
             var text = await Task.Run(() => _ocrEngine.Recognize(bitmap));
             RecognizedText.Text = text;
-
             var results = MathEvaluator.Evaluate(text);
             MathResult.Text = results;
             StatusText.Text = string.IsNullOrEmpty(results) ? "Kein Mathe-Ausdruck gefunden" : "✓ Berechnet";
@@ -409,14 +466,11 @@ public partial class MainWindow : Window
 
         var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         rtb.Render(MainCanvas);
-
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(rtb));
-
         using var stream = new MemoryStream();
         encoder.Save(stream);
         stream.Position = 0;
-
         return new System.Drawing.Bitmap(stream);
     }
 
@@ -437,11 +491,9 @@ public partial class MainWindow : Window
 
         try
         {
-            // Save as PNG
             var bitmap = RenderStrokesToBitmap();
             bitmap.Save(pngPath, ImageFormat.Png);
 
-            // Save strokes as JSON for re-editing
             var strokesData = MainCanvas.Strokes.Select(s => new
             {
                 Color = s.DrawingAttributes.Color.ToString(),
@@ -453,7 +505,15 @@ public partial class MainWindow : Window
                     X = p.X, Y = p.Y, PressureFactor = p.PressureFactor
                 })
             });
-            File.WriteAllText(jsonPath, JsonSerializer.Serialize(strokesData, new JsonSerializerOptions { WriteIndented = true }));
+            var noteData = new
+            {
+                Version = App.Version,
+                Template = _currentTemplate.ToString(),
+                Theme = _currentTheme.ToString(),
+                Zoom = _zoomManager.ZoomLevel,
+                Strokes = strokesData
+            };
+            File.WriteAllText(jsonPath, JsonSerializer.Serialize(noteData, new JsonSerializerOptions { WriteIndented = true }));
 
             StatusText.Text = $"✓ Gespeichert: {filename}.png + .json";
         }
@@ -469,7 +529,7 @@ public partial class MainWindow : Window
 
     private void OpenSettings()
     {
-        // TODO: Full settings window (Issue #6)
+        // TODO: Issue #6 – Full settings window
         StatusText.Text = "⚙️ Einstellungen kommen bald...";
     }
 
@@ -481,30 +541,34 @@ public partial class MainWindow : Window
     {
         base.OnKeyDown(e);
 
-        // Ctrl+Z = Undo
-        if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control && !(Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)))
+        if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
-            Undo();
-            e.Handled = true;
+            Undo(); e.Handled = true;
         }
-        // Ctrl+Y or Ctrl+Shift+Z = Redo
         else if ((e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control) ||
                  (e.Key == Key.Z && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)))
         {
-            Redo();
-            e.Handled = true;
+            Redo(); e.Handled = true;
         }
-        // Ctrl+Shift+R = Recognize
         else if (e.Key == Key.R && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
         {
-            _ = RecognizeText();
-            e.Handled = true;
+            _ = RecognizeText(); e.Handled = true;
         }
-        // Ctrl+Shift+M = Math
         else if (e.Key == Key.M && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
         {
-            _ = RecognizeAndCalculate();
-            e.Handled = true;
+            _ = RecognizeAndCalculate(); e.Handled = true;
+        }
+        else if (e.Key == Key.Add && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            _zoomManager.ZoomIn(); e.Handled = true;
+        }
+        else if (e.Key == Key.Subtract && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            _zoomManager.ZoomOut(); e.Handled = true;
+        }
+        else if (e.Key == Key.D0 && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            _zoomManager.ResetZoom(); e.Handled = true;
         }
     }
 

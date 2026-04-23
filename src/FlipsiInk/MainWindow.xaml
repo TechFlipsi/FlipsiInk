@@ -9,24 +9,33 @@
 
     <DockPanel>
         <!-- Top Bar -->
-        <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48">
+        <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48" x:Name="TopBar">
             <StackPanel Orientation="Horizontal" Margin="8,0">
-                <TextBlock Text="🖊️ FlipsiInk" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0,16,0"/>
+                <TextBlock Text="🖊️ FlipsiInk" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0,16,0" x:Name="AppTitle"/>
                 <TextBlock x:Name="VersionLabel" Text="v0.1.0" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,16,0"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,0">
-                <Button x:Name="BtnUndo" Content="↩️" Style="{StaticResource ToolButton}" ToolTip="Rückgängig"/>
-                <Button x:Name="BtnRedo" Content="↪️" Style="{StaticResource ToolButton}" ToolTip="Wiederholen"/>
+                <!-- Zoom Controls -->
+                <Button x:Name="BtnZoomOut" Content="🔍−" Style="{StaticResource ToolButton}" ToolTip="Verkleinern"/>
+                <TextBlock x:Name="ZoomLabel" Text="100%" Foreground="White" VerticalAlignment="Center" FontSize="12" Margin="4,0" Width="45" TextAlignment="Center"/>
+                <Button x:Name="BtnZoomIn" Content="🔍+" Style="{StaticResource ToolButton}" ToolTip="Vergrößern"/>
+                <Button x:Name="BtnZoomReset" Content="📐" Style="{StaticResource ToolButton}" ToolTip="Seitengröße"/>
+                <Separator Margin="4,8"/>
+                <Button x:Name="BtnUndo" Content="↩️" Style="{StaticResource ToolButton}" ToolTip="Rückgängig (Ctrl+Z)"/>
+                <Button x:Name="BtnRedo" Content="↪️" Style="{StaticResource ToolButton}" ToolTip="Wiederholen (Ctrl+Y)"/>
                 <Button x:Name="BtnClear" Content="🗑️" Style="{StaticResource ToolButton}" ToolTip="Alles löschen"/>
-                <Button x:Name="BtnRecognize" Content="🔤" Style="{StaticResource ToolButton}" ToolTip="Text erkennen" Background="#0078D7"/>
-                <Button x:Name="BtnCalc" Content="🧮" Style="{StaticResource ToolButton}" ToolTip="Mathe berechnen" Background="#0078D7"/>
+                <Separator Margin="4,8"/>
+                <Button x:Name="BtnRecognize" Content="🔤" Style="{StaticResource ToolButton}" ToolTip="Text erkennen (Ctrl+Shift+R)" Background="#0078D7"/>
+                <Button x:Name="BtnCalc" Content="🧮" Style="{StaticResource ToolButton}" ToolTip="Mathe berechnen (Ctrl+Shift+M)" Background="#0078D7"/>
+                <Separator Margin="4,8"/>
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
+                <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
                 <Button x:Name="BtnSettings" Content="⚙️" Style="{StaticResource ToolButton}" ToolTip="Einstellungen"/>
             </StackPanel>
         </DockPanel>
 
         <!-- Left Toolbar -->
-        <Border DockPanel.Dock="Left" Background="#252525" Width="56" Padding="4">
+        <Border DockPanel.Dock="Left" Background="#252525" Width="56" Padding="4" x:Name="LeftToolbar">
             <StackPanel>
                 <Button x:Name="BtnPen" Content="✏️" Style="{StaticResource ToolButton}" ToolTip="Stift" Background="#0078D7"/>
                 <Button x:Name="BtnHighlighter" Content="🖍️" Style="{StaticResource ToolButton}" ToolTip="Textmarker"/>
@@ -45,6 +54,9 @@
                 <Button x:Name="BtnThin" Content="▪️" Style="{StaticResource ToolButton}" ToolTip="Dünn" FontSize="10"/>
                 <Button x:Name="BtnMedium" Content="◼️" Style="{StaticResource ToolButton}" ToolTip="Mittel"/>
                 <Button x:Name="BtnThick" Content="⬛" Style="{StaticResource ToolButton}" ToolTip="Dick"/>
+                <Separator Margin="4,8"/>
+                <!-- Page Template Button -->
+                <Button x:Name="BtnTemplate" Content="📄" Style="{StaticResource ToolButton}" ToolTip="Seitenvorlage"/>
             </StackPanel>
         </Border>
 
@@ -56,7 +68,7 @@
                          Height="150" VerticalScrollBarVisibility="Auto"
                          Background="#1E1E1E" Foreground="White" BorderThickness="1" BorderBrush="#444"
                          FontSize="14" IsReadOnly="True"/>
-                
+
                 <TextBlock Text="🧮 Mathe-Ergebnis" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,16,0,8"/>
                 <TextBox x:Name="MathResult" AcceptsReturn="True" TextWrapping="Wrap"
                          Height="100" VerticalScrollBarVisibility="Auto"
@@ -65,12 +77,32 @@
 
                 <TextBlock Text="📊 Status" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,16,0,8"/>
                 <TextBlock x:Name="StatusText" Text="Bereit" Foreground="Gray" FontSize="12" TextWrapping="Wrap"/>
-                
+
                 <TextBlock x:Name="ModelStatus" Text="Modell: nicht geladen" Foreground="#FF6600" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
+
+                <!-- Template Preview -->
+                <TextBlock Text="📄 Vorlage" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,16,0,8"/>
+                <ComboBox x:Name="TemplateCombo" SelectionChanged="TemplateCombo_SelectionChanged" Margin="0,0,0,4">
+                    <ComboBoxItem Content="Blanko" IsSelected="True"/>
+                    <ComboBoxItem Content="Liniert (breit)"/>
+                    <ComboBoxItem Content="Liniert (schmal)"/>
+                    <ComboBoxItem Content="Kariert (klein)"/>
+                    <ComboBoxItem Content="Kariert (mittel)"/>
+                    <ComboBoxItem Content="Kariert (groß)"/>
+                    <ComboBoxItem Content="Punktiert (klein)"/>
+                    <ComboBoxItem Content="Punktiert (mittel)"/>
+                    <ComboBoxItem Content="Punktiert (groß)"/>
+                    <ComboBoxItem Content="Cornell Notes"/>
+                    <ComboBoxItem Content="Isometrisch"/>
+                </ComboBox>
             </StackPanel>
         </Border>
 
-        <!-- Main Canvas -->
-        <InkCanvas x:Name="MainCanvas" Background="#FAFAFA"/>
+        <!-- Main Canvas Area with Zoom -->
+        <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Grid x:Name="CanvasGrid">
+                <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
+            </Grid>
+        </ScrollViewer>
     </DockPanel>
 </Window>
