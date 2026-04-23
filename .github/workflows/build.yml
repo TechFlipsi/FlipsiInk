@@ -26,9 +26,21 @@ jobs:
         run: choco install innosetup -y
         shell: pwsh
 
+      - name: Extract Version
+        id: version
+        run: |
+          $csproj = Get-Content src/FlipsiInk/FlipsiInk.csproj -Raw
+          if ($csproj -match '<Version>(.*?)</Version>') {
+            $version = $Matches[1]
+          } else {
+            $version = "0.0.0"
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
       - name: Build Installer
         run: |
-          $version = "${{ github.ref_name }}" -replace '^v',''
+          $version = "${{ steps.version.outputs.version }}"
           iscc installer.iss /DAppVersion=$version /Ooutput
         shell: pwsh
 
@@ -38,11 +50,28 @@ jobs:
           name: FlipsiInk-win-x64
           path: output\FlipsiInk_Setup_*.exe
 
+      - name: Delete old releases (keep max 4)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $headers = @{ Authorization = "token ${{ secrets.GITHUB_TOKEN }}" }
+          $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases" -Headers $headers
+          $sorted = $releases | Sort-Object created_at -Descending
+          $toDelete = $sorted | Select-Object -Skip 4
+          foreach ($rel in $toDelete) {
+            Write-Host "Deleting old release: $($rel.tag_name)"
+            Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/$($rel.id)" -Method Delete -Headers $headers | Out-Null
+            # Also delete the tag
+            $ref = "refs/tags/$($rel.tag_name)"
+            Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/git/$ref" -Method Delete -Headers $headers | Out-Null
+          }
+
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: output\FlipsiInk_Setup_*.exe
-          prerelease: true
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
