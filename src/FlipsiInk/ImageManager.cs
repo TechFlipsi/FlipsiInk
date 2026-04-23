@@ -23,7 +23,7 @@ namespace FlipsiInk
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string FilePath { get; set; } = string.Empty;
-        public Point Position { get; set; }
+        public System.Windows.Point Position { get; set; }
         public double Width { get; set; }
         public double Height { get; set; }
         public double Rotation { get; set; }
@@ -62,7 +62,7 @@ namespace FlipsiInk
         #region Bild einfügen
 
         /// <summary>Bild aus Datei an Position einfügen</summary>
-        public void InsertImageFromFile(string filePath, Point position, InkCanvas canvas)
+        public void InsertImageFromFile(string filePath, System.Windows.Point position, InkCanvas canvas)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Bilddatei nicht gefunden", filePath);
@@ -90,12 +90,12 @@ namespace FlipsiInk
 
             // Wpf BitmapSource → System.Drawing.Bitmap konvertieren
             var bitmap = BitmapSourceToDrawingBitmap(clipboardImage);
-            var position = new Point(50, 50); // Standardposition
+            var position = new System.Windows.Point(50, 50); // Standardposition
             InsertImage(bitmap, position, canvas);
         }
 
         /// <summary>System.Drawing.Bitmap an Position einfügen</summary>
-        public void InsertImage(System.Drawing.Bitmap bitmap, Point position, InkCanvas canvas)
+        public void InsertImage(System.Drawing.Bitmap bitmap, System.Windows.Point position, InkCanvas canvas)
         {
             var canvasImage = new CanvasImage
             {
@@ -141,7 +141,7 @@ namespace FlipsiInk
         }
 
         /// <summary>Bild verschieben</summary>
-        public void MoveImage(string imageId, Point newPosition)
+        public void MoveImage(string imageId, System.Windows.Point newPosition)
         {
             if (!Images.TryGetValue(imageId, out var img)) return;
             img.Position = newPosition;
@@ -165,7 +165,7 @@ namespace FlipsiInk
             var canvasImage = new CanvasImage
             {
                 FilePath = filePath,
-                Position = new Point(0, 0),
+                Position = new System.Windows.Point(0, 0),
                 Width = canvas.ActualWidth,
                 Height = canvas.ActualHeight,
                 Rotation = 0,

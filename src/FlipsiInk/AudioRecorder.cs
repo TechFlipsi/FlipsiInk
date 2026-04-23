@@ -19,7 +19,7 @@ namespace FlipsiInk;
 public class AudioRecorder
 {
     private string? _currentFilePath;
-    private Timer? _positionTimer;
+    private System.Timers.Timer? _positionTimer;
     private bool _isRecording = false;
     private bool _isPaused = false;
     private bool _isPlaying = false;

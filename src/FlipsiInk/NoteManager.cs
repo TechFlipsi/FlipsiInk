@@ -20,18 +20,6 @@ using System.Text.Json.Serialization;
 namespace FlipsiInk;
 
 /// <summary>
-/// Vorlagentyp für eine Notizbuchseite.
-/// </summary>
-public enum PageTemplateType
-{
-    Blank,
-    Lined,
-    Grid,
-    Dotted,
-    Isometric
-}
-
-/// <summary>
 /// Repräsentiert eine einzelne Seite in einem Notizbuch.
 /// </summary>
 public class NotePage
@@ -96,7 +84,7 @@ public class NoteManager
 {
     private readonly string _basePath;
     private readonly string _indexPath;
-    private readonly Lock _lock = new();
+    private readonly object _lock = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
