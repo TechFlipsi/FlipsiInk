@@ -886,7 +886,7 @@ public partial class MainWindow : Window
         return new Stroke(sp);
     }
 
-    private static double Distance(Point a, Point b)
+    private static double Distance(System.Windows.Point a, System.Windows.Point b)
     {
         double dx = a.X - b.X;
         double dy = a.Y - b.Y;
