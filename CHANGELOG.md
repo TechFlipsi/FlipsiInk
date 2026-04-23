@@ -5,6 +5,11 @@ Alle bemerkenswerten Änderungen werden hier dokumentiert.
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/),
 die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.1.1] - 2026-04-23
+
+### Behoben
+- 🐛 NullReferenceException beim Start – TemplateCombo_SelectionChanged feuerte vor InitializeComponent()
+
 ## [0.1.0] - 2026-04-23
 
 ### Hinzugefügt
