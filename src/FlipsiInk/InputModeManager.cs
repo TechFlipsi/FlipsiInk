@@ -196,7 +196,7 @@ public class InputModeManager
     private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         // Prüfe ob die Eingabe vom Stift oder Touch/Maus kommt
-        if (_currentMode == InputMode.Pen && e.StylusDevice?.DeviceType == TabletDeviceType.Touch)
+        if (_currentMode == InputMode.Pen && e.StylusDevice?.TabletDevice.Type == TabletDeviceType.Touch)
         {
             e.Handled = true;
         }

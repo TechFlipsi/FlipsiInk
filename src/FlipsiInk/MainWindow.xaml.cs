@@ -386,7 +386,7 @@ public partial class MainWindow : Window
     {
         StatusText.Text = "Lade KI-Modell...";
         ModelStatus.Text = "Modell: wird geladen...";
-        ModelStatus.Foreground = System.Windows.Media.System.Windows.Media.Brushes.Orange;
+        ModelStatus.Foreground = System.Windows.Media.Brushes.Orange;
 
         try
         {
@@ -394,14 +394,14 @@ public partial class MainWindow : Window
             await Task.Run(() => _ocrEngine.LoadModel());
             _modelLoaded = true;
             ModelStatus.Text = $"Modell: geladen ✓ ({_ocrEngine.ModelName})";
-            ModelStatus.Foreground = System.Windows.Media.System.Windows.Media.Brushes.LightGreen;
+            ModelStatus.Foreground = System.Windows.Media.Brushes.LightGreen;
             StatusText.Text = "Bereit – schreibe und klicke 🔤 oder 🧮";
         }
         catch (Exception ex)
         {
             _modelLoaded = false;
             ModelStatus.Text = $"Modell: Fehler – {ex.Message}";
-            ModelStatus.Foreground = System.Windows.Media.System.Windows.Media.Brushes.Red;
+            ModelStatus.Foreground = System.Windows.Media.Brushes.Red;
             StatusText.Text = "KI nicht verfügbar – Stift funktioniert trotzdem";
         }
     }
