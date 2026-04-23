@@ -84,10 +84,15 @@ public static class MathEvaluator
         // NCalc fallback for complex expressions
         try
         {
-            var expr = NCalc.Async.AsyncExpression.Evaluate(text).Result;
-            if (expr is double d && !double.IsNaN(d))
+            var expr = new NCalc.Expression(text);
+            var result = expr.Evaluate();
+            if (result is double d && !double.IsNaN(d))
             {
                 results.AppendLine($"= {FormatNumber(d)}");
+            }
+            else if (result != null)
+            {
+                results.AppendLine($"= {result}");
             }
         }
         catch { }
