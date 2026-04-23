@@ -1,4 +1,4 @@
-// InkNote - AI-powered Handwriting & Math Notes App
+// FlipsiInk - AI-powered Handwriting & Math Notes App
 // Copyright (C) 2026 Fabian Kirchweger
 //
 // This program is free software: you can redistribute it and/or modify
@@ -9,14 +9,14 @@ using System;
 using System.IO;
 using System.Text.Json;
 
-namespace InkNote;
+namespace FlipsiInk;
 
 /// <summary>
 /// Application configuration persisted as JSON.
 /// </summary>
 public class Config
 {
-    private static readonly string AppName = "InkNote";
+    private static readonly string AppName = "FlipsiInk";
     private static readonly string ConfigDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppName);
 

@@ -1,7 +1,7 @@
-<Window x:Class="InkNote.MainWindow"
+<Window x:Class="FlipsiInk.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="InkNote"
+        Title="FlipsiInk"
         Width="1200" Height="800"
         MinWidth="800" MinHeight="600"
         WindowStartupLocation="CenterScreen"
@@ -11,7 +11,7 @@
         <!-- Top Bar -->
         <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48">
             <StackPanel Orientation="Horizontal" Margin="8,0">
-                <TextBlock Text="📝 InkNote" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0,16,0"/>
+                <TextBlock Text="🖊️ FlipsiInk" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0,16,0"/>
                 <TextBlock x:Name="VersionLabel" Text="v0.1.0" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,16,0"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,0">
@@ -37,7 +37,6 @@
                 <Button x:Name="BtnRect" Content="⬜" Style="{StaticResource ToolButton}" ToolTip="Rechteck"/>
                 <Button x:Name="BtnCircle" Content="⭕" Style="{StaticResource ToolButton}" ToolTip="Kreis"/>
                 <Separator Margin="4,8"/>
-                <!-- Color buttons -->
                 <Button x:Name="BtnBlack" Content="⚫" Style="{StaticResource ToolButton}" ToolTip="Schwarz"/>
                 <Button x:Name="BtnBlue" Content="🔵" Style="{StaticResource ToolButton}" ToolTip="Blau"/>
                 <Button x:Name="BtnRed" Content="🔴" Style="{StaticResource ToolButton}" ToolTip="Rot"/>

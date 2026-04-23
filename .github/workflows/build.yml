@@ -1,4 +1,4 @@
-name: Build InkNote
+name: Build FlipsiInk
 
 on:
   push:
@@ -18,25 +18,25 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Build
-        run: dotnet publish src/InkNote -c Release -r win-x64 --self-contained -o publish
+        run: dotnet publish src/FlipsiInk -c Release -r win-x64 --self-contained -o publish
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
       - name: Create ZIP
-        run: Compress-Archive -Path publish\* -DestinationPath InkNote_win-x64.zip
+        run: Compress-Archive -Path publish\* -DestinationPath FlipsiInk_win-x64.zip
         shell: pwsh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: InkNote-win-x64
-          path: InkNote_win-x64.zip
+          name: FlipsiInk-win-x64
+          path: FlipsiInk_win-x64.zip
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: InkNote_win-x64.zip
+          files: FlipsiInk_win-x64.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,4 @@
-// InkNote - AI-powered Handwriting & Math Notes App
+// FlipsiInk - AI-powered Handwriting & Math Notes App
 // Copyright (C) 2026 Fabian Kirchweger
 //
 // This program is free software: you can redistribute it and/or modify
@@ -9,7 +9,7 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace InkNote;
+namespace FlipsiInk;
 
 /// <summary>
 /// Evaluates math expressions found in recognized text.
@@ -17,17 +17,13 @@ namespace InkNote;
 /// </summary>
 public static class MathEvaluator
 {
-    /// <summary>
-    /// Find and evaluate math expressions in text.
-    /// Returns formatted results or empty string if none found.
-    /// </summary>
     public static string Evaluate(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "";
 
         var results = new System.Text.StringBuilder();
 
-        // Pattern 1: Simple equations like "3 + 5" or "12 * 4"
+        // Simple arithmetic: 3 + 5, 12 * 4
         var simplePattern = @"(\d+[\.\,]?\d*)\s*([+\-*/×÷^])\s*(\d+[\.\,]?\d*)";
         var matches = Regex.Matches(text, simplePattern);
 
@@ -58,7 +54,7 @@ public static class MathEvaluator
             catch { }
         }
 
-        // Pattern 2: Equations like "3x + 5 = 20" or "2a - 3 = 7"
+        // Equations: 3x + 5 = 20 → x = 5
         var equationPattern = @"(\d*)\s*([a-zA-Z])\s*([+\-])\s*(\d+[\.\,]?\d*)\s*=\s*(\d+[\.\,]?\d*)";
         var eqMatches = Regex.Matches(text, equationPattern);
 
@@ -85,7 +81,7 @@ public static class MathEvaluator
             catch { }
         }
 
-        // Pattern 3: Parentheses expressions like "(3 + 5) * 2"
+        // NCalc fallback for complex expressions
         try
         {
             var expr = NCalc.Async.AsyncExpression.Evaluate(text).Result;

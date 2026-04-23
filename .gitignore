@@ -1,0 +1,26 @@
+## Build outputs
+bin/
+obj/
+publish/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+
+## .NET
+*.dll
+*.pdb
+*.exe
+
+## Models (too large for git)
+Models/*.onnx
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## IDE
+.idea/
+.vscode/

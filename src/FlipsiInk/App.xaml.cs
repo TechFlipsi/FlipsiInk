@@ -1,4 +1,4 @@
-// InkNote - AI-powered Handwriting & Math Notes App
+// FlipsiInk - AI-powered Handwriting & Math Notes App
 // Copyright (C) 2026 Fabian Kirchweger
 //
 // This program is free software: you can redistribute it and/or modify
@@ -7,7 +7,7 @@
 #nullable enable
 using System.Windows;
 
-namespace InkNote;
+namespace FlipsiInk;
 
 public partial class App : Application
 {

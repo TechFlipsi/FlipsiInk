@@ -1,5 +1,3 @@
-MIT License → siehe LICENSE
-
 Copyright © 2026 Fabian Kirchweger
 
 Idee: Fabian Kirchweger

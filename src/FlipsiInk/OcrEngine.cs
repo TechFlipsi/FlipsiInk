@@ -1,4 +1,4 @@
-// InkNote - AI-powered Handwriting & Math Notes App
+// FlipsiInk - AI-powered Handwriting & Math Notes App
 // Copyright (C) 2026 Fabian Kirchweger
 //
 // This program is free software: you can redistribute it and/or modify
@@ -9,10 +9,11 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
-namespace InkNote;
+namespace FlipsiInk;
 
 /// <summary>
 /// OCR Engine using ONNX Runtime for handwriting recognition.
@@ -33,7 +34,14 @@ public class OcrEngine : IDisposable
         var modelDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Models");
         Directory.CreateDirectory(modelDir);
 
-        // Look for model files
+        // Also check config path
+        if (!string.IsNullOrEmpty(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
+        {
+            LoadModelFile(App.Config.ModelPath);
+            return;
+        }
+
+        // Look for model files in Models directory
         string? foundModel = null;
         if (File.Exists(Path.Combine(modelDir, "model.onnx")))
             foundModel = Path.Combine(modelDir, "model.onnx");
@@ -48,37 +56,36 @@ public class OcrEngine : IDisposable
 
         if (foundModel == null)
         {
-            // No model found - create placeholder
             ModelName = "kein Modell gefunden";
             throw new FileNotFoundException(
                 "Kein ONNX-Modell im Models-Ordner gefunden. " +
                 "Bitte ein Modell (z.B. TrOCR large als .onnx) in den Ordner legen: " + modelDir);
         }
 
-        _modelPath = foundModel;
+        LoadModelFile(foundModel);
+    }
+
+    private void LoadModelFile(string path)
+    {
+        _modelPath = path;
         var sessionOptions = new SessionOptions();
         sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
-
-        // Use CPU only (no GPU required)
         sessionOptions.AppendExecutionProvider_CPU(0);
 
-        _session = new InferenceSession(foundModel, sessionOptions);
-        ModelName = Path.GetFileName(foundModel);
+        _session = new InferenceSession(path, sessionOptions);
+        ModelName = Path.GetFileName(path);
     }
 
     /// <summary>
     /// Recognize text from a bitmap image.
-    /// Preprocesses image and runs inference.
     /// </summary>
     public string Recognize(Bitmap bitmap)
     {
         if (_session == null)
             throw new InvalidOperationException("Modell nicht geladen");
 
-        // Preprocess: convert to model input format
         var inputTensor = PreprocessImage(bitmap);
 
-        // Run inference
         var inputs = new List<NamedOnnxValue>();
         var inputName = _session.InputNames.First();
         inputs.Add(NamedOnnxValue.CreateFromTensor(inputName, inputTensor));
@@ -86,19 +93,16 @@ public class OcrEngine : IDisposable
         using var results = _session.Run(inputs);
         var output = results.First().AsTensor<float>();
 
-        // Decode output to text
         return DecodeOutput(output);
     }
 
     /// <summary>
-    /// Preprocess bitmap for the model.
-    /// Resizes to 384x384 (TrOCR standard), normalizes pixel values.
+    /// Preprocess bitmap: resize to 384x384, normalize with ImageNet stats.
     /// </summary>
     private DenseTensor<float> PreprocessImage(Bitmap bitmap)
     {
         const int targetSize = 384;
 
-        // Resize to target size
         using var resized = new Bitmap(targetSize, targetSize);
         using (var g = Graphics.FromImage(resized))
         {
@@ -106,7 +110,6 @@ public class OcrEngine : IDisposable
             g.DrawImage(bitmap, 0, 0, targetSize, targetSize);
         }
 
-        // Convert to RGB tensor [1, 3, 384, 384] normalized to [0, 1]
         var tensor = new DenseTensor<float>(new[] { 1, 3, targetSize, targetSize });
 
         for (int y = 0; y < targetSize; y++)
@@ -114,10 +117,9 @@ public class OcrEngine : IDisposable
             for (int x = 0; x < targetSize; x++)
             {
                 var pixel = resized.GetPixel(x, y);
-                // Normalize: ImageNet mean/std
-                tensor[0, 0, y, x] = (pixel.R / 255f - 0.485f) / 0.229f; // R
-                tensor[0, 1, y, x] = (pixel.G / 255f - 0.456f) / 0.224f; // G
-                tensor[0, 2, y, x] = (pixel.B / 255f - 0.406f) / 0.225f; // B
+                tensor[0, 0, y, x] = (pixel.R / 255f - 0.485f) / 0.229f;
+                tensor[0, 1, y, x] = (pixel.G / 255f - 0.456f) / 0.224f;
+                tensor[0, 2, y, x] = (pixel.B / 255f - 0.406f) / 0.225f;
             }
         }
 
@@ -125,21 +127,17 @@ public class OcrEngine : IDisposable
     }
 
     /// <summary>
-    /// Decode model output tensor to text string.
-    /// Uses greedy decoding (argmax per timestep).
+    /// Decode model output: greedy decoding (argmax per timestep).
+    /// Full implementation needs BPE tokenizer – placeholder for now.
     /// </summary>
     private string DecodeOutput(Tensor<float> output)
     {
-        // TrOCR output: [1, seq_len, vocab_size]
         var dims = output.Dimensions;
         if (dims.Length < 2) return "";
 
         int seqLen = dims[1];
         int vocabSize = dims.Length > 2 ? dims[2] : dims[1];
 
-        // For now, return raw output info
-        // Full implementation needs tokenizer (BPE) for proper decoding
-        // This will be completed when model is integrated
         return $"[Modell-Ausgabe: {seqLen} Schritte, {vocabSize} Vokabular – Tokenizer noch nötig]";
     }
 
