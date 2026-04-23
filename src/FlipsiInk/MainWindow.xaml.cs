@@ -56,13 +56,14 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         VersionLabel.Text = $"v{App.Version}";
-        SetupToolButtons();
-        SetupCanvas();
-        SetupZoom();
-        SetupTheme();
-        SetupTemplateCombo();
-        SetupInputMode();
-        LoadModelAsync();
+
+        try { SetupToolButtons(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupToolButtons: {ex}"); }
+        try { SetupCanvas(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupCanvas: {ex}"); }
+        try { SetupZoom(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupZoom: {ex}"); }
+        try { SetupTheme(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTheme: {ex}"); }
+        try { SetupTemplateCombo(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTemplateCombo: {ex}"); }
+        try { SetupInputMode(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupInputMode: {ex}"); }
+        try { LoadModelAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"LoadModelAsync: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;

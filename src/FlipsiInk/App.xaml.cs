@@ -17,11 +17,33 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        Config = Config.Load();
 
-        // Beim Start nach Updates suchen
-        var updater = new AutoUpdater();
-        _ = updater.CheckForUpdatesAsync();
+        // Global exception handler – zeigt Fehler statt silent crash
+        DispatcherUnhandledException += (s, args) =>
+        {
+            System.Windows.MessageBox.Show($"Unerwarteter Fehler:\n\n{args.Exception}\n\nBitte an den Entwickler melden.",
+                "FlipsiInk – Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            args.Handled = true;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+                System.Windows.MessageBox.Show($"Kritischer Fehler:\n\n{ex}",
+                    "FlipsiInk – Absturz", MessageBoxButton.OK, MessageBoxImage.Error);
+        };
+
+        try
+        {
+            Config = Config.Load();
+        }
+        catch
+        {
+            Config = new Config();
+        }
+
+        // Beim Start nach Updates suchen (non-blocking, errors ignored)
+        try { _ = new AutoUpdater().CheckForUpdatesAsync(); }
+        catch { /* ignore */ }
 
         var window = new MainWindow();
         window.Show();
