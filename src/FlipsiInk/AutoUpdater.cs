@@ -7,16 +7,14 @@
 #nullable enable
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Net.Http;
-using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace FlipsiInk;
 
 /// <summary>
-/// Auto-Updater – prüft GitHub Releases auf neue Versionen und lädt diese herunter.
+/// Auto-Updater – checks GitHub Releases for new versions and downloads/installs them.
 /// </summary>
 public class AutoUpdater
 {
@@ -28,32 +26,32 @@ public class AutoUpdater
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("FlipsiInk-AutoUpdater");
     }
 
-    /// <summary>Aktuelle Version der App.</summary>
+    /// <summary>Current app version.</summary>
     public string CurrentVersion => App.Version;
 
-    /// <summary>Neueste verfügbare Version von GitHub (null wenn noch nicht geprüft).</summary>
+    /// <summary>Latest available version from GitHub (null if not checked yet).</summary>
     public string? LatestVersion { get; private set; }
 
-    /// <summary>Ob ein Update verfügbar ist.</summary>
+    /// <summary>Whether an update is available.</summary>
     public bool UpdateAvailable { get; private set; }
 
-    /// <summary>Download-URL des neuesten Releases.</summary>
+    /// <summary>Download URL of the latest release.</summary>
     public string? DownloadUrl { get; private set; }
 
-    /// <summary>Release Notes des neuesten Releases.</summary>
+    /// <summary>Release notes of the latest release.</summary>
     public string? ReleaseNotes { get; private set; }
 
-    /// <summary>Update-Kanal: "stable" oder "prerelease".</summary>
-    public string Channel { get; set; } = "stable";
+    /// <summary>Update channel: "stable" or "prerelease".</summary>
+    public string Channel { get; set; } = "prerelease"; // Default prerelease since app is in alpha
 
-    /// <summary>Wird ausgelöst wenn die Update-Prüfung abgeschlossen ist.</summary>
+    /// <summary>Fired when update check completes.</summary>
     public event EventHandler<UpdateCheckEventArgs>? UpdateChecked;
 
-    /// <summary>Wird ausgelöst wenn der Download-Fortschritt sich ändert.</summary>
+    /// <summary>Fired when download progress changes.</summary>
     public event EventHandler<UpdateDownloadEventArgs>? DownloadProgress;
 
     /// <summary>
-    /// Prüft asynchron auf neue GitHub Releases.
+    /// Checks GitHub for new releases asynchronously.
     /// </summary>
     public async Task CheckForUpdatesAsync()
     {
@@ -65,7 +63,7 @@ public class AutoUpdater
 
             foreach (var release in releases)
             {
-                // Pre-Release filtern wenn Kanal "stable"
+                // Filter pre-releases for stable channel
                 var isPrerelease = release.GetProperty("prerelease").GetBoolean();
                 if (Channel == "stable" && isPrerelease)
                     continue;
@@ -73,14 +71,14 @@ public class AutoUpdater
                 var tag = release.GetProperty("tag_name").GetString() ?? "";
                 var body = release.TryGetProperty("body", out var bodyEl) ? bodyEl.GetString() : "";
 
-                // Erste Asset-URL als Download-Link
+                // Find .exe asset (Inno Setup installer)
                 string? assetUrl = null;
                 if (release.TryGetProperty("assets", out var assets))
                 {
                     foreach (var asset in assets.EnumerateArray())
                     {
                         var name = asset.GetProperty("name").GetString() ?? "";
-                        if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                         {
                             assetUrl = asset.GetProperty("browser_download_url").GetString();
                             break;
@@ -92,7 +90,7 @@ public class AutoUpdater
                 DownloadUrl = assetUrl;
                 ReleaseNotes = body;
 
-                // Versionsvergleich: Nur Upgrades erlauben
+                // Version comparison: only allow upgrades
                 var current = ParseVersion(CurrentVersion);
                 var latest = ParseVersion(LatestVersion);
                 UpdateAvailable = latest > current;
@@ -102,7 +100,7 @@ public class AutoUpdater
                 return;
             }
 
-            // Keine passenden Releases gefunden
+            // No matching releases found
             UpdateAvailable = false;
             UpdateChecked?.Invoke(this, new UpdateCheckEventArgs(false, CurrentVersion, null, null));
         }
@@ -113,7 +111,7 @@ public class AutoUpdater
     }
 
     /// <summary>
-    /// Lädt das Update-ZIP herunter und speichert es am Zielpfad.
+    /// Downloads the update installer and saves it to the target path.
     /// </summary>
     public async Task DownloadUpdateAsync(string downloadUrl, string targetPath, IProgress<double>? progress)
     {
@@ -146,43 +144,28 @@ public class AutoUpdater
     }
 
     /// <summary>
-    /// Entpackt das Update-ZIP und ersetzt die alten Dateien.
+    /// Runs the downloaded Inno Setup installer (silent) and shuts down the app.
     /// </summary>
-    public void InstallUpdate(string zipPath)
+    public void InstallUpdate(string installerPath)
     {
-        var appDir = AppDomain.CurrentDomain.BaseDirectory;
-        var extractDir = Path.Combine(Path.GetTempPath(), "FlipsiInk_Update");
+        if (!File.Exists(installerPath) || new FileInfo(installerPath).Length < 1_000_000)
+            throw new InvalidOperationException("Installer file invalid or too small.");
 
-        // Vorheriges Extrakt-Verzeichnis aufräumen
-        if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
-        Directory.CreateDirectory(extractDir);
-
-        // ZIP entpacken
-        ZipFile.ExtractToDirectory(zipPath, extractDir);
-
-        // Batch-Datei für das Ersetzen erstellen (App muss sich selbst beenden)
-        var batch = $@"@echo off
-timeout /t 2 /nobreak >nul
-xcopy /y /e ""{extractDir}\*"" ""{appDir}""
-del ""{zipPath}""
-rmdir /s /q ""{extractDir}""
-start """" ""{Path.Combine(appDir, "FlipsiInk.exe")}""
-del ""%~f0""
-";
-        var batchPath = Path.Combine(Path.GetTempPath(), "FlipsiInk_InstallUpdate.bat");
-        File.WriteAllText(batchPath, batch);
-
-        // Batch starten und App beenden
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        var psi = new System.Diagnostics.ProcessStartInfo
         {
-            FileName = batchPath,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        });
+            FileName = installerPath,
+            Arguments = "/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS",
+            UseShellExecute = true,
+            Verb = "runas" // Admin rights for installer
+        };
+        System.Diagnostics.Process.Start(psi);
+
+        // Shut down so installer can replace files
+        System.Windows.Application.Current.Shutdown();
     }
 
     /// <summary>
-    /// Parst eine Versionszeichenkette in ein vergleichbares Objekt.
+    /// Parses a version string into a comparable Version object.
     /// </summary>
     private static Version ParseVersion(string version)
     {
@@ -192,7 +175,7 @@ del ""%~f0""
 }
 
 /// <summary>
-/// Event-Args für Update-Prüfung.
+/// Event args for update check.
 /// </summary>
 public class UpdateCheckEventArgs : EventArgs
 {
@@ -214,7 +197,7 @@ public class UpdateCheckEventArgs : EventArgs
 }
 
 /// <summary>
-/// Event-Args für Download-Fortschritt.
+/// Event args for download progress.
 /// </summary>
 public class UpdateDownloadEventArgs : EventArgs
 {

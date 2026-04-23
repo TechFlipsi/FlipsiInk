@@ -31,6 +31,7 @@
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
                 <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
                 <Button x:Name="BtnSettings" Content="⚙️" Style="{StaticResource ToolButton}" ToolTip="Einstellungen"/>
+                <Button x:Name="BtnCheckUpdate" Content="🔄" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen"/>
             </StackPanel>
         </DockPanel>
 

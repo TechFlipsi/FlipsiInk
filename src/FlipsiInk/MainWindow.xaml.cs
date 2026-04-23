@@ -32,6 +32,10 @@ public partial class MainWindow : Window
     // Initialization flag – prevents events firing before UI is ready
     private bool _initialized = false;
 
+    // Auto-Updater
+    private readonly AutoUpdater _autoUpdater = new();
+    private System.Threading.Timer? _updateCheckTimer;
+
     // Undo/Redo stacks (Issue #24)
     private readonly Stack<StrokeCollection> _undoStack = new();
     private readonly Stack<StrokeCollection> _redoStack = new();
@@ -74,6 +78,9 @@ public partial class MainWindow : Window
 
         // UI is now fully initialized – enable event handlers
         _initialized = true;
+
+        // Setup Auto-Updater
+        try { SetupAutoUpdater(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupAutoUpdater: {ex}"); }
     }
 
     #region Canvas Setup
@@ -555,6 +562,81 @@ public partial class MainWindow : Window
         {
             StatusText.Text = $"✗ Speichern fehlgeschlagen: {ex.Message}";
         }
+    }
+
+    #endregion
+
+    #region Auto-Update
+
+    private void SetupAutoUpdater()
+    {
+        _autoUpdater.Channel = "prerelease"; // Alpha phase – include prereleases
+
+        // Manual check button
+        BtnCheckUpdate.Click += async (s, e) =>
+        {
+            StatusText.Text = "🔄 Prüfe auf Updates...";
+            try
+            {
+                await _autoUpdater.CheckForUpdatesAsync();
+                if (_autoUpdater.UpdateAvailable && _autoUpdater.DownloadUrl != null)
+                {
+                    StatusText.Text = $"📥 Update verfügbar: v{_autoUpdater.LatestVersion} – Lade herunter...";
+                    var tempPath = Path.Combine(Path.GetTempPath(), $"FlipsiInk_Setup_{_autoUpdater.LatestVersion}.exe");
+                    await _autoUpdater.DownloadUpdateAsync(_autoUpdater.DownloadUrl, tempPath, new Progress<double>(p =>
+                    {
+                        StatusText.Text = $"📥 Download: {p:P0}";
+                    }));
+                    StatusText.Text = "📦 Installiere Update...";
+                    _autoUpdater.InstallUpdate(tempPath);
+                }
+                else
+                {
+                    StatusText.Text = "✅ FlipsiInk ist aktuell.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"✗ Update-Prüfung fehlgeschlagen: {ex.Message}";
+            }
+        };
+
+        // Auto-check on startup
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000); // Wait 5s after startup
+                await _autoUpdater.CheckForUpdatesAsync();
+                if (_autoUpdater.UpdateAvailable)
+                {
+                    Dispatcher.Invoke(() => StatusText.Text = $"🔄 Update verfügbar: v{_autoUpdater.LatestVersion}");
+                }
+            }
+            catch { }
+        });
+
+        // Periodic check every 15 minutes
+        _updateCheckTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                await _autoUpdater.CheckForUpdatesAsync();
+                if (_autoUpdater.UpdateAvailable && _autoUpdater.DownloadUrl != null)
+                {
+                    Dispatcher.Invoke(() => StatusText.Text = $"🔄 Update verfügbar: v{_autoUpdater.LatestVersion}");
+                    // Auto-download and install
+                    var tempPath = Path.Combine(Path.GetTempPath(), $"FlipsiInk_Setup_{_autoUpdater.LatestVersion}.exe");
+                    await _autoUpdater.DownloadUpdateAsync(_autoUpdater.DownloadUrl, tempPath, null);
+                    Dispatcher.Invoke(() =>
+                    {
+                        StatusText.Text = $"📦 Installiere v{_autoUpdater.LatestVersion}...";
+                        _autoUpdater.InstallUpdate(tempPath);
+                    });
+                }
+            }
+            catch { }
+        }, null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
     }
 
     #endregion
