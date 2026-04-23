@@ -830,7 +830,7 @@ public partial class MainWindow : Window
                 var current = queue.Dequeue();
                 group.Add(current);
                 var currentBounds = current.GetBounds();
-                var searchBounds = new Rect(
+                var searchBounds = new System.Windows.Rect(
                     currentBounds.X - threshold, currentBounds.Y - threshold,
                     currentBounds.Width + 2 * threshold, currentBounds.Height + 2 * threshold);
 
@@ -1019,7 +1019,7 @@ public partial class MainWindow : Window
         }
 
         // Bounding Box der Selektion
-        Rect bounds = Rect.Empty;
+        System.Windows.Rect bounds = System.Windows.Rect.Empty;
         foreach (Stroke? s in selected)
         {
             if (s != null) bounds.Union(s.GetBounds());
@@ -1103,7 +1103,7 @@ public partial class MainWindow : Window
     private System.Drawing.Bitmap? RenderSelectedStrokesToBitmap(StrokeCollection selected)
     {
         if (selected.Count == 0) return null;
-        Rect bounds = Rect.Empty;
+        System.Windows.Rect bounds = System.Windows.Rect.Empty;
         foreach (Stroke? s in selected)
         {
             if (s != null) bounds.Union(s.GetBounds());
@@ -1126,8 +1126,8 @@ public partial class MainWindow : Window
         }
         ink.Strokes.Add(offsetStrokes);
 
-        ink.Measure(new Size(w, h));
-        ink.Arrange(new Rect(0, 0, w, h));
+        ink.Measure(new System.Windows.Size(w, h));
+        ink.Arrange(new System.Windows.Rect(0, 0, w, h));
 
         var rtb = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
         rtb.Render(ink);
