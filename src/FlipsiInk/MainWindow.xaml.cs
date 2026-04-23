@@ -19,6 +19,7 @@ using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Diagnostics;
 
 namespace FlipsiInk;
 
@@ -68,6 +69,9 @@ public partial class MainWindow : Window
     // Kontext-Aktionsleiste (Issue #35)
     private ContextActionBar? _contextActionBar;
 
+    // Handschrift-Index (Issue #30)
+    private NoteSearchIndex _searchIndex = new();
+
     public MainWindow()
     {
         InitializeComponent();
@@ -83,6 +87,8 @@ public partial class MainWindow : Window
         try { ApplyLayout(App.Config.ToolbarLayout); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ApplyLayout: {ex}"); }
         try { SetupAutoTidy(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupAutoTidy: {ex}"); }
         try { SetupContextActionBar(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupContextActionBar: {ex}"); }
+        try { SetupSearchIndex(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSearchIndex: {ex}"); }
+        try { SetupSmartLinks(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSmartLinks: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
@@ -382,6 +388,7 @@ public partial class MainWindow : Window
         BtnCalc.Click += async (s, e) => await RecognizeAndCalculate();
         BtnSave.Click += (s, e) => SaveNote();
         BtnSettings.Click += (s, e) => OpenSettings();
+        BtnSearch.Click += (s, e) => OpenSearch();
     }
 
     private void SetTool(InkCanvasEditingMode mode, Button activeBtn)
@@ -479,6 +486,76 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Smart-Detection (Issue #30)
+
+    private void SetupSmartLinks()
+    {
+        // SmartLinks wird nach OCR-Erkennung aktualisiert
+    }
+
+    /// <summary>
+    /// Aktualisiert die Smart-Links im RightPanel basierend auf dem erkannten Text.
+    /// </summary>
+    private void UpdateSmartLinks(string text)
+    {
+        SmartLinksList.ItemsSource = null;
+
+        var matches = SmartDetector.Detect(text);
+        if (matches.Count == 0)
+        {
+            SmartLinksPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var links = matches.Select(m => new
+        {
+            Label = $"{SmartDetector.GetTypeLabel(m.Type)} {m.Value}",
+            Uri = SmartDetector.GetUri(m)
+        }).ToList();
+
+        SmartLinksList.ItemsSource = links;
+        SmartLinksPanel.Visibility = Visibility.Visible;
+    }
+
+    private void SmartLink_Navigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"✗ Link konnte nicht geöffnet werden: {ex.Message}";
+        }
+    }
+
+    #endregion
+
+    #region Handschrift-Index / Suche (Issue #30)
+
+    private void SetupSearchIndex()
+    {
+        _searchIndex.Initialize();
+    }
+
+    private void OpenSearch()
+    {
+        var searchWindow = new SearchWindow(_searchIndex)
+        {
+            Owner = this
+        };
+        searchWindow.ShowDialog();
+
+        // Wenn eine Notiz ausgewählt wurde, Status anzeigen
+        if (searchWindow.SelectedFilename != null)
+        {
+            StatusText.Text = $"📄 Notiz ausgewählt: {searchWindow.SelectedFilename}";
+            // TODO: Notiz laden und anzeigen
+        }
+    }
+
+    #endregion
+
     #region OCR & Math
 
     private async void LoadModelAsync()
@@ -524,6 +601,15 @@ public partial class MainWindow : Window
             var bitmap = RenderStrokesToBitmap();
             var text = await Task.Run(() => _ocrEngine.Recognize(bitmap));
             RecognizedText.Text = text;
+
+            // Smart-Detection: E-Mail, Telefon, URL erkennen (Issue #30)
+            UpdateSmartLinks(text);
+
+            // Formel-Konverter: Mathematische Ausdrücke erkennen (Issue #30)
+            var formulaResult = FormulaConverter.ConvertAndCalculate(text);
+            if (!string.IsNullOrEmpty(formulaResult))
+                MathResult.Text = formulaResult;
+
             StatusText.Text = $"✓ {text.Length} Zeichen erkannt";
         }
         catch (Exception ex)
@@ -552,8 +638,17 @@ public partial class MainWindow : Window
             var text = await Task.Run(() => _ocrEngine.Recognize(bitmap));
             RecognizedText.Text = text;
             var results = MathEvaluator.Evaluate(text);
-            MathResult.Text = results;
-            StatusText.Text = string.IsNullOrEmpty(results) ? "Kein Mathe-Ausdruck gefunden" : "✓ Berechnet";
+            // Zusätzlich: Formel-Konverter für komplexere Ausdrücke (Issue #30)
+            var formulaResult = FormulaConverter.ConvertAndCalculate(text);
+            if (!string.IsNullOrEmpty(formulaResult))
+                MathResult.Text = string.IsNullOrEmpty(results) ? formulaResult : results + "\n" + formulaResult;
+            else
+                MathResult.Text = results;
+
+            // Smart-Detection (Issue #30)
+            UpdateSmartLinks(text);
+
+            StatusText.Text = string.IsNullOrEmpty(results) && string.IsNullOrEmpty(formulaResult) ? "Kein Mathe-Ausdruck gefunden" : "✓ Berechnet";
         }
         catch (Exception ex)
         {
@@ -644,6 +739,24 @@ public partial class MainWindow : Window
                 Strokes = strokesData
             };
             File.WriteAllText(jsonPath, JsonSerializer.Serialize(noteData, new JsonSerializerOptions { WriteIndented = true }));
+
+            // Handschrift-Index: OCR-Text indizieren (Issue #30)
+            try
+            {
+                var ocrText = RecognizedText.Text;
+                if (!string.IsNullOrEmpty(ocrText))
+                {
+                    var existingId = _searchIndex.FindByFilename(filename);
+                    if (existingId >= 0)
+                        _searchIndex.UpdateNote(existingId, ocrText);
+                    else
+                        _searchIndex.IndexNote(filename, ocrText);
+                }
+            }
+            catch (Exception idxEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"SearchIndex: {idxEx.Message}");
+            }
 
             StatusText.Text = $"✓ Gespeichert: {filename}.png + .json";
         }

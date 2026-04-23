@@ -131,6 +131,25 @@
 
                 <TextBlock x:Name="ModelStatus" Text="Modell: nicht geladen" Foreground="#FF6600" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
 
+                <!-- Smart-Detection Links (Issue #30) -->
+                <StackPanel x:Name="SmartLinksPanel" Visibility="Collapsed" Margin="0,12,0,0">
+                    <TextBlock Text="🔗 Erkannte Links" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,4"/>
+                    <ItemsControl x:Name="SmartLinksList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,2">
+                                    <Hyperlink NavigateUri="{Binding Uri}" RequestNavigate="SmartLink_Navigate" Foreground="#4CAF50">
+                                        <Run Text="{Binding Label}"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Suche-Button (Issue #30) -->
+                <Button x:Name="BtnSearch" Content="🔍 Notizen durchsuchen" Style="{StaticResource ToolButton}" ToolTip="Volltextsuche in gespeicherten Notizen" Margin="0,12,0,0" HorizontalAlignment="Stretch"/>
+
                 <!-- Template Preview (Classic only – Modern has it in toolbar) -->
                 <StackPanel x:Name="ClassicTemplatePanel" Visibility="Collapsed">
                     <TextBlock Text="📄 Vorlage" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,16,0,8"/>
