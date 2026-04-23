@@ -107,7 +107,7 @@ public partial class MainWindow : Window
         _strokesBeforeChange = MainCanvas.Strokes.Clone();
     }
 
-    private void OnStrokesChanged(object sender, StrokeCollectionChangeEventArgs e)
+    private void OnStrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
     {
         // Track changes for undo
     }
