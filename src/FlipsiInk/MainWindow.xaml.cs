@@ -38,6 +38,9 @@ public partial class MainWindow : Window
     // Zoom (Issue #25)
     private readonly ZoomManager _zoomManager = new();
 
+    // Input Mode (Issue #27)
+    private InputModeManager? _inputModeManager;
+
     // Theme (Issue #8)
     private readonly ThemeManager _themeManager = new();
     private Theme _currentTheme = Theme.System;
@@ -58,6 +61,7 @@ public partial class MainWindow : Window
         SetupZoom();
         SetupTheme();
         SetupTemplateCombo();
+        SetupInputMode();
         LoadModelAsync();
 
         // Track strokes for undo
@@ -472,6 +476,28 @@ public partial class MainWindow : Window
         encoder.Save(stream);
         stream.Position = 0;
         return new System.Drawing.Bitmap(stream);
+    }
+
+    #endregion
+
+    #region Input Mode (Issue #27)
+
+    private void SetupInputMode()
+    {
+        _inputModeManager = new InputModeManager(MainCanvas, CanvasScroll);
+        _inputModeManager.ModeChanged += (s, e) =>
+        {
+            BtnInputMode.Content = _inputModeManager.GetModeEmoji();
+            BtnInputMode.ToolTip = _inputModeManager.GetModeDescription();
+            StatusText.Text = _inputModeManager.GetModeDescription();
+        };
+
+        // Initial button state
+        BtnInputMode.Content = _inputModeManager.GetModeEmoji();
+        BtnInputMode.ToolTip = _inputModeManager.GetModeDescription();
+
+        // Cycle input mode on button click
+        BtnInputMode.Click += (s, e) => _inputModeManager.CycleMode();
     }
 
     #endregion

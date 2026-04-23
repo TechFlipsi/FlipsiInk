@@ -57,6 +57,9 @@
                 <Separator Margin="4,8"/>
                 <!-- Page Template Button -->
                 <Button x:Name="BtnTemplate" Content="📄" Style="{StaticResource ToolButton}" ToolTip="Seitenvorlage"/>
+                <Separator Margin="4,8"/>
+                <!-- Input Mode Button -->
+                <Button x:Name="BtnInputMode" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
             </StackPanel>
         </Border>
 

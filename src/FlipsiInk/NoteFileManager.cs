@@ -68,26 +68,26 @@ public class SavedPoint
 // ─────────────────────────── Notebook-Datenklasse ─────────────────────
 
 /// <summary>
-/// Repräsentiert ein vollständiges Notizbuch mit Metadaten und Seiten.
+/// Repräsentiert ein vollständiges Notizbuch mit Metadaten und Seiten (Datei-Export-Version).
 /// </summary>
-public class Notebook
+public class SavedNotebook
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "Unbenannt";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
-    public List<NotebookPage> Pages { get; set; } = [];
+    public List<SavedNotebookPage> Pages { get; set; } = [];
 
     /// <summary>
     /// Bequemer Zugriff: Striche der aktuellen Seite.
     /// </summary>
-    public NotebookPage CurrentPage => Pages.Count > 0 ? Pages[0] : new NotebookPage();
+    public SavedNotebookPage CurrentPage => Pages.Count > 0 ? Pages[0] : new SavedNotebookPage();
 }
 
 /// <summary>
 /// Eine einzelne Seite innerhalb eines Notizbuchs.
 /// </summary>
-public class NotebookPage
+public class SavedSavedNotebookPage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public int PageNumber { get; set; }
@@ -292,7 +292,7 @@ public class NoteFileManager : IDisposable
                     var savedPage = JsonSerializer.Deserialize<SavedPage>(json, JsonOptions);
                     if (savedPage is null) continue;
 
-                    var page = new NotebookPage
+                    var page = new SavedNotebookPage
                     {
                         Id = savedPage.Id,
                         PageNumber = savedPage.PageNumber,

@@ -1,0 +1,162 @@
+<!-- FlipsiInk - AI-powered Handwriting & Math Notes App
+  - Copyright (C) 2026 Fabian Kirchweger
+  -
+  - This program is free software: you can redistribute it and/or modify
+  - it under the terms of the GNU General Public License v3 as published by
+  - the Free Software Foundation. -->
+<Window x:Class="FlipsiInk.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FlipsiInk – Einstellungen"
+        Width="600" Height="500"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- 🔌 Verbindung -->
+                <GroupBox Header="🔌 Verbindung" Margin="0,0,0,8">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Content="Modell-Pfad:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="ModelPathBox" Margin="4" VerticalAlignment="Center"/>
+                        <Button Grid.Row="0" Grid.Column="2" Content="Durchsuchen…" Margin="4" Click="BrowseModel_Click"/>
+
+                        <Label Grid.Row="1" Grid.Column="0" Content="Status:" VerticalAlignment="Center"/>
+                        <Label Grid.Row="1" Grid.Column="1" x:Name="ModelStatusLabel" Content="–" Margin="4" VerticalAlignment="Center"/>
+
+                        <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Content="📥 Modell herunterladen…" Margin="4,8,4,4" Click="DownloadModel_Click"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- ⚙️ Allgemein -->
+                <GroupBox Header="⚙️ Allgemein" Margin="0,0,0,8">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Content="Sprache:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="LanguageCombo" Margin="4" VerticalAlignment="Center">
+                            <ComboBoxItem Content="Deutsch (DE)" Tag="de"/>
+                            <ComboBoxItem Content="English (EN)" Tag="en"/>
+                            <ComboBoxItem Content="Español (ES)" Tag="es"/>
+                            <ComboBoxItem Content="Français (FR)" Tag="fr"/>
+                            <ComboBoxItem Content="中文 (ZH)" Tag="zh"/>
+                            <ComboBoxItem Content="日本語 (JA)" Tag="ja"/>
+                        </ComboBox>
+
+                        <Label Grid.Row="1" Grid.Column="0" Content="Theme:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="ThemeCombo" Margin="4" VerticalAlignment="Center">
+                            <ComboBoxItem Content="System" Tag="system"/>
+                            <ComboBoxItem Content="Hell" Tag="light"/>
+                            <ComboBoxItem Content="Dunkel" Tag="dark"/>
+                        </ComboBox>
+
+                        <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="AutoUpdateCheck" Content="Auto-Update prüfen" Margin="4" VerticalAlignment="Center"/>
+
+                        <Label Grid.Row="3" Grid.Column="0" Content="Update-Kanal:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="3" Grid.Column="1" x:Name="UpdateChannelCombo" Margin="4" VerticalAlignment="Center">
+                            <ComboBoxItem Content="Stable" Tag="stable"/>
+                            <ComboBoxItem Content="Pre-release" Tag="prerelease"/>
+                        </ComboBox>
+
+                        <Label Grid.Row="4" Grid.Column="0" Content="Standard-Stiftgröße:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="4" Grid.Column="1" x:Name="PenSizeCombo" Margin="4" VerticalAlignment="Center" IsEditable="True">
+                            <ComboBoxItem Content="1" Tag="1"/>
+                            <ComboBoxItem Content="2.5" Tag="2.5"/>
+                            <ComboBoxItem Content="5" Tag="5"/>
+                        </ComboBox>
+
+                        <Label Grid.Row="5" Grid.Column="0" Content="Standard-Stiftfarbe:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="5" Grid.Column="1" x:Name="PenColorCombo" Margin="4" VerticalAlignment="Center">
+                            <ComboBoxItem Content="Schwarz" Tag="Black"/>
+                            <ComboBoxItem Content="Blau" Tag="Blue"/>
+                            <ComboBoxItem Content="Rot" Tag="Red"/>
+                            <ComboBoxItem Content="Grün" Tag="Green"/>
+                        </ComboBox>
+
+                        <CheckBox Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" x:Name="AutoRecognizeCheck" Content="Auto-Erkennen (Text beim Schreiben erkennen)" Margin="4" VerticalAlignment="Center"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- 📄 Seiten -->
+                <GroupBox Header="📄 Seiten" Margin="0,0,0,8">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Content="Standard-Vorlage:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="TemplateCombo" Margin="4" VerticalAlignment="Center"/>
+
+                        <Label Grid.Row="1" Grid.Column="0" Content="Seitenformat:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="PageSizeCombo" Margin="4" VerticalAlignment="Center">
+                            <ComboBoxItem Content="A4" Tag="A4"/>
+                            <ComboBoxItem Content="A5" Tag="A5"/>
+                            <ComboBoxItem Content="Letter" Tag="Letter"/>
+                        </ComboBox>
+
+                        <Label Grid.Row="2" Grid.Column="0" Content="Zeilenabstand:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="LineSpacingCombo" Margin="4" VerticalAlignment="Center">
+                            <ComboBoxItem Content="18 px" Tag="18"/>
+                            <ComboBoxItem Content="25 px" Tag="25"/>
+                            <ComboBoxItem Content="28 px" Tag="28"/>
+                        </ComboBox>
+                    </Grid>
+                </GroupBox>
+
+                <!-- ⚡ Tastenkürzel -->
+                <GroupBox Header="⚡ Tastenkürzel" Margin="0,0,0,8">
+                    <StackPanel Margin="4">
+                        <TextBlock Margin="0,2" Text="Quick Actions:  Ctrl+Shift+H"/>
+                        <TextBlock Margin="0,2" Text="Dashboard:       Ctrl+Shift+D"/>
+                        <TextBlock Margin="0,2" Text="Einstellungen:   Ctrl+Shift+S"/>
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons unten -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Speichern" Width="90" Margin="0,0,8,0" Click="Save_Click" IsDefault="True"/>
+            <Button Content="Abbrechen" Width="90" Margin="0,0,8,0" Click="Cancel_Click" IsCancel="True"/>
+            <Button Content="Über" Width="90" Click="About_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

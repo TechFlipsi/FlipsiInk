@@ -18,6 +18,11 @@ public partial class App : Application
     {
         base.OnStartup(e);
         Config = Config.Load();
+
+        // Beim Start nach Updates suchen
+        var updater = new AutoUpdater();
+        _ = updater.CheckForUpdatesAsync();
+
         var window = new MainWindow();
         window.Show();
     }

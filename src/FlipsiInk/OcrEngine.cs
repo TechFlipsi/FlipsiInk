@@ -45,6 +45,8 @@ public class OcrEngine : IDisposable
         string? foundModel = null;
         if (File.Exists(Path.Combine(modelDir, "model.onnx")))
             foundModel = Path.Combine(modelDir, "model.onnx");
+        else if (File.Exists(Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx")))
+            foundModel = Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx");
         else if (File.Exists(Path.Combine(modelDir, "trocr_large.onnx")))
             foundModel = Path.Combine(modelDir, "trocr_large.onnx");
         else
