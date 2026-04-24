@@ -44,6 +44,7 @@ public class Config
     public string UpdateChannel { get; set; } = "stable";
     public string ToolbarLayout { get; set; } = "floating";
     public string Setting_NotebookViewMode { get; set; } = "grid";
+    public string Setting_NotebookSortOrder { get; set; } = "name";
     public int DefaultTemplateIndex { get; set; } = 1;       // LinedWide
     public double TemplateLineOpacity { get; set; } = 1.0;    // 0.0-1.0
     public int AutoSaveIntervalMinutes { get; set; } = 0;    // 0 = disabled

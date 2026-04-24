@@ -282,8 +282,8 @@ public partial class NotebookListView : Window
     {
         // Simple sort toggle - could expand to popup menu
         // Sort toggle: name ↔ date
-        var currentOrder = App.Config.Get("NotebookSortOrder", "name");
-        App.Config.Set("NotebookSortOrder", currentOrder == "name" ? "date" : "name");
+        var currentOrder = App.Config.Setting_NotebookSortOrder;
+        App.Config.Setting_NotebookSortOrder = currentOrder == "name" ? "date" : "name";
         App.Config.Save();
         RefreshList(SearchBox.Text);
     }

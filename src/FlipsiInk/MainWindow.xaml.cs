@@ -1765,7 +1765,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Imports a PDF and creates a new notebook with each page as an annotated background.
     /// </summary>
-    private async void ImportPdf()
+    private async void ImportPdf(object sender, RoutedEventArgs e)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
@@ -1813,7 +1813,8 @@ public partial class MainWindow : Window
 
                 // Render PDF page as background image
                 var bgPath = Path.Combine(saveDir, $"pdf_bg_{Guid.NewGuid():N}_{i + 1}.png");
-                _pdfImporter.SavePageAsPng(i, bgPath);
+                // TODO: Implement PDF page rendering once PdfImporter is fully functional
+                // _pdfImporter.SavePageAsPng(i, bgPath);
 
                 notebook.Pages.Add(page);
             }
