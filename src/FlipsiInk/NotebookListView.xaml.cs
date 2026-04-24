@@ -18,19 +18,19 @@ using System.Windows.Media;
 namespace FlipsiInk;
 
 /// <summary>
-/// Window showing all notebooks in a grid or list view with cover thumbnails.
-/// Supports searching by title, author, description and right-click properties.
+/// Dashboard window showing all notebooks with sidebar navigation.
 /// </summary>
 public partial class NotebookListView : Window
 {
     private readonly NoteManager _noteManager;
     private readonly NotebookMetadataManager _metaManager;
     private bool _isGridView = true;
+    private string _currentFilter = "all"; // all, favorites, recent
 
-    /// <summary>Fired when user opens a notebook. Passes the Notebook object.</summary>
+    /// <summary>Fired when user opens a notebook.</summary>
     public event Action<Notebook>? NotebookOpened;
 
-    /// <summary>Fired when user creates a new notebook (with cover dialog).</summary>
+    /// <summary>Fired when user creates a new notebook.</summary>
     public event Action? NewNotebookRequested;
 
     public NotebookListView(NoteManager noteManager, NotebookMetadataManager metaManager)
@@ -39,20 +39,19 @@ public partial class NotebookListView : Window
         _noteManager = noteManager;
         _metaManager = metaManager;
 
-        BtnNewNotebook.Click += (s, e) => NewNotebookRequested?.Invoke();
-        BtnToggleView.Click += ToggleView;
         SearchBox.TextChanged += SearchBox_TextChanged;
+        BtnNewNotebook.Click += (s, e) => NewNotebookRequested?.Invoke();
 
         RefreshList();
     }
 
-    /// <summary>Refreshes the notebook list from NoteManager and metadata.</summary>
-    public void RefreshList(string? filter = null)
+    /// <summary>Refreshes the notebook list.</summary>
+    public void RefreshList(string? searchFilter = null)
     {
-        NotebookList.Items.Clear();
+        if (NotebookGrid == null) return;
+        NotebookGrid.Items.Clear();
 
-        var notebooks = _noteManager.GetNotebooksInFolder(null); // all root notebooks
-        // Also get notebooks in folders
+        var notebooks = _noteManager.GetNotebooksInFolder(null);
         var folders = _noteManager.GetRootFolders();
         foreach (var folder in folders)
         {
@@ -61,219 +60,148 @@ public partial class NotebookListView : Window
                 notebooks.AddRange(_noteManager.GetNotebooksInFolder(child.Id));
         }
 
-        // Deduplicate
         var distinct = notebooks.DistinctBy(n => n.Id).ToList();
 
+        // Apply navigation filter
+        if (_currentFilter == "favorites")
+            distinct = distinct.Where(n => n.IsFavorite).ToList();
+        else if (_currentFilter == "recent")
+            distinct = distinct.OrderByDescending(n => n.ModifiedAt).Take(10).ToList();
+
         // Apply search filter
-        if (!string.IsNullOrWhiteSpace(filter))
+        if (!string.IsNullOrWhiteSpace(searchFilter))
         {
-            var q = filter.Trim();
+            var q = searchFilter.Trim();
             distinct = distinct.Where(n =>
             {
                 var meta = _metaManager.GetMetadata(n.Id);
                 return n.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
-                    || meta.Description.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || (meta.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
                     || (meta.Author?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false);
             }).ToList();
         }
 
         // Sort by last modified
-        distinct = distinct.OrderByDescending(n => n.ModifiedAt).ToList();
+        if (_currentFilter != "recent")
+            distinct = distinct.OrderByDescending(n => n.ModifiedAt).ToList();
 
-        if (_isGridView)
-            SetGridTemplate();
-        else
-            SetListTemplate();
+        // Update UI counts
+        SidebarNoteCount.Text = $"{distinct.Count} Notizb\u00FCcher";
+        FilterCount.Text = distinct.Count > 0 ? $"({distinct.Count})" : "";
 
         foreach (var nb in distinct)
         {
             var meta = _metaManager.GetMetadata(nb.Id);
-            var item = _isGridView ? BuildGridItem(nb, meta) : BuildListItem(nb, meta);
-            NotebookList.Items.Add(item);
+            var card = BuildCard(nb, meta);
+            NotebookGrid.Items.Add(card);
         }
     }
 
-    private void SetGridTemplate()
+    private Border BuildCard(Notebook nb, NotebookMetadata meta)
     {
-        var panel = NotebookList.ItemsPanel.LoadContent() as WrapPanel;
-        if (panel != null)
+        var card = new Border
         {
-            panel.ItemWidth = 180;
-            panel.ItemHeight = 280;
-        }
-    }
-
-    private void SetListTemplate()
-    {
-        // For list view we use a StackPanel
-    }
-
-    private ListBoxItem BuildGridItem(Notebook nb, NotebookMetadata meta)
-    {
-        var border = new Border
-        {
-            Width = 170,
-            Height = 260,
-            Margin = new Thickness(6),
-            CornerRadius = new CornerRadius(8),
-            Background = NotebookCover.CreateCoverVisual(nb.Color, meta.Template, nb.Name),
+            Width = 180,
+            Height = 240,
+            Margin = new Thickness(8),
+            CornerRadius = new CornerRadius(10),
+            Background = new SolidColorBrush(Color.FromRgb(42, 42, 42)),
             Cursor = Cursors.Hand,
             Tag = nb
         };
 
-        // Title overlay at bottom
-        var titlePanel = new StackPanel
-        {
-            VerticalAlignment = VerticalAlignment.Bottom,
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-        var titleText = new TextBlock
-        {
-            Text = nb.Name,
-            Foreground = Brushes.White,
-            FontWeight = FontWeights.Bold,
-            FontSize = 13,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(10, 0, 10, 2)
-        };
-        var infoText = new TextBlock
-        {
-            Text = $"{meta.PageCount} Seiten · {NotebookMetadataManager.FormatFileSize(meta.FileSize)}",
-            Foreground = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255)),
-            FontSize = 10,
-            Margin = new Thickness(10, 0, 10, 0)
-        };
-        titlePanel.Children.Add(titleText);
-        titlePanel.Children.Add(infoText);
+        // Hover effect
+        card.MouseEnter += (s, e) => card.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+        card.MouseLeave += (s, e) => card.Background = new SolidColorBrush(Color.FromRgb(42, 42, 42));
 
-        // Favorite star
+        // Double-click to open
+        card.MouseLeftButtonUp += (s, e) =>
+        {
+            NotebookOpened?.Invoke(nb);
+            DialogResult = true;
+            Close();
+        };
+
+        var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 0) };
+
+        // Cover preview area
+        var coverArea = new Border
+        {
+            Height = 140,
+            CornerRadius = new CornerRadius(10, 10, 0, 0),
+            Background = NotebookCover.CreateCoverVisual(nb.Color, meta.Template, nb.Name)
+        };
+
+        // Favorite indicator
         if (nb.IsFavorite)
         {
             var star = new TextBlock
             {
-                Text = "⭐",
+                Text = "\u2605",
                 FontSize = 16,
+                Foreground = new SolidColorBrush(Colors.Gold),
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 6, 8, 0),
-                VerticalAlignment = VerticalAlignment.Top
+                Margin = new Thickness(0, 6, 8, 0)
             };
             var grid = new Grid();
-            grid.Children.Add(titlePanel);
+            grid.Children.Add(coverArea);
             grid.Children.Add(star);
-            border.Child = grid;
+            stack.Children.Add(grid);
         }
         else
         {
-            border.Child = titlePanel;
+            stack.Children.Add(coverArea);
         }
 
-        var item = new ListBoxItem { Content = border, Tag = nb };
-        return item;
-    }
-
-    private ListBoxItem BuildListItem(Notebook nb, NotebookMetadata meta)
-    {
-        var stack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4) };
-
-        // Small color swatch
-        var swatch = new Border
-        {
-            Width = 40,
-            Height = 40,
-            CornerRadius = new CornerRadius(6),
-            Background = NotebookCover.GetCoverBrush(nb.Color),
-            Margin = new Thickness(0, 0, 12, 0)
-        };
-        stack.Children.Add(swatch);
-
-        var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        // Info area
+        var info = new StackPanel { Margin = new Thickness(10, 8, 10, 8) };
         info.Children.Add(new TextBlock
         {
             Text = nb.Name,
             Foreground = Brushes.White,
-            FontWeight = FontWeights.Bold,
-            FontSize = 14
+            FontWeight = FontWeights.SemiBold,
+            FontSize = 13,
+            TextTrimming = TextTrimming.CharacterEllipsis
         });
         info.Children.Add(new TextBlock
         {
-            Text = $"{meta.PageCount} Seiten · Geändert: {meta.ModifiedAt.ToLocalTime():dd.MM.yyyy HH:mm}" +
-                   (nb.IsFavorite ? " · ⭐" : ""),
+            Text = $"{meta.PageCount} Seiten \u00B7 {nb.ModifiedAt.ToLocalTime():dd.MM.yyyy}",
             Foreground = new SolidColorBrush(Color.FromRgb(170, 170, 170)),
-            FontSize = 11
+            FontSize = 11,
+            Margin = new Thickness(0, 2, 0, 0)
         });
-        if (!string.IsNullOrWhiteSpace(meta.Description))
-        {
-            info.Children.Add(new TextBlock
-            {
-                Text = meta.Description.Length > 80 ? meta.Description[..80] + "…" : meta.Description,
-                Foreground = new SolidColorBrush(Color.FromRgb(140, 140, 140)),
-                FontSize = 11,
-                TextWrapping = TextWrapping.Wrap
-            });
-        }
+
         stack.Children.Add(info);
+        card.Child = stack;
 
-        return new ListBoxItem { Content = stack, Tag = nb };
+        // Context menu
+        var menu = new ContextMenu();
+        var openItem = new MenuItem { Header = "\u00D6ffnen" };
+        openItem.Click += (s, e) => { NotebookOpened?.Invoke(nb); DialogResult = true; Close(); };
+        var propItem = new MenuItem { Header = "Eigenschaften" };
+        propItem.Click += (s, e) => OpenProperties(nb);
+        var favItem = new MenuItem { Header = nb.IsFavorite ? "\u2605 Favorit entfernen" : "\u2606 Favorit setzen" };
+        favItem.Click += (s, e) => ToggleFavorite(nb);
+        var deleteItem = new MenuItem { Header = "L\u00F6schen" };
+        deleteItem.Click += (s, e) => DeleteNotebook(nb);
+
+        menu.Items.Add(openItem);
+        menu.Items.Add(propItem);
+        menu.Items.Add(favItem);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(deleteItem);
+        card.ContextMenu = menu;
+
+        return card;
     }
 
-    private void ToggleView(object sender, RoutedEventArgs e)
+    private void OpenProperties(Notebook nb)
     {
-        _isGridView = !_isGridView;
-        BtnToggleView.Content = _isGridView ? "📊" : "📋";
-
-        // Update ItemsPanel template
-        if (_isGridView)
-        {
-            NotebookList.ItemsPanel = CreateItemsPanelTemplate(true);
-        }
-        else
-        {
-            NotebookList.ItemsPanel = CreateItemsPanelTemplate(false);
-        }
-
-        RefreshList(SearchBox.Text);
-
-        // Persist view mode
-        App.Config.Setting_NotebookViewMode = _isGridView ? "grid" : "list";
-        App.Config.Save();
-    }
-
-    private static ItemsPanelTemplate CreateItemsPanelTemplate(bool isGrid)
-    {
-        var template = new ItemsPanelTemplate();
-        var factory = new FrameworkElementFactory(isGrid ? typeof(WrapPanel) : typeof(StackPanel));
-        if (!isGrid)
-            factory.SetValue(StackPanel.OrientationProperty, Orientation.Vertical);
-        template.VisualTree = factory;
-        return template;
-    }
-
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        RefreshList(SearchBox.Text);
-    }
-
-    private void NotebookList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        OpenSelected();
-    }
-
-    private void MenuOpen_Click(object sender, RoutedEventArgs e)
-    {
-        OpenSelected();
-    }
-
-    private void MenuProperties_Click(object sender, RoutedEventArgs e)
-    {
-        var nb = GetSelectedNotebook();
-        if (nb == null) return;
-
         var meta = _metaManager.GetMetadata(nb.Id);
         var dialog = new NotebookCoverDialog(meta);
         dialog.Owner = this;
         if (dialog.ShowDialog() == true)
         {
-            // Update notebook color/name
             nb.Name = dialog.Result.Title;
             nb.Color = dialog.Result.Color;
             nb.ModifiedAt = DateTime.UtcNow;
@@ -283,31 +211,25 @@ public partial class NotebookListView : Window
                 m.Description = dialog.Result.Description;
                 m.Color = dialog.Result.Color;
                 m.Template = dialog.Result.Template;
-                if (!string.IsNullOrWhiteSpace(dialog.Author))
-                    m.Author = dialog.Author;
             });
             _noteManager.SaveNotebook(nb);
             RefreshList(SearchBox.Text);
         }
     }
 
-    private void MenuFavorite_Click(object sender, RoutedEventArgs e)
+    private void ToggleFavorite(Notebook nb)
     {
-        var nb = GetSelectedNotebook();
-        if (nb == null) return;
         nb.IsFavorite = !nb.IsFavorite;
         nb.ModifiedAt = DateTime.UtcNow;
         _noteManager.SaveNotebook(nb);
         RefreshList(SearchBox.Text);
     }
 
-    private void MenuDelete_Click(object sender, RoutedEventArgs e)
+    private void DeleteNotebook(Notebook nb)
     {
-        var nb = GetSelectedNotebook();
-        if (nb == null) return;
         var result = MessageBox.Show(
-            $"Notizbuch \"{nb.Name}\" wirklich löschen?\nDiese Aktion kann nicht rückgängig gemacht werden.",
-            "Löschen bestätigen", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            $"Notizbuch \"{nb.Name}\" wirklich l\u00F6schen?",
+            "L\u00F6schen best\u00E4tigen", MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (result == MessageBoxResult.Yes)
         {
             _noteManager.DeleteNotebook(nb.Id);
@@ -315,34 +237,67 @@ public partial class NotebookListView : Window
         }
     }
 
-    private Notebook? GetSelectedNotebook()
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (NotebookList.SelectedItem is ListBoxItem item && item.Tag is Notebook nb)
-            return nb;
-        if (NotebookList.SelectedItem is ListBoxItem li)
-        {
-            // Try to find the Notebook from the visual tree
-            return FindNotebookFromItem(li);
-        }
-        return null;
+        RefreshList(SearchBox.Text);
     }
 
-    private Notebook? FindNotebookFromItem(ListBoxItem item)
+    // Navigation sidebar handlers
+    private void NavAll_Click(object sender, RoutedEventArgs e)
     {
-        // Walk visual tree to find Border with Tag
-        if (item.Content is Border border && border.Tag is Notebook nb)
-            return nb;
-        return null;
+        _currentFilter = "all";
+        SectionTitle.Text = "Alle Notizb\u00FCcher";
+        RefreshList(SearchBox.Text);
     }
 
-    private void OpenSelected()
+    private void NavFavorites_Click(object sender, RoutedEventArgs e)
     {
-        var nb = GetSelectedNotebook();
-        if (nb != null)
-        {
-            NotebookOpened?.Invoke(nb);
-            DialogResult = true;
-            Close();
-        }
+        _currentFilter = "favorites";
+        SectionTitle.Text = "Favoriten";
+        RefreshList(SearchBox.Text);
     }
+
+    private void NavRecent_Click(object sender, RoutedEventArgs e)
+    {
+        _currentFilter = "recent";
+        SectionTitle.Text = "K\u00FCrzlich ge\u00F6ffnet";
+        RefreshList(SearchBox.Text);
+    }
+
+    private void NavFolderRoot_Click(object sender, RoutedEventArgs e)
+    {
+        _currentFilter = "all";
+        SectionTitle.Text = "Alle Dateien";
+        RefreshList(SearchBox.Text);
+    }
+
+    private void BtnToggleView_Click(object sender, RoutedEventArgs e)
+    {
+        _isGridView = !_isGridView;
+        BtnToggleView.Content = _isGridView ? "\u25A6" : "\u2630";
+        RefreshList(SearchBox.Text);
+    }
+
+    private void BtnSortBy_Click(object sender, RoutedEventArgs e)
+    {
+        // Simple sort toggle - could expand to popup menu
+        App.Config.Setting_NotebookSortOrder = App.Config.Setting_NotebookSortOrder == "name" ? "date" : "name";
+        App.Config.Save();
+        RefreshList(SearchBox.Text);
+    }
+
+    private void BtnNewNotebook_Click(object sender, RoutedEventArgs e)
+    {
+        NewNotebookRequested?.Invoke();
+    }
+
+    private void NotebookList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // Legacy - kept for compatibility
+    }
+
+    private void MenuOpen_Click(object sender, RoutedEventArgs e) { }
+    private void MenuProperties_Click(object sender, RoutedEventArgs e) { }
+    private void MenuFavorite_Click(object sender, RoutedEventArgs e) { }
+    private void MenuDelete_Click(object sender, RoutedEventArgs e) { }
 }

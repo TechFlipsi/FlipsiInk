@@ -124,16 +124,16 @@ public partial class SettingsWindow : Window
         };
 
         // Auto-title
-        AutoTitleCheck.IsChecked = config.AutoTitleNotes;
+        AutoTitleCheck.IsChecked = config.AutoTitleEnabled;
 
         // Empty notes
-        SkipEmptyNotesCheck.IsChecked = config.SkipEmptyNotes ?? true;
+        SkipEmptyNotesCheck.IsChecked = config.SkipEmptyNotes;
 
         // Shape recognition
-        ShapeRecognitionCheck.IsChecked = config.ShapeRecognitionEnabled;
+        ShapeRecognitionCheck.IsChecked = config.ShapeRecognition;
 
         // PDF resolution
-        PdfResolutionCombo.SelectedIndex = config.PdfResolutionDpi switch
+        PdfResolutionCombo.SelectedIndex = config.PdfImportDpi switch
         {
             72 => 0,
             300 => 2,
@@ -141,10 +141,10 @@ public partial class SettingsWindow : Window
         };
 
         // Active model
-        ActiveModelLabel.Text = config.ActiveModel ?? "(nicht geladen)";
+        ActiveModelLabel.Text = !string.IsNullOrEmpty(config.ModelPath) ? System.IO.Path.GetFileNameWithoutExtension(config.ModelPath) : "(nicht geladen)";
 
         // Auto model update
-        AutoModelUpdateCheck.IsChecked = config.AutoModelUpdate ?? true;
+        AutoModelUpdateCheck.IsChecked = config.AutoModelUpdate;
 
         // Language
         LanguageCombo.SelectedIndex = config.Language == "en" ? 1 : 0;
@@ -152,7 +152,7 @@ public partial class SettingsWindow : Window
         // Storage paths
         NotesFolderBox.Text = config.NotesFolder ?? System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
-        ModelsFolderBox.Text = config.ModelsFolder ?? System.IO.Path.Combine(
+        ModelsFolderBox.Text = config.ModelsFolderPath ?? System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlipsiInk", "Models");
         ExportFolderBox.Text = config.ExportFolder ?? System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk", "Export");
@@ -272,16 +272,16 @@ public partial class SettingsWindow : Window
         };
 
         // Auto-title
-        config.AutoTitleNotes = AutoTitleCheck.IsChecked == true;
+        config.AutoTitleEnabled = AutoTitleCheck.IsChecked == true;
 
         // Empty notes
         config.SkipEmptyNotes = SkipEmptyNotesCheck.IsChecked;
 
         // Shape recognition
-        config.ShapeRecognitionEnabled = ShapeRecognitionCheck.IsChecked == true;
+        config.ShapeRecognition = ShapeRecognitionCheck.IsChecked == true;
 
         // PDF resolution
-        config.PdfResolutionDpi = PdfResolutionCombo.SelectedIndex switch
+        config.PdfImportDpi = PdfResolutionCombo.SelectedIndex switch
         {
             0 => 72,
             2 => 300,
@@ -296,7 +296,7 @@ public partial class SettingsWindow : Window
 
         // Storage paths
         config.NotesFolder = NotesFolderBox.Text;
-        config.ModelsFolder = ModelsFolderBox.Text;
+        config.ModelsFolderPath = ModelsFolderBox.Text;
         config.ExportFolder = ExportFolderBox.Text;
 
         // Max backups

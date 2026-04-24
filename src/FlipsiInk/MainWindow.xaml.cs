@@ -713,9 +713,7 @@ public partial class MainWindow : Window
         }
 
         RefreshPageThumbnails();
-
         // Refresh page overview too
-        int currentIdx = (_pageManager?.CurrentPageNumber ?? 1) - 1;
         try { PageOverview.Refresh(_currentNotebook, _pageManager.CurrentPageNumber - 1); } catch { }
     }
 
