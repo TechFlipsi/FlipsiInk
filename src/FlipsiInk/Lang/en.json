@@ -47,5 +47,18 @@
   "panel_recognized": "🔤 Recognized Text",
   "panel_math": "🧮 Math Result",
   "panel_status": "📊 Status",
-  "model_not_found_msg": "No ONNX model found in Models folder. Please place a model in:"
+  "model_not_found_msg": "No ONNX model found in Models folder. Please place a model in:",
+  "page_overview_title": "Page Overview",
+  "page_overview_tooltip": "Open page overview",
+  "filter_all": "All",
+  "filter_flagged": "Flagged",
+  "mark_page": "Mark page",
+  "mark_page_with_color": "Mark page with...",
+  "remove_flag": "Remove flag",
+  "flag_red": "Red",
+  "flag_orange": "Orange",
+  "flag_yellow": "Yellow",
+  "flag_green": "Green",
+  "flag_blue": "Blue",
+  "flag_purple": "Purple"
 }

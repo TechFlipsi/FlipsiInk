@@ -240,5 +240,15 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Dark ContextMenu (for page overview flags) -->
+        <Style x:Key="DarkContextMenu" TargetType="ContextMenu">
+            <Setter Property="Background" Value="#2A2A2A"/>
+            <Setter Property="Foreground" Value="#DDD"/>
+            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Padding" Value="4,2"/>
+        </Style>
     </Application.Resources>
 </Application>

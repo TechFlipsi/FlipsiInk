@@ -1,23 +1,33 @@
 <Window x:Class="FlipsiInk.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Einstellungen" Width="480" Height="560"
+        Title="Einstellungen" Width="560" Height="700"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         Background="#1E1E1E"
         ShowInTaskbar="False">
 
     <Window.Resources>
-        <Style x:Key="SettingsHeader" TargetType="TextBlock">
+        <!-- ═══ Section Expander Style ═══ -->
+        <Style TargetType="Expander">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Background" Value="#252525"/>
+            <Setter Property="BorderBrush" Value="#3A3A3A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
         </Style>
+
         <Style x:Key="SettingsLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#CCCCCC"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+        <Style x:Key="SettingsSubLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#999999"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
         <Style x:Key="SettingsCombo" TargetType="ComboBox">
             <Setter Property="Background" Value="#252525"/>
@@ -40,6 +50,11 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Margin" Value="0,4"/>
         </Style>
+        <Style x:Key="SettingsSlider" TargetType="Slider">
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="Height" Value="20"/>
+        </Style>
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Background" Value="#0078D7"/>
             <Setter Property="Foreground" Value="White"/>
@@ -50,7 +65,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -72,7 +87,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -84,11 +99,45 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="SmallButton" TargetType="Button">
+            <Setter Property="Background" Value="#333"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#444" TargetName="bg"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SectionIcon" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- Shortcut row -->
+        <Style x:Key="ShortcutKey" TargetType="Border">
+            <Setter Property="Background" Value="#333"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,2,8,2"/>
+        </Style>
     </Window.Resources>
 
     <DockPanel Margin="20">
         <!-- Header -->
-        <TextBlock DockPanel.Dock="Top" Text="Einstellungen" Style="{StaticResource SettingsHeader}" FontSize="20"/>
+        <TextBlock DockPanel.Dock="Top" Text="Einstellungen" FontSize="22" FontWeight="Bold" Foreground="White" Margin="0,0,0,12"/>
 
         <!-- Buttons -->
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
@@ -96,87 +145,349 @@
             <Button Content="Speichern" Style="{StaticResource ActionButton}" Click="Save_Click"/>
         </StackPanel>
 
-        <!-- Settings Content -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <!-- Scrollable Settings Content -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
             <StackPanel>
-                <!-- Theme -->
-                <TextBlock Text="Theme" Style="{StaticResource SettingsLabel}"/>
-                <ComboBox x:Name="ThemeCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
-                    <ComboBoxItem Content="System"/>
-                    <ComboBoxItem Content="Hell"/>
-                    <ComboBoxItem Content="Dunkel"/>
-                </ComboBox>
 
-                <!-- Default Template -->
-                <TextBlock Text="Standard-Seitenvorlage" Style="{StaticResource SettingsLabel}"/>
-                <ComboBox x:Name="TemplateCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="1">
-                    <ComboBoxItem Content="Blanko"/>
-                    <ComboBoxItem Content="Liniert (breit)"/>
-                    <ComboBoxItem Content="Liniert (schmal)"/>
-                    <ComboBoxItem Content="Kariert (klein)"/>
-                    <ComboBoxItem Content="Kariert (mittel)"/>
-                    <ComboBoxItem Content="Kariert (groß)"/>
-                    <ComboBoxItem Content="Punktiert (klein)"/>
-                    <ComboBoxItem Content="Punktiert (mittel)"/>
-                    <ComboBoxItem Content="Punktiert (groß)"/>
-                    <ComboBoxItem Content="Cornell Notes"/>
-                    <ComboBoxItem Content="Isometrisch"/>
-                </ComboBox>
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Erscheinungsbild (Appearance)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Erscheinungsbild" IsExpanded="True">
+                    <StackPanel Margin="8,4,0,8">
+                        <!-- Theme -->
+                        <TextBlock Text="Theme" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="ThemeCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="System"/>
+                            <ComboBoxItem Content="Hell"/>
+                            <ComboBoxItem Content="Dunkel"/>
+                        </ComboBox>
 
-                <!-- Default Pen Color -->
-                <TextBlock Text="Standard-Stiftfarbe" Style="{StaticResource SettingsLabel}"/>
-                <ComboBox x:Name="PenColorCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
-                    <ComboBoxItem Content="Schwarz"/>
-                    <ComboBoxItem Content="Dunkelblau"/>
-                    <ComboBoxItem Content="Blau"/>
-                    <ComboBoxItem Content="Rot"/>
-                    <ComboBoxItem Content="Grün"/>
-                    <ComboBoxItem Content="Orange"/>
-                    <ComboBoxItem Content="Lila"/>
-                    <ComboBoxItem Content="Braun"/>
-                    <ComboBoxItem Content="Grau"/>
-                    <ComboBoxItem Content="Türkis"/>
-                </ComboBox>
+                        <!-- Accent Color -->
+                        <TextBlock Text="Akzentfarbe" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="AccentColorCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Blau (#0078D7)"/>
+                            <ComboBoxItem Content="Violett (#7B1FA2)"/>
+                            <ComboBoxItem Content="Teal (#00897B)"/>
+                            <ComboBoxItem Content="Orange (#E65100)"/>
+                            <ComboBoxItem Content="Rot (#C62828)"/>
+                            <ComboBoxItem Content="Gr&#xFC;n (#2E7D32)"/>
+                        </ComboBox>
 
-                <!-- Default Pen Thickness -->
-                <TextBlock Text="Standard-Stiftdicke" Style="{StaticResource SettingsLabel}"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <RadioButton x:Name="PenThin" Content="Dünn (1px)" Foreground="#CCC" FontSize="13" Margin="0,0,16,0" GroupName="PenSize"/>
-                    <RadioButton x:Name="PenMedium" Content="Mittel (2.5px)" Foreground="#CCC" FontSize="13" Margin="0,0,16,0" GroupName="PenSize" IsChecked="True"/>
-                    <RadioButton x:Name="PenThick" Content="Dick (5px)" Foreground="#CCC" FontSize="13" GroupName="PenSize"/>
-                </StackPanel>
+                        <!-- Canvas Background -->
+                        <TextBlock Text="Canvas-Hintergrundfarbe" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="CanvasBgCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Wei&#xDF;/Schwarz (Theme-basiert)"/>
+                            <ComboBoxItem Content="Cremewei&#xDF; (#FFF8E1)"/>
+                            <ComboBoxItem Content="Sepia (#F5E6CC)"/>
+                            <ComboBoxItem Content="Hellgrau (#F5F5F5)"/>
+                        </ComboBox>
 
-                <!-- Language -->
-                <TextBlock Text="Sprache" Style="{StaticResource SettingsLabel}"/>
-                <ComboBox x:Name="LanguageCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
-                    <ComboBoxItem Content="Deutsch"/>
-                    <ComboBoxItem Content="English"/>
-                </ComboBox>
+                        <!-- Toolbar Position -->
+                        <TextBlock Text="Toolbar-Position" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="ToolbarPositionCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Oben (Standard)"/>
+                            <ComboBoxItem Content="Unten"/>
+                            <ComboBoxItem Content="Links"/>
+                            <ComboBoxItem Content="Rechts"/>
+                        </ComboBox>
 
-                <!-- Auto-save -->
-                <TextBlock Text="Auto-Speichern Intervall (Minuten, 0 = deaktiviert)" Style="{StaticResource SettingsLabel}"/>
-                <TextBox x:Name="AutoSaveInterval" Style="{StaticResource SettingsTextBox}" Text="0"/>
+                        <!-- Toolbar Transparency -->
+                        <TextBlock Text="Toolbar-Transparenz" Style="{StaticResource SettingsLabel}"/>
+                        <Slider x:Name="ToolbarOpacitySlider" Minimum="20" Maximum="100" Value="85" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource SettingsSlider}"/>
 
-                <!-- Canvas opacity -->
-                <TextBlock Text="Vorlagen-Deckkraft (0.0 - 1.0)" Style="{StaticResource SettingsLabel}"/>
-                <TextBox x:Name="CanvasOpacity" Style="{StaticResource SettingsTextBox}" Text="1.0"/>
+                        <!-- Animations -->
+                        <CheckBox x:Name="AnimationsCheck" Content="Animationen aktivieren" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+                    </StackPanel>
+                </Expander>
 
-                <!-- Startup behavior -->
-                <TextBlock Text="Startverhalten" Style="{StaticResource SettingsLabel}"/>
-                <ComboBox x:Name="StartupCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
-                    <ComboBoxItem Content="Leeres Notizbuch starten"/>
-                    <ComboBoxItem Content="Letztes Notizbuch öffnen"/>
-                </ComboBox>
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Stift &amp; Eingabe (Pen &amp; Input)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Stift &amp; Eingabe">
+                    <StackPanel Margin="8,4,0,8">
+                        <!-- Default Pen Color -->
+                        <TextBlock Text="Standard-Stiftfarbe" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="PenColorCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Schwarz"/>
+                            <ComboBoxItem Content="Dunkelblau"/>
+                            <ComboBoxItem Content="Blau"/>
+                            <ComboBoxItem Content="Rot"/>
+                            <ComboBoxItem Content="Gr&#xFC;n"/>
+                            <ComboBoxItem Content="Orange"/>
+                            <ComboBoxItem Content="Lila"/>
+                            <ComboBoxItem Content="Braun"/>
+                            <ComboBoxItem Content="Grau"/>
+                            <ComboBoxItem Content="T&#xFC;rkis"/>
+                        </ComboBox>
 
-                <!-- Toolbar layout -->
-                <TextBlock Text="Toolbar-Layout" Style="{StaticResource SettingsLabel}"/>
-                <ComboBox x:Name="ToolbarLayoutCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
-                    <ComboBoxItem Content="Modern (horizontal)"/>
-                    <ComboBoxItem Content="Klassisch (vertikal)"/>
-                </ComboBox>
+                        <!-- Default Pen Size -->
+                        <TextBlock Text="Standard-Strichst&#xE4;rke" Style="{StaticResource SettingsLabel}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <RadioButton x:Name="PenThin" Content="D&#xFC;nn (1px)" Foreground="#CCC" FontSize="13" Margin="0,0,16,0" GroupName="PenSize"/>
+                            <RadioButton x:Name="PenMedium" Content="Mittel (2.5px)" Foreground="#CCC" FontSize="13" Margin="0,0,16,0" GroupName="PenSize" IsChecked="True"/>
+                            <RadioButton x:Name="PenThick" Content="Dick (5px)" Foreground="#CCC" FontSize="13" GroupName="PenSize"/>
+                        </StackPanel>
 
-                <!-- Auto-update -->
-                <CheckBox x:Name="AutoUpdateCheck" Content="Automatisch nach Updates suchen" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+                        <!-- Default Tool -->
+                        <TextBlock Text="Standard-Werkzeug" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="DefaultToolCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Stift"/>
+                            <ComboBoxItem Content="Textmarker"/>
+                            <ComboBoxItem Content="Radierer"/>
+                            <ComboBoxItem Content="Lasso"/>
+                        </ComboBox>
+
+                        <!-- Pressure Sensitivity -->
+                        <CheckBox x:Name="PressureCheck" Content="Druckempfindlichkeit aktivieren" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+
+                        <!-- Palm Rejection -->
+                        <CheckBox x:Name="PalmRejectionCheck" Content="Palm Rejection (Touch-Stift-Unterscheidung)" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+
+                        <!-- Input Mode -->
+                        <TextBlock Text="Eingabemodus" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="InputModeCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Stift + Touch"/>
+                            <ComboBoxItem Content="Nur Stift"/>
+                            <ComboBoxItem Content="Nur Touch"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Notizen (Notes)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Notizen">
+                    <StackPanel Margin="8,4,0,8">
+                        <!-- Default Template -->
+                        <TextBlock Text="Standard-Seitenvorlage" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="TemplateCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="1">
+                            <ComboBoxItem Content="Blanko"/>
+                            <ComboBoxItem Content="Liniert (breit)"/>
+                            <ComboBoxItem Content="Liniert (schmal)"/>
+                            <ComboBoxItem Content="Kariert (klein)"/>
+                            <ComboBoxItem Content="Kariert (mittel)"/>
+                            <ComboBoxItem Content="Kariert (gro&#xDF;)"/>
+                            <ComboBoxItem Content="Punktiert (klein)"/>
+                            <ComboBoxItem Content="Punktiert (mittel)"/>
+                            <ComboBoxItem Content="Punktiert (gro&#xDF;)"/>
+                            <ComboBoxItem Content="Cornell Notes"/>
+                            <ComboBoxItem Content="Isometrisch"/>
+                        </ComboBox>
+
+                        <!-- Line Opacity -->
+                        <TextBlock Text="Vorlagenlinien-Deckkraft" Style="{StaticResource SettingsLabel}"/>
+                        <Slider x:Name="CanvasOpacitySlider" Minimum="0" Maximum="100" Value="100" TickFrequency="10" IsSnapToTickEnabled="True" Style="{StaticResource SettingsSlider}"/>
+
+                        <!-- Auto-Save -->
+                        <TextBlock Text="Auto-Speichern Intervall" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="AutoSaveCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="2">
+                            <ComboBoxItem Content="Deaktiviert"/>
+                            <ComboBoxItem Content="1 Minute"/>
+                            <ComboBoxItem Content="5 Minuten"/>
+                            <ComboBoxItem Content="10 Minuten"/>
+                            <ComboBoxItem Content="30 Minuten"/>
+                        </ComboBox>
+
+                        <!-- Auto-Title -->
+                        <CheckBox x:Name="AutoTitleCheck" Content="KI generiert automatisch Titel f&#xFC;r Notizen" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+                        <TextBlock Text="Die KI analysiert den Inhalt und schl&#xE4;gt einen passenden Titel vor" Style="{StaticResource SettingsSubLabel}"/>
+
+                        <!-- Empty Notes -->
+                        <CheckBox x:Name="SkipEmptyNotesCheck" Content="Leere Notizen nicht speichern" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+
+                        <!-- Shape Recognition -->
+                        <CheckBox x:Name="ShapeRecognitionCheck" Content="Form-Erkennung (gezeichnete Formen automatisch gl&#xE4;tten)" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+
+                        <!-- PDF Resolution -->
+                        <TextBlock Text="PDF-Import: Render-Aufl&#xF6;sung" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="PdfResolutionCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="1">
+                            <ComboBoxItem Content="72 DPI (schnell)"/>
+                            <ComboBoxItem Content="150 DPI (Standard)"/>
+                            <ComboBoxItem Content="300 DPI (hoch)"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: KI-Modelle (AI Models)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="KI-Modelle">
+                    <StackPanel Margin="8,4,0,8">
+                        <!-- Active Model Display -->
+                        <TextBlock Text="Aktives Modell" Style="{StaticResource SettingsLabel}"/>
+                        <TextBlock x:Name="ActiveModelLabel" Text="(nicht geladen)" Foreground="#999" FontSize="13" Margin="0,0,0,8"/>
+
+                        <!-- Model Manager Button -->
+                        <Button x:Name="BtnOpenModelManager" Content="KI-Modelle verwalten..." Style="{StaticResource SmallButton}" Click="OpenModelManager_Click" Margin="0,0,0,12"/>
+
+                        <!-- Auto-Update Models -->
+                        <CheckBox x:Name="AutoModelUpdateCheck" Content="Automatisch nach Modell-Updates suchen" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Sprache (Language)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Sprache / Language">
+                    <StackPanel Margin="8,4,0,8">
+                        <TextBlock Text="Anzeigesprache" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="LanguageCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Deutsch"/>
+                            <ComboBoxItem Content="English"/>
+                        </ComboBox>
+                        <TextBlock Text="Erfordert Neustart der Anwendung" Style="{StaticResource SettingsSubLabel}"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Datenspeicherung (Storage)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Datenspeicherung">
+                    <StackPanel Margin="8,4,0,8">
+                        <!-- Notes Folder -->
+                        <TextBlock Text="Notizen-Ordner" Style="{StaticResource SettingsLabel}"/>
+                        <TextBox x:Name="NotesFolderBox" Style="{StaticResource SettingsTextBox}" IsReadOnly="True" Margin="0,0,0,4"/>
+                        <Button x:Name="BtnBrowseNotesFolder" Content="Durchsuchen..." Style="{StaticResource SmallButton}" Click="BrowseNotesFolder_Click" Margin="0,0,0,12"/>
+
+                        <!-- Models Folder -->
+                        <TextBlock Text="Modelle-Ordner" Style="{StaticResource SettingsLabel}"/>
+                        <TextBox x:Name="ModelsFolderBox" Style="{StaticResource SettingsTextBox}" IsReadOnly="True" Margin="0,0,0,4"/>
+                        <Button x:Name="BtnBrowseModelsFolder" Content="Durchsuchen..." Style="{StaticResource SmallButton}" Click="BrowseModelsFolder_Click" Margin="0,0,0,12"/>
+
+                        <!-- Export Folder -->
+                        <TextBlock Text="Export-Ordner" Style="{StaticResource SettingsLabel}"/>
+                        <TextBox x:Name="ExportFolderBox" Style="{StaticResource SettingsTextBox}" IsReadOnly="True" Margin="0,0,0,4"/>
+                        <Button x:Name="BtnBrowseExportFolder" Content="Durchsuchen..." Style="{StaticResource SmallButton}" Click="BrowseExportFolder_Click" Margin="0,0,0,12"/>
+
+                        <!-- Max Backups -->
+                        <TextBlock Text="Max. Backups pro Notiz" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="MaxBackupsCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="1">
+                            <ComboBoxItem Content="Keine Backups"/>
+                            <ComboBoxItem Content="1"/>
+                            <ComboBoxItem Content="3"/>
+                            <ComboBoxItem Content="5"/>
+                            <ComboBoxItem Content="10"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Tastenk&#xFC;rzel (Shortcuts)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Tastenk&#xFC;rzel">
+                    <StackPanel Margin="8,4,0,8">
+                        <!-- Shortcut list -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Aktion" FontWeight="Bold" Foreground="White" FontSize="12" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Tastenk&#xFC;rzel" FontWeight="Bold" Foreground="White" FontSize="12" Margin="0,0,0,6"/>
+
+                            <!-- Shortcuts -->
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="R&#xFC;ckg&#xE4;ngig" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+Z" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Wiederholen" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+Y" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Speichern" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+S" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Export" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="4" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+E" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Suchen" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="5" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+F" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Neue Notiz" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="6" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+N" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Neue Seite" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="7" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+Shift+N" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="8" Grid.Column="0" Text="Stift" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="8" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="P" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="9" Grid.Column="0" Text="Textmarker" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="9" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="H" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="10" Grid.Column="0" Text="Radierer" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="10" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="E" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="11" Grid.Column="0" Text="Lasso" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="11" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="L" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="12" Grid.Column="0" Text="Zen-Modus" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="12" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="F11" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="13" Grid.Column="0" Text="Vollbild" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="13" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="F12" Foreground="White" FontSize="11"/></Border>
+
+                            <TextBlock Grid.Row="14" Grid.Column="0" Text="Einstellungen" Foreground="#CCC" FontSize="12" Margin="0,2"/>
+                            <Border Grid.Row="14" Grid.Column="1" Style="{StaticResource ShortcutKey}"><TextBlock Text="Ctrl+," Foreground="White" FontSize="11"/></Border>
+                        </Grid>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: Startup &amp; Toolbar
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="Startverhalten &amp; Toolbar">
+                    <StackPanel Margin="8,4,0,8">
+                        <TextBlock Text="Startverhalten" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="StartupCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Leeres Notizbuch starten"/>
+                            <ComboBoxItem Content="Letztes Notizbuch &#xF6;ffnen"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Toolbar-Layout" Style="{StaticResource SettingsLabel}"/>
+                        <ComboBox x:Name="ToolbarLayoutCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                            <ComboBoxItem Content="Modern (horizontal)"/>
+                            <ComboBoxItem Content="Klassisch (vertikal)"/>
+                        </ComboBox>
+
+                        <CheckBox x:Name="AutoUpdateCheck" Content="Automatisch nach App-Updates suchen" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- ═══════════════════════════════════════════════
+                     SECTION: &#xDC;ber (About)
+                     ═══════════════════════════════════════════════ -->
+                <Expander Header="&#xDC;ber FlipsiInk">
+                    <StackPanel Margin="8,4,0,8">
+                        <TextBlock x:Name="AboutVersion" Text="FlipsiInk v0.4.0" FontWeight="Bold" Foreground="White" FontSize="16" Margin="0,0,0,8"/>
+                        <TextBlock Text="AI-powered Handwriting &amp; Math Notes App" Foreground="#AAA" FontSize="12" Margin="0,0,0,8"/>
+                        <TextBlock Text="Idee: Fabian Kirchweger" Foreground="#CCC" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBlock Text="Code: GLM-5.1 (via OpenClaw)" Foreground="#CCC" FontSize="12" Margin="0,0,0,8"/>
+                        <TextBlock Foreground="#4CAF50" FontSize="12" Margin="0,0,0,4">
+                            <Hyperlink NavigateUri="https://github.com/TechFlipsi/FlipsiInk" RequestNavigate="GitHubLink_Click">github.com/TechFlipsi/FlipsiInk</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Text="Lizenz: GNU General Public License v3" Foreground="#999" FontSize="11" Margin="0,8,0,4"/>
+                        <TextBlock Text="Copyright &#xA9; 2026 Fabian Kirchweger" Foreground="#666" FontSize="11"/>
+                    </StackPanel>
+                </Expander>
+
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

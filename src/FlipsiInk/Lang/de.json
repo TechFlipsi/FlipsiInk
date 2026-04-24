@@ -47,5 +47,18 @@
   "panel_recognized": "🔤 Erkannter Text",
   "panel_math": "🧮 Mathe-Ergebnis",
   "panel_status": "📊 Status",
-  "model_not_found_msg": "Kein ONNX-Modell im Models-Ordner gefunden. Bitte ein Modell in den Ordner legen:"
+  "model_not_found_msg": "Kein ONNX-Modell im Models-Ordner gefunden. Bitte ein Modell in den Ordner legen:",
+  "page_overview_title": "Seitenu00fcbersicht",
+  "page_overview_tooltip": "Seitenu00fcbersicht u00f6ffnen",
+  "filter_all": "Alle",
+  "filter_flagged": "Markiert",
+  "mark_page": "Seite markieren",
+  "mark_page_with_color": "Seite markieren mit...",
+  "remove_flag": "Markierung entfernen",
+  "flag_red": "Rot",
+  "flag_orange": "Orange",
+  "flag_yellow": "Gelb",
+  "flag_green": "Gru00fcn",
+  "flag_blue": "Blau",
+  "flag_purple": "Lila"
 }

@@ -7,6 +7,7 @@
 #nullable enable
 using System;
 using System.Windows;
+using System.Windows.Media;
 
 namespace FlipsiInk;
 
@@ -18,13 +19,16 @@ public partial class SettingsWindow : Window
         "Orange", "Purple", "Brown", "Gray", "Teal"
     };
 
+    private static readonly string[] AccentColors = new[]
+    {
+        "#0078D7", "#7B1FA2", "#00897B", "#E65100", "#C62828", "#2E7D32"
+    };
+
     public SettingsWindow()
     {
         InitializeComponent();
 
         if (Application.Current.MainWindow != null && Application.Current.MainWindow != this)
-            Owner = Application.Current.MainWindow;
-        else if (Application.Current.MainWindow != null)
             Owner = Application.Current.MainWindow;
 
         LoadSettings();
@@ -42,8 +46,33 @@ public partial class SettingsWindow : Window
             _ => 0
         };
 
-        // Template
-        TemplateCombo.SelectedIndex = Math.Clamp(config.DefaultTemplateIndex, 0, 10);
+        // Accent color
+        AccentColorCombo.SelectedIndex = Array.IndexOf(AccentColors, config.AccentColor ?? "#0078D7");
+        if (AccentColorCombo.SelectedIndex < 0) AccentColorCombo.SelectedIndex = 0;
+
+        // Canvas background
+        CanvasBgCombo.SelectedIndex = config.CanvasBackground ?? "theme" switch
+        {
+            "cream" => 1,
+            "sepia" => 2,
+            "lightgray" => 3,
+            _ => 0
+        };
+
+        // Toolbar position
+        ToolbarPositionCombo.SelectedIndex = config.ToolbarPosition switch
+        {
+            "bottom" => 1,
+            "left" => 2,
+            "right" => 3,
+            _ => 0
+        };
+
+        // Toolbar opacity
+        ToolbarOpacitySlider.Value = (config.ToolbarOpacity ?? 0.85) * 100;
+
+        // Animations
+        AnimationsCheck.IsChecked = config.AnimationsEnabled ?? true;
 
         // Pen color
         var colorIdx = Array.IndexOf(ColorNames, config.DefaultPenColor);
@@ -54,14 +83,90 @@ public partial class SettingsWindow : Window
         PenMedium.IsChecked = config.DefaultPenSize > 1 && config.DefaultPenSize <= 3;
         PenThick.IsChecked = config.DefaultPenSize > 3;
 
+        // Default tool
+        DefaultToolCombo.SelectedIndex = config.DefaultTool switch
+        {
+            "highlighter" => 1,
+            "eraser" => 2,
+            "lasso" => 3,
+            _ => 0
+        };
+
+        // Pressure
+        PressureCheck.IsChecked = config.PressureSensitivity ?? true;
+
+        // Palm rejection
+        PalmRejectionCheck.IsChecked = config.PalmRejection ?? true;
+
+        // Input mode
+        InputModeCombo.SelectedIndex = config.InputMode switch
+        {
+            "pen" => 1,
+            "touch" => 2,
+            _ => 0
+        };
+
+        // Template
+        TemplateCombo.SelectedIndex = Math.Clamp(config.DefaultTemplateIndex, 0, 10);
+
+        // Canvas opacity (slider 0-100)
+        CanvasOpacitySlider.Value = (config.CanvasOpacity) * 100;
+
+        // Auto-save interval
+        AutoSaveCombo.SelectedIndex = config.AutoSaveIntervalMinutes switch
+        {
+            0 => 0,
+            1 => 1,
+            5 => 2,
+            10 => 3,
+            30 => 4,
+            _ => 2
+        };
+
+        // Auto-title
+        AutoTitleCheck.IsChecked = config.AutoTitleNotes;
+
+        // Empty notes
+        SkipEmptyNotesCheck.IsChecked = config.SkipEmptyNotes ?? true;
+
+        // Shape recognition
+        ShapeRecognitionCheck.IsChecked = config.ShapeRecognitionEnabled;
+
+        // PDF resolution
+        PdfResolutionCombo.SelectedIndex = config.PdfResolutionDpi switch
+        {
+            72 => 0,
+            300 => 2,
+            _ => 1
+        };
+
+        // Active model
+        ActiveModelLabel.Text = config.ActiveModel ?? "(nicht geladen)";
+
+        // Auto model update
+        AutoModelUpdateCheck.IsChecked = config.AutoModelUpdate ?? true;
+
         // Language
         LanguageCombo.SelectedIndex = config.Language == "en" ? 1 : 0;
 
-        // Auto-save interval
-        AutoSaveInterval.Text = config.AutoSaveIntervalMinutes.ToString();
+        // Storage paths
+        NotesFolderBox.Text = config.NotesFolder ?? System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
+        ModelsFolderBox.Text = config.ModelsFolder ?? System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlipsiInk", "Models");
+        ExportFolderBox.Text = config.ExportFolder ?? System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk", "Export");
 
-        // Canvas opacity
-        CanvasOpacity.Text = config.CanvasOpacity.ToString("0.0");
+        // Max backups
+        MaxBackupsCombo.SelectedIndex = (config.MaxBackupsPerNote ?? 1) switch
+        {
+            0 => 0,
+            1 => 1,
+            3 => 2,
+            5 => 3,
+            10 => 4,
+            _ => 1
+        };
 
         // Startup
         StartupCombo.SelectedIndex = config.StartupBehavior switch
@@ -75,6 +180,9 @@ public partial class SettingsWindow : Window
 
         // Auto-update
         AutoUpdateCheck.IsChecked = config.AutoUpdate;
+
+        // About
+        AboutVersion.Text = $"FlipsiInk v{App.Version}";
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -89,8 +197,32 @@ public partial class SettingsWindow : Window
             _ => "system"
         };
 
-        // Template
-        config.DefaultTemplateIndex = TemplateCombo.SelectedIndex;
+        // Accent color
+        config.AccentColor = AccentColors[AccentColorCombo.SelectedIndex];
+
+        // Canvas background
+        config.CanvasBackground = CanvasBgCombo.SelectedIndex switch
+        {
+            1 => "cream",
+            2 => "sepia",
+            3 => "lightgray",
+            _ => "theme"
+        };
+
+        // Toolbar position
+        config.ToolbarPosition = ToolbarPositionCombo.SelectedIndex switch
+        {
+            1 => "bottom",
+            2 => "left",
+            3 => "right",
+            _ => "top"
+        };
+
+        // Toolbar opacity
+        config.ToolbarOpacity = ToolbarOpacitySlider.Value / 100.0;
+
+        // Animations
+        config.AnimationsEnabled = AnimationsCheck.IsChecked == true;
 
         // Pen color
         config.DefaultPenColor = ColorNames[PenColorCombo.SelectedIndex];
@@ -99,16 +231,84 @@ public partial class SettingsWindow : Window
         config.DefaultPenSize = PenThin.IsChecked == true ? 1 :
                                 PenThick.IsChecked == true ? 5 : 2.5;
 
+        // Default tool
+        config.DefaultTool = DefaultToolCombo.SelectedIndex switch
+        {
+            1 => "highlighter",
+            2 => "eraser",
+            3 => "lasso",
+            _ => "pen"
+        };
+
+        // Pressure
+        config.PressureSensitivity = PressureCheck.IsChecked;
+
+        // Palm rejection
+        config.PalmRejection = PalmRejectionCheck.IsChecked;
+
+        // Input mode
+        config.InputMode = InputModeCombo.SelectedIndex switch
+        {
+            1 => "pen",
+            2 => "touch",
+            _ => "both"
+        };
+
+        // Template
+        config.DefaultTemplateIndex = TemplateCombo.SelectedIndex;
+
+        // Canvas opacity
+        config.CanvasOpacity = CanvasOpacitySlider.Value / 100.0;
+
+        // Auto-save interval
+        config.AutoSaveIntervalMinutes = AutoSaveCombo.SelectedIndex switch
+        {
+            0 => 0,
+            1 => 1,
+            2 => 5,
+            3 => 10,
+            4 => 30,
+            _ => 5
+        };
+
+        // Auto-title
+        config.AutoTitleNotes = AutoTitleCheck.IsChecked == true;
+
+        // Empty notes
+        config.SkipEmptyNotes = SkipEmptyNotesCheck.IsChecked;
+
+        // Shape recognition
+        config.ShapeRecognitionEnabled = ShapeRecognitionCheck.IsChecked == true;
+
+        // PDF resolution
+        config.PdfResolutionDpi = PdfResolutionCombo.SelectedIndex switch
+        {
+            0 => 72,
+            2 => 300,
+            _ => 150
+        };
+
+        // Auto model update
+        config.AutoModelUpdate = AutoModelUpdateCheck.IsChecked;
+
         // Language
         config.Language = LanguageCombo.SelectedIndex == 1 ? "en" : "de";
 
-        // Auto-save interval
-        if (int.TryParse(AutoSaveInterval.Text, out int interval))
-            config.AutoSaveIntervalMinutes = interval;
+        // Storage paths
+        config.NotesFolder = NotesFolderBox.Text;
+        config.ModelsFolder = ModelsFolderBox.Text;
+        config.ExportFolder = ExportFolderBox.Text;
 
-        // Canvas opacity
-        if (double.TryParse(CanvasOpacity.Text, out double opacity))
-            config.CanvasOpacity = Math.Clamp(opacity, 0, 1);
+        // Max backups
+        config.MaxBackupsPerNote = MaxBackupsCombo.SelectedIndex switch
+        {
+            0 => 0,
+            1 => 1,
+            2 => 3,
+            3 => 5,
+            4 => 10,
+            _ => 1
+        };
 
         // Startup
         config.StartupBehavior = StartupCombo.SelectedIndex == 1 ? "last" : "blank";
@@ -128,5 +328,53 @@ public partial class SettingsWindow : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void OpenModelManager_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var mmw = new ModelManagerWindow { Owner = this };
+            mmw.ShowDialog();
+            // Refresh active model label after closing
+            ActiveModelLabel.Text = App.Config.ActiveModel ?? "(nicht geladen)";
+        }
+        catch { }
+    }
+
+    private void BrowseNotesFolder_Click(object sender, RoutedEventArgs e)
+    {
+        BrowseFolder(NotesFolderBox);
+    }
+
+    private void BrowseModelsFolder_Click(object sender, RoutedEventArgs e)
+    {
+        BrowseFolder(ModelsFolderBox);
+    }
+
+    private void BrowseExportFolder_Click(object sender, RoutedEventArgs e)
+    {
+        BrowseFolder(ExportFolderBox);
+    }
+
+    private void BrowseFolder(TextBox target)
+    {
+        try
+        {
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog();
+            dialog.SelectedPath = target.Text;
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                target.Text = dialog.SelectedPath;
+        }
+        catch { }
+    }
+
+    private void GitHubLink_Click(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch { }
     }
 }

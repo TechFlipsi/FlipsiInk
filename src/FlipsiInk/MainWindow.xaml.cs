@@ -653,8 +653,25 @@ public partial class MainWindow : Window
 
     private void TogglePageNavPanel(object sender, RoutedEventArgs e)
     {
-        PageNavPanel.Visibility = PageNavPanel.Visibility == Visibility.Visible
+        PageNavOverlay.Visibility = PageNavOverlay.Visibility == Visibility.Visible
             ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void PrevPage_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pageManager.HasPreviousPage)
+            SwitchToPage(_pageManager.CurrentPageNumber - 1);
+    }
+
+    private void NextPage_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pageManager.HasNextPage)
+            SwitchToPage(_pageManager.CurrentPageNumber + 1);
+    }
+
+    private void AddPageFromNav_Click(object sender, RoutedEventArgs e)
+    {
+        OnAddPage();
     }
 
     #endregion
@@ -663,61 +680,43 @@ public partial class MainWindow : Window
 
     private void TogglePageOverview(object? sender, RoutedEventArgs e)
     {
-        var panel = PageOverviewPanel;
-        if (panel.Visibility == Visibility.Visible)
+        if (PageOverviewPanel.Visibility == Visibility.Visible)
         {
-            panel.Visibility = Visibility.Collapsed;
+            PageOverviewPanel.Visibility = Visibility.Collapsed;
         }
         else
         {
-            // Refresh and show
-            var nb = _noteManager?.CurrentNotebook;
-            if (nb != null)
-            {
-                var pageMgr = GetType().GetField("_pageManager", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.GetValue(this) as PageManager;
-                int currentIdx = pageMgr?.CurrentPageIndex ?? 0;
-                PageOverview.Refresh(nb, currentIdx);
-            }
-            panel.Visibility = Visibility.Visible;
+            try { PageOverview.Refresh(_currentNotebook, _pageManager.CurrentPageNumber - 1); } catch { }
+            PageOverviewPanel.Visibility = Visibility.Visible;
         }
     }
 
     private void OnPageOverviewNavigate(int pageNumber)
     {
-        // Navigate to the clicked page (1-based)
         SwitchToPage(pageNumber);
     }
 
     private void OnPageOverviewFlag(int pageNumber, string? flagColor)
     {
-        var nb = _noteManager?.CurrentNotebook;
-        if (nb == null) return;
-
-        var page = nb.Pages.Find(p => p.PageNumber == pageNumber);
+        var page = _currentNotebook.Pages.Find(p => p.PageNumber == pageNumber);
         if (page == null) return;
 
         if (flagColor == null)
         {
-            // Remove flag
             page.IsFlagged = false;
             page.FlagColor = string.Empty;
         }
         else
         {
-            // Set flag
             page.IsFlagged = true;
             page.FlagColor = flagColor;
         }
 
-        // Save
-        _noteManager?.SaveCurrentNotebook();
+        RefreshPageThumbnails();
 
-        // Refresh overview
-        var pageMgr = GetType().GetField("_pageManager", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.GetValue(this) as PageManager;
-        int currentIdx = pageMgr?.CurrentPageIndex ?? 0;
-        PageOverview.Refresh(nb, currentIdx);
+        // Refresh page overview too
+        int currentIdx = (_pageManager?.CurrentPageNumber ?? 1) - 1;
+        try { PageOverview.Refresh(_currentNotebook, _pageManager.CurrentPageNumber - 1); } catch { }
     }
 
     #endregion
@@ -830,7 +829,7 @@ public partial class MainWindow : Window
                         {
                             MainCanvas.Strokes.Remove(stroke);
                             MainCanvas.Strokes.Add(cleanStroke);
-                            StatusText.Text = $"Form erkannt: {result.ShapeType} ({result.Confidence:P0})";
+                            StatusText.Text = $"Form erkannt: {result.Type} ({result.Confidence:P0})";
                         }
                     }
                 });
@@ -847,12 +846,15 @@ public partial class MainWindow : Window
         var points = new StylusPointCollection();
         var bbox = shape.BoundingBox;
 
-        switch (shape.ShapeType)
+        switch (shape.Type)
         {
             case ShapeRecognizer.ShapeType.Line:
-                points.Add(new StylusPoint(shape.StartPoint.X, shape.StartPoint.Y));
-                points.Add(new StylusPoint(shape.EndPoint.X, shape.EndPoint.Y));
+            {
+                // Use bounding box diagonal as the line
+                points.Add(new StylusPoint(bbox.X, bbox.Y));
+                points.Add(new StylusPoint(bbox.X + bbox.Width, bbox.Y + bbox.Height));
                 break;
+            }
 
             case ShapeRecognizer.ShapeType.Rectangle:
             {
@@ -1605,7 +1607,7 @@ public partial class MainWindow : Window
         _currentNotebook.PageCount = _currentNotebook.Pages.Count;
 
         // Auto-title: if untitled and AI model available, try to generate title
-        if ((_currentNotebook.Name == string.Empty || _currentNotebook.Name.StartsWith("Untitled") || _currentNotebook.Name.StartsWith("note_")) && App.Config.AutoTitleNotes)
+        if ((_currentNotebook.Name == string.Empty || _currentNotebook.Name.StartsWith("Untitled") || _currentNotebook.Name.StartsWith("note_")) && App.Config.AutoTitleEnabled)
         {
             var recognizedText = RecognizedText?.Text?.Trim();
             if (!string.IsNullOrWhiteSpace(recognizedText))
@@ -1912,7 +1914,7 @@ public partial class MainWindow : Window
         {
             Title = "Erkannten Text exportieren",
             Filter = "Textdateien|*.txt|Alle Dateien|*.*",
-            DefaultFileName = SanitizeFilename(_currentNotebook.Name) + "_text"
+            FileName = SanitizeFilename(_currentNotebook.Name) + "_text"
         };
 
         if (dialog.ShowDialog() != true) return;
@@ -1926,6 +1928,11 @@ public partial class MainWindow : Window
         {
             MessageBox.Show($"Export fehlgeschlagen:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void BtnExportRecognizedText_Click(object sender, RoutedEventArgs e)
+    {
+        ExportRecognizedTextToFile();
     }
 
     #endregion
@@ -2757,6 +2764,11 @@ public partial class MainWindow : Window
         PageThumbnails.AddPageRequested += OnAddPage;
         PageThumbnails.DeletePageRequested += OnDeletePage;
         PageThumbnails.ReorderPages += OnReorderPages;
+
+        // Wire up page overview events
+        PageOverview.NavigateToPage += OnPageOverviewNavigate;
+        PageOverview.FlagPageRequested += OnPageOverviewFlag;
+        PageOverview.CloseRequested += () => { PageOverviewPanel.Visibility = Visibility.Collapsed; };
 
         // Wire up page manager events
         _pageManager.PageChanged += OnPageChanged;
