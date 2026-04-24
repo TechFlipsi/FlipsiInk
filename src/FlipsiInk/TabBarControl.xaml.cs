@@ -62,7 +62,7 @@ public partial class TabBarControl : UserControl
         foreach (var tab in tabs)
         {
             var border = CreateTabElement(tab);
-            _tabElements[tab.NotebookId] = border;
+            _tabElements[tab.NotebookId.ToString()] = border;
             TabStrip.Children.Add(border);
         }
 
@@ -229,7 +229,7 @@ public partial class TabBarControl : UserControl
     {
         foreach (var kvp in _tabElements)
         {
-            var isActive = kvp.Key == _tabManager.ActiveTabId;
+            var isActive = kvp.Key == _tabManager.ActiveTabId?.ToString();
             kvp.Value.Background = isActive
                 ? new SolidColorBrush(Color.FromRgb(0x3D, 0x3D, 0x3D))
                 : new SolidColorBrush(Color.FromRgb(0x2D, 0x2D, 0x2D));
