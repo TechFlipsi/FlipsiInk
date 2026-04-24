@@ -57,7 +57,7 @@ public partial class MainWindow : Window
     private Theme _currentTheme = Theme.System;
 
     // Page template (Issue #17)
-    private PageTemplateType _currentTemplate = PageTemplateType.Blank;
+    private PageTemplateType _currentTemplate = PageTemplateType.LinedWide;
 
     // OCR
     private OcrEngine? _ocrEngine;
@@ -241,7 +241,7 @@ public partial class MainWindow : Window
         {
             _stickyNoteMode = true;
             BtnStickyNote_M.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
-            StatusText.Text = "📝 Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
+            StatusText.Text = "Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
         };
         BtnStickyNote_M.Unchecked += (s, e) =>
         {
@@ -255,7 +255,7 @@ public partial class MainWindow : Window
         {
             _stickyNoteMode = true;
             BtnStickyNote.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
-            StatusText.Text = "📝 Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
+            StatusText.Text = "Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
         };
         BtnStickyNote.Unchecked += (s, e) =>
         {
@@ -280,7 +280,7 @@ public partial class MainWindow : Window
         var idx = Array.IndexOf(colors, _nextStickyColor);
         _nextStickyColor = colors[(idx + 1) % colors.Length];
 
-        StatusText.Text = $"📝 Klebezettel hinzugefügt";
+        StatusText.Text = $"Klebezettel hinzugefügt";
         e.Handled = true;
     }
 
@@ -397,10 +397,13 @@ public partial class MainWindow : Window
 
     private void SetupTemplateCombo()
     {
-        TemplateCombo.SelectedIndex = 0; // Blank
+        TemplateCombo.SelectedIndex = 1; // Liniert (breit)
         TemplateCombo.SelectionChanged += TemplateCombo_SelectionChanged;
-        TemplateCombo_M.SelectedIndex = 0; // Blank
+        TemplateCombo_M.SelectedIndex = 1; // Liniert (breit)
         TemplateCombo_M.SelectionChanged += TemplateCombo_SelectionChanged;
+        // Apply default template on startup
+        _currentTemplate = PageTemplateType.LinedWide;
+        MainCanvas.Background = PageTemplate.GetBackgroundBrush(_currentTemplate);
     }
 
     private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -421,18 +424,18 @@ public partial class MainWindow : Window
 
         StatusText.Text = _currentTemplate switch
         {
-            PageTemplateType.Blank => "📄 Blanko",
-            PageTemplateType.LinedWide => "📄 Liniert (breit)",
-            PageTemplateType.LinedNarrow => "📄 Liniert (schmal)",
-            PageTemplateType.GridSmall => "📄 Kariert (klein)",
-            PageTemplateType.GridMedium => "📄 Kariert (mittel)",
-            PageTemplateType.GridLarge => "📄 Kariert (groß)",
-            PageTemplateType.DotGridSmall => "📄 Punktiert (klein)",
-            PageTemplateType.DotGridMedium => "📄 Punktiert (mittel)",
-            PageTemplateType.DotGridLarge => "📄 Punktiert (groß)",
-            PageTemplateType.CornellNotes => "📄 Cornell Notes",
-            PageTemplateType.Isometric => "📄 Isometrisch",
-            _ => "📄 Blanko"
+            PageTemplateType.Blank => "Blanko",
+            PageTemplateType.LinedWide => "Liniert (breit)",
+            PageTemplateType.LinedNarrow => "Liniert (schmal)",
+            PageTemplateType.GridSmall => "Kariert (klein)",
+            PageTemplateType.GridMedium => "Kariert (mittel)",
+            PageTemplateType.GridLarge => "Kariert (groß)",
+            PageTemplateType.DotGridSmall => "Punktiert (klein)",
+            PageTemplateType.DotGridMedium => "Punktiert (mittel)",
+            PageTemplateType.DotGridLarge => "Punktiert (groß)",
+            PageTemplateType.CornellNotes => "Cornell Notes",
+            PageTemplateType.Isometric => "Isometrisch",
+            _ => "Blanko"
         };
     }
 
@@ -467,15 +470,9 @@ public partial class MainWindow : Window
         BtnRect_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnRect_M);
         BtnCircle_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnCircle_M);
 
-        // Colors – both layouts
-        BtnBlack.Click += (s, e) => SetColor(System.Windows.Media.Colors.Black, BtnBlack);
-        BtnBlue.Click += (s, e) => SetColor(System.Windows.Media.Colors.Blue, BtnBlue);
-        BtnRed.Click += (s, e) => SetColor(System.Windows.Media.Colors.Red, BtnRed);
-        BtnGreen.Click += (s, e) => SetColor(System.Windows.Media.Colors.Green, BtnGreen);
-        BtnBlack_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Black, BtnBlack_M);
-        BtnBlue_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Blue, BtnBlue_M);
-        BtnRed_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Red, BtnRed_M);
-        BtnGreen_M.Click += (s, e) => SetColor(System.Windows.Media.Colors.Green, BtnGreen_M);
+        // Color picker – both layouts
+        BtnColorPicker.Click += (s, e) => ColorPopup.IsOpen = true;
+        BtnColorPicker_M.Click += (s, e) => ColorPopup_M.IsOpen = true;
 
         // Sizes – both layouts
         BtnThin.Click += (s, e) => SetSize(1, BtnThin);
@@ -495,7 +492,7 @@ public partial class MainWindow : Window
                 _undoStack.Push(MainCanvas.Strokes.Clone());
                 _redoStack.Clear();
                 MainCanvas.Strokes.Clear();
-                StatusText.Text = "🗑️ Alles gelöscht";
+                StatusText.Text = "Alles gelöscht";
             }
         };
         BtnRecognize.Click += async (s, e) => await RecognizeText();
@@ -543,19 +540,32 @@ public partial class MainWindow : Window
         activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
     }
 
-    private void SetColor(System.Windows.Media.Color color, Button activeBtn)
+    private void ColorSwatch_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string colorName) return;
+        var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorName);
+        _currentColor = color;
+        MainCanvas.DefaultDrawingAttributes.Color = color;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
+        MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
+        MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
+        // Update color indicators
+        CurrentColorIndicator.Fill = new SolidColorBrush(color);
+        CurrentColorIndicator_M.Fill = new SolidColorBrush(color);
+        ColorPopup.IsOpen = false;
+        ColorPopup_M.IsOpen = false;
+        StatusText.Text = $"Farbe: {colorName}";
+    }
+
+    private void SetColor(System.Windows.Media.Color color, string colorName)
     {
         _currentColor = color;
         MainCanvas.DefaultDrawingAttributes.Color = color;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
         MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
-        var colorBtns = _currentLayout == "modern"
-            ? new[] { BtnBlack_M, BtnBlue_M, BtnRed_M, BtnGreen_M }
-            : new[] { BtnBlack, BtnBlue, BtnRed, BtnGreen };
-        foreach (var btn in colorBtns)
-            btn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
-        activeBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+        CurrentColorIndicator.Fill = new SolidColorBrush(color);
+        CurrentColorIndicator_M.Fill = new SolidColorBrush(color);
     }
 
     private void SetSize(double size, Button activeBtn)
@@ -598,7 +608,7 @@ public partial class MainWindow : Window
         // Save preference
         App.Config.ToolbarLayout = layout;
         App.Config.Save();
-        StatusText.Text = layout == "modern" ? "📐 Modern-Layout" : "📐 Klassisch-Layout";
+        StatusText.Text = layout == "modern" ? "Modern-Layout" : "Klassisch-Layout";
     }
 
     #endregion
@@ -620,7 +630,7 @@ public partial class MainWindow : Window
         var matches = SmartDetector.Detect(text);
         if (matches.Count == 0)
         {
-            SmartLinksPanel.Visibility = Visibility.Collapsed;
+            SmartLinksCard.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -632,6 +642,7 @@ public partial class MainWindow : Window
 
         SmartLinksList.ItemsSource = links;
         SmartLinksPanel.Visibility = Visibility.Visible;
+        SmartLinksCard.Visibility = Visibility.Visible;
     }
 
     private void SmartLink_Navigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -666,7 +677,7 @@ public partial class MainWindow : Window
         // Wenn eine Notiz ausgewählt wurde, Status anzeigen
         if (searchWindow.SelectedFilename != null)
         {
-            StatusText.Text = $"📄 Notiz ausgewählt: {searchWindow.SelectedFilename}";
+            StatusText.Text = $"Notiz ausgewählt: {searchWindow.SelectedFilename}";
             // TODO: Notiz laden und anzeigen
         }
     }
@@ -692,7 +703,7 @@ public partial class MainWindow : Window
             _modelLoaded = true;
             ModelStatus.Text = $"Modell: geladen ✓ ({_ocrEngine.ModelName})";
             ModelStatus.Foreground = System.Windows.Media.Brushes.LightGreen;
-            StatusText.Text = "Bereit – schreibe und klicke 🔤 oder 🧮";
+            StatusText.Text = "Bereit – schreibe und erkenne";
         }
         catch (Exception ex)
         {
@@ -707,15 +718,15 @@ public partial class MainWindow : Window
     {
         if (!_modelLoaded || _ocrEngine == null)
         {
-            StatusText.Text = "⚠️ Modell nicht geladen!";
+            StatusText.Text = "✕ Modell nicht geladen!";
             return;
         }
         if (MainCanvas.Strokes.Count == 0)
         {
-            StatusText.Text = "⚠️ Nichts zu erkennen – zuerst schreiben!";
+            StatusText.Text = "✕ Nichts zu erkennen – zuerst schreiben!";
             return;
         }
-        StatusText.Text = "🔤 Erkenne Text...";
+        StatusText.Text = "Erkenne Text...";
         RecognizedText.Text = "";
         try
         {
@@ -743,15 +754,15 @@ public partial class MainWindow : Window
     {
         if (!_modelLoaded || _ocrEngine == null)
         {
-            StatusText.Text = "⚠️ Modell nicht geladen!";
+            StatusText.Text = "✕ Modell nicht geladen!";
             return;
         }
         if (MainCanvas.Strokes.Count == 0)
         {
-            StatusText.Text = "⚠️ Nichts zu berechnen – zuerst schreiben!";
+            StatusText.Text = "✕ Nichts zu berechnen – zuerst schreiben!";
             return;
         }
-        StatusText.Text = "🧮 Erkenne und berechne...";
+        StatusText.Text = "Erkenne und berechne...";
         MathResult.Text = "";
         try
         {
@@ -965,7 +976,7 @@ public partial class MainWindow : Window
         var pageNumber = _pageManager.CurrentPageNumber;
         _bookmarkManager.AddBookmark(notebookId, pageNumber);
         _bookmarkPanel?.RefreshBookmarks();
-        StatusText.Text = $"🔖 Lesezeichen auf Seite {pageNumber} hinzugefügt";
+        StatusText.Text = $"Lesezeichen auf Seite {pageNumber} hinzugefügt";
     }
 
     private void OnBookmarkRemoved(Guid notebookId, int pageNumber)
@@ -1014,9 +1025,9 @@ public partial class MainWindow : Window
         {
             var nb = noteMgr.FindNotebookById(id);
             if (nb != null)
-                items.Add($"📄 {nb.Name}");
+                items.Add($"→ {nb.Name}");
             else
-                items.Add($"📄 {id}");
+                items.Add($"→ {id}");
         }
 
         if (items.Count == 0)
@@ -1047,19 +1058,19 @@ public partial class MainWindow : Window
         // Manual check button
         BtnCheckUpdate.Click += async (s, e) =>
         {
-            StatusText.Text = "🔄 Prüfe auf Updates...";
+            StatusText.Text = "↻ Prüfe auf Updates...";
             try
             {
                 await _autoUpdater.CheckForUpdatesAsync();
                 if (_autoUpdater.UpdateAvailable && _autoUpdater.DownloadUrl != null)
                 {
-                    StatusText.Text = $"📥 Update verfügbar: v{_autoUpdater.LatestVersion} – Lade herunter...";
+                    StatusText.Text = $"↓ Update verfügbar: v{_autoUpdater.LatestVersion} – Lade herunter...";
                     var tempPath = Path.Combine(Path.GetTempPath(), $"FlipsiInk_Setup_{_autoUpdater.LatestVersion}.exe");
                     await _autoUpdater.DownloadUpdateAsync(_autoUpdater.DownloadUrl, tempPath, new Progress<double>(p =>
                     {
-                        StatusText.Text = $"📥 Download: {p:P0}";
+                        StatusText.Text = $"↓ Download: {p:P0}";
                     }));
-                    StatusText.Text = "📦 Installiere Update...";
+                    StatusText.Text = "⊞ Installiere Update...";
                     _autoUpdater.InstallUpdate(tempPath);
                 }
                 else
@@ -1082,7 +1093,7 @@ public partial class MainWindow : Window
                 await _autoUpdater.CheckForUpdatesAsync();
                 if (_autoUpdater.UpdateAvailable)
                 {
-                    Dispatcher.Invoke(() => StatusText.Text = $"🔄 Update verfügbar: v{_autoUpdater.LatestVersion}");
+                    Dispatcher.Invoke(() => StatusText.Text = $"↻ Update verfügbar: v{_autoUpdater.LatestVersion}");
                 }
             }
             catch { }
@@ -1096,13 +1107,13 @@ public partial class MainWindow : Window
                 await _autoUpdater.CheckForUpdatesAsync();
                 if (_autoUpdater.UpdateAvailable && _autoUpdater.DownloadUrl != null)
                 {
-                    Dispatcher.Invoke(() => StatusText.Text = $"🔄 Update verfügbar: v{_autoUpdater.LatestVersion}");
+                    Dispatcher.Invoke(() => StatusText.Text = $"↻ Update verfügbar: v{_autoUpdater.LatestVersion}");
                     // Auto-download and install
                     var tempPath = Path.Combine(Path.GetTempPath(), $"FlipsiInk_Setup_{_autoUpdater.LatestVersion}.exe");
                     await _autoUpdater.DownloadUpdateAsync(_autoUpdater.DownloadUrl, tempPath, null);
                     Dispatcher.Invoke(() =>
                     {
-                        StatusText.Text = $"📦 Installiere v{_autoUpdater.LatestVersion}...";
+                        StatusText.Text = $"⊞ Installiere v{_autoUpdater.LatestVersion}...";
                         _autoUpdater.InstallUpdate(tempPath);
                     });
                 }
@@ -1132,11 +1143,11 @@ public partial class MainWindow : Window
     {
         if (MainCanvas.Strokes.Count == 0)
         {
-            StatusText.Text = "⚠️ Nichts zum Aufräumen!";
+            StatusText.Text = "✕ Nichts zum Aufräumen!";
             return;
         }
 
-        StatusText.Text = "✨ Auto-Tidy: Räume auf...";
+        StatusText.Text = "Auto-Tidy: Räume auf...";
         int shapesTidied = 0;
         int linesStraightened = 0;
 
@@ -1362,17 +1373,17 @@ public partial class MainWindow : Window
         _contextActionBar = new ContextActionBar();
 
         // Aktionen registrieren
-        _contextActionBar.AddAction("text", "📝 Zusammenfassen", async () => await SummarizeSelection());
+        _contextActionBar.AddAction("text", "Zusammenfassen", async () => await SummarizeSelection());
         _contextActionBar.AddAction("text", "✅ In Todo verwandeln", () => ConvertSelectionToTodo());
-        _contextActionBar.AddAction("math", "📈 Graph zeichnen", () => DrawGraph());
-        _contextActionBar.AddAction("math", "💱 Währung umrechnen", () => ConvertCurrency());
+        _contextActionBar.AddAction("math", "Graph zeichnen", () => DrawGraph());
+        _contextActionBar.AddAction("math", "Währung umrechnen", () => ConvertCurrency());
 
         // Smart Snapshot Aktionen (Issue #36)
-        _contextActionBar.AddAction("table", "📋 Als Tabelle kopieren", () => CopyAsTable());
-        _contextActionBar.AddAction("table", "📄 Als CSV kopieren", () => CopyAsCsv());
-        _contextActionBar.AddAction("table", "📝 Als Markdown", () => CopyAsMarkdownTable());
-        _contextActionBar.AddAction("date", "📅 Als Termin übernehmen", () => ExportDateAsIcs());
-        _contextActionBar.AddAction("date", "📋 Datum kopieren", () => CopyDate());
+        _contextActionBar.AddAction("table", "Als Tabelle kopieren", () => CopyAsTable());
+        _contextActionBar.AddAction("table", "→ Als CSV kopieren", () => CopyAsCsv());
+        _contextActionBar.AddAction("table", "Als Markdown", () => CopyAsMarkdownTable());
+        _contextActionBar.AddAction("date", "Als Termin übernehmen", () => ExportDateAsIcs());
+        _contextActionBar.AddAction("date", "Datum kopieren", () => CopyDate());
 
         // Selektionsänderungen überwachen
         MainCanvas.SelectionChanged += OnSelectionChanged;
@@ -1541,17 +1552,17 @@ public partial class MainWindow : Window
     private async Task SummarizeSelection()
     {
         ContextActionPopup.IsOpen = false;
-        if (!_modelLoaded || _ocrEngine == null) { StatusText.Text = "⚠️ Modell nicht geladen!"; return; }
+        if (!_modelLoaded || _ocrEngine == null) { StatusText.Text = "✕ Modell nicht geladen!"; return; }
         var selected = MainCanvas.GetSelectedStrokes();
         if (selected.Count == 0) return;
 
-        StatusText.Text = "📝 Fasse zusammen...";
+        StatusText.Text = "Fasse zusammen...";
         try
         {
             var bitmap = RenderSelectedStrokesToBitmap(selected);
             if (bitmap == null) return;
             var text = await Task.Run(() => _ocrEngine.Recognize(bitmap));
-            if (string.IsNullOrWhiteSpace(text)) { StatusText.Text = "⚠️ Kein Text erkannt"; return; }
+            if (string.IsNullOrWhiteSpace(text)) { StatusText.Text = "✕ Kein Text erkannt"; return; }
             // Einfache Zusammenfassung: Sätze komprimieren
             var summary = SimpleSummarize(text);
             RecognizedText.Text = $"Zusammenfassung:\n{summary}";
@@ -1563,7 +1574,7 @@ public partial class MainWindow : Window
     private void ConvertSelectionToTodo()
     {
         ContextActionPopup.IsOpen = false;
-        if (!_modelLoaded || _ocrEngine == null) { StatusText.Text = "⚠️ Modell nicht geladen!"; return; }
+        if (!_modelLoaded || _ocrEngine == null) { StatusText.Text = "✕ Modell nicht geladen!"; return; }
         var selected = MainCanvas.GetSelectedStrokes();
         if (selected.Count == 0) return;
 
@@ -1573,7 +1584,7 @@ public partial class MainWindow : Window
             var bitmap = RenderSelectedStrokesToBitmap(selected);
             if (bitmap == null) return;
             var text = _ocrEngine.Recognize(bitmap);
-            if (string.IsNullOrWhiteSpace(text)) { StatusText.Text = "⚠️ Kein Text erkannt"; return; }
+            if (string.IsNullOrWhiteSpace(text)) { StatusText.Text = "✕ Kein Text erkannt"; return; }
             // Jede Zeile als Todo-Eintrag formatieren
             var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             var todo = string.Join("\n", lines.Select((l, i) => $"☐ {l.Trim()}"));
@@ -1586,14 +1597,14 @@ public partial class MainWindow : Window
     private void DrawGraph()
     {
         ContextActionPopup.IsOpen = false;
-        StatusText.Text = "📈 Graph zeichnen – Coming Soon";
+        StatusText.Text = "Graph zeichnen – Coming Soon";
         // TODO: Graph-Zeichnung auf Basis erkannter Funktion implementieren
     }
 
     private void ConvertCurrency()
     {
         ContextActionPopup.IsOpen = false;
-        StatusText.Text = "💱 Währung umrechnen – Coming Soon";
+        StatusText.Text = "Währung umrechnen – Coming Soon";
         // TODO: Währungsumrechnung auf Basis erkannter Beträge implementieren
     }
 
@@ -1622,7 +1633,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "⚠️ Keine Tabelle erkannt";
+            StatusText.Text = "✕ Keine Tabelle erkannt";
         }
     }
 
@@ -1636,7 +1647,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "⚠️ Keine Tabelle erkannt";
+            StatusText.Text = "✕ Keine Tabelle erkannt";
         }
     }
 
@@ -1650,7 +1661,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "⚠️ Keine Tabelle erkannt";
+            StatusText.Text = "✕ Keine Tabelle erkannt";
         }
     }
 
@@ -1672,7 +1683,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "⚠️ Kein Termin erkannt";
+            StatusText.Text = "✕ Kein Termin erkannt";
         }
     }
 
@@ -1690,7 +1701,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "⚠️ Kein Termin erkannt";
+            StatusText.Text = "✕ Kein Termin erkannt";
         }
     }
 
@@ -1739,14 +1750,14 @@ public partial class MainWindow : Window
         _redoStack.Clear();
         _strokesBeforeChange = null;
 
-        StatusText.Text = $"📄 Neue Seite {newPage.PageNumber} hinzugefügt";
+        StatusText.Text = $"→ Neue Seite {newPage.PageNumber} hinzugefügt";
     }
 
     private void OnDeletePage(int pageIndex0)
     {
         if (_pageManager.PageCount <= 1)
         {
-            StatusText.Text = "⚠️ Letzte Seite kann nicht gelöscht werden!";
+            StatusText.Text = "✕ Letzte Seite kann nicht gelöscht werden!";
             return;
         }
 
@@ -1757,7 +1768,7 @@ public partial class MainWindow : Window
             int currentPage = Math.Min(pageNumber, _pageManager.PageCount);
             _pageManager.GoToPage(currentPage);
             LoadCurrentPageStrokes();
-            StatusText.Text = $"🗑️ Seite {pageNumber} gelöscht";
+            StatusText.Text = $"Seite {pageNumber} gelöscht";
         }
     }
 
@@ -1767,7 +1778,7 @@ public partial class MainWindow : Window
         {
             RefreshPageThumbnails();
             UpdatePageIndicator();
-            StatusText.Text = "📄 Seitenreihenfolge geändert";
+            StatusText.Text = "→ Seitenreihenfolge geändert";
         }
     }
 
@@ -1906,7 +1917,7 @@ public partial class MainWindow : Window
             ApplyNotebookAccentColor(nb.Color);
 
             listView.RefreshList();
-            StatusText.Text = $"📓 Notizbuch \"{meta.Title}\" erstellt";
+            StatusText.Text = $"Notizbuch \"{meta.Title}\" erstellt";
         }
     }
 
@@ -1939,7 +1950,7 @@ public partial class MainWindow : Window
             UpdatePageIndicator();
         }
 
-        StatusText.Text = $"📓 \"{_currentNotebook.Name}\" geöffnet";
+        StatusText.Text = $"Notizbuch \"{_currentNotebook.Name}\" geöffnet";
     }
 
     /// <summary>
@@ -1982,7 +1993,7 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog() == true && dialog.Exported)
         {
-            StatusText.Text = $"📤 Exportiert: {Path.GetFileName(dialog.ExportedFilePath)}";
+            StatusText.Text = $"Exportiert: {Path.GetFileName(dialog.ExportedFilePath)}";
         }
     }
 
@@ -2003,13 +2014,13 @@ public partial class MainWindow : Window
             if (selected.Count > 0)
             {
                 ExportManager.CopySelectedImageToClipboard(selected, 150);
-                StatusText.Text = "📋 Auswahl in Zwischenablage kopiert";
+                StatusText.Text = "Auswahl in Zwischenablage kopiert";
             }
             else
             {
                 var strokes = _pageManager.LoadPage(_pageManager.CurrentPageNumber);
                 ExportManager.CopyImageToClipboard(strokes, MainCanvas.Background, canvasW, canvasH, 150);
-                StatusText.Text = "📋 Seite als Bild in Zwischenablage kopiert";
+                StatusText.Text = "Seite als Bild in Zwischenablage kopiert";
             }
         }
         catch (Exception ex)
@@ -2026,11 +2037,11 @@ public partial class MainWindow : Window
         var text = RecognizedText.Text;
         if (string.IsNullOrWhiteSpace(text))
         {
-            StatusText.Text = "⚠️ Kein erkannter Text zum Kopieren!";
+            StatusText.Text = "✕ Kein erkannter Text zum Kopieren!";
             return;
         }
         ExportManager.CopyTextToClipboard(text);
-        StatusText.Text = "📋 Text in Zwischenablage kopiert";
+        StatusText.Text = "Text in Zwischenablage kopiert";
     }
 
     #endregion
@@ -2056,8 +2067,12 @@ public partial class MainWindow : Window
 
     private void OpenSettings()
     {
-        // TODO: Issue #6 – Full settings window
-        StatusText.Text = "⚙️ Einstellungen kommen bald...";
+        var settings = new SettingsWindow();
+        if (Application.Current.MainWindow != null && Application.Current.MainWindow != this)
+            settings.Owner = Application.Current.MainWindow;
+        else if (Application.Current.MainWindow != null)
+            settings.Owner = Application.Current.MainWindow;
+        settings.ShowDialog();
     }
 
     #endregion

@@ -63,7 +63,7 @@
     <DockPanel Margin="16">
         <!-- Header -->
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
-            <TextBlock Text="📦 KI-Modelle verwalten" Style="{StaticResource HeaderLabel}" VerticalAlignment="Center"/>
+            <TextBlock Text="⊞ KI-Modelle verwalten" Style="{StaticResource HeaderLabel}" VerticalAlignment="Center"/>
             <TextBlock x:Name="ModelsDirLabel" DockPanel.Dock="Right" VerticalAlignment="Center"
                        Foreground="Gray" FontSize="11" TextTrimming="CharacterEllipsis"/>
         </DockPanel>
@@ -133,11 +133,11 @@
 
                             <!-- Actions -->
                             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
-                                <Button Content="📥 Herunterladen" Style="{StaticResource ActionButton}"
+                                <Button Content="↓ Herunterladen" Style="{StaticResource ActionButton}"
                                         Visibility="{Binding DownloadVisible}" Click="Download_Click" Tag="{Binding Id}" Margin="0,0,4,0"/>
-                                <Button Content="🔄 Update" Style="{StaticResource ActionButton}"
+                                <Button Content="↻ Update" Style="{StaticResource ActionButton}"
                                         Visibility="{Binding UpdateVisible}" Click="Update_Click" Tag="{Binding Id}" Margin="0,0,4,0"/>
-                                <Button Content="🗑️ Löschen" Click="Delete_Click" Tag="{Binding Id}" Margin="0,0,4,0">
+                                <Button Content="✕ Löschen" Click="Delete_Click" Tag="{Binding Id}" Margin="0,0,4,0">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border Background="#D32F2F" CornerRadius="4" Padding="12,6" Cursor="Hand" x:Name="DeleteBg">

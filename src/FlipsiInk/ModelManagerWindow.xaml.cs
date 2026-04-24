@@ -23,7 +23,8 @@ public partial class ModelManagerWindow : Window
     {
         InitializeComponent();
         _manager = manager;
-        Owner = Application.Current.MainWindow;
+        if (Application.Current.MainWindow != null && Application.Current.MainWindow != this)
+            Owner = Application.Current.MainWindow;
         ModelsDirLabel.Text = $"📁 {_manager.ModelsDirectory}";
         RefreshList();
     }
@@ -111,13 +112,13 @@ public partial class ModelManagerWindow : Window
             await _manager.DownloadModelAsync(catalog, new Progress<double>(p =>
             {
                 DownloadProgress.Value = p * 100;
-                StatusLabel.Text = $"📥 Lade {catalog.Name} herunter… {p:P0}";
+                StatusLabel.Text = $"↓ Lade {catalog.Name} herunter… {p:P0}";
             }));
-            StatusLabel.Text = $"✅ {catalog.Name} heruntergeladen!";
+            StatusLabel.Text = $"✓ {catalog.Name} heruntergeladen!";
         }
         catch (Exception ex)
         {
-            StatusLabel.Text = $"❌ Fehler: {ex.Message}";
+            StatusLabel.Text = $"✕ Fehler: {ex.Message}";
             MessageBox.Show($"Download fehlgeschlagen:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
@@ -148,7 +149,7 @@ public partial class ModelManagerWindow : Window
         if (result != MessageBoxResult.Yes) return;
 
         _manager.DeleteModel(id);
-        StatusLabel.Text = $"🗑️ {name} gelöscht.";
+        StatusLabel.Text = $"✕ {name} gelöscht.";
         RefreshList();
     }
 
@@ -156,7 +157,7 @@ public partial class ModelManagerWindow : Window
     {
         if (sender is not System.Windows.Controls.Button btn || btn.Tag is not string id) return;
         _manager.SetActiveModel(id);
-        StatusLabel.Text = "✅ Aktives Modell geändert – OCR wird beim nächsten Erkennen neu geladen.";
+        StatusLabel.Text = "✓ Aktives Modell geändert – OCR wird beim nächsten Erkennen neu geladen.";
         RefreshList();
     }
 

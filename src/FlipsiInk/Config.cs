@@ -25,12 +25,16 @@ public class Config
     public string ModelPath { get; set; } = "";
     public bool AutoUpdate { get; set; } = true;
     public string UpdateChannel { get; set; } = "stable";
-    public double DefaultPenSize { get; set; } = 2;
+    public double DefaultPenSize { get; set; } = 2.5;
     public string DefaultPenColor { get; set; } = "Black";
     public bool AutoRecognize { get; set; } = false;
     public bool AutoCalcEnabled { get; set; } = true;
     public string ToolbarLayout { get; set; } = "modern"; // "classic" = vertical left, "modern" = horizontal top
     public string Setting_NotebookViewMode { get; set; } = "grid"; // "grid" or "list"
+    public int DefaultTemplateIndex { get; set; } = 1; // LinedWide by default
+    public int AutoSaveIntervalMinutes { get; set; } = 0; // 0 = disabled
+    public double CanvasOpacity { get; set; } = 1.0;
+    public string StartupBehavior { get; set; } = "blank"; // "blank" or "last"
 
     private string ConfigPath => Path.Combine(ConfigDir, "config.json");
 

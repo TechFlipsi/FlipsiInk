@@ -6,18 +6,18 @@
              BorderThickness="1"
              Padding="8">
     <StackPanel>
-        <TextBlock Text="📋 Smart Snapshot"
+        <TextBlock Text="Smart Snapshot"
                    FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
                    Foreground="#212529"/>
 
         <!-- Detected Tables Section -->
-        <Expander Header="📊 Tabellen" IsExpanded="True" Margin="0,0,0,4"
+        <Expander Header="Tabellen" IsExpanded="True" Margin="0,0,0,4"
                   x:Name="TableExpander" Visibility="Collapsed">
             <StackPanel x:Name="TableContentPanel"/>
         </Expander>
 
         <!-- Detected Dates Section -->
-        <Expander Header="📅 Termine" IsExpanded="True" Margin="0,0,0,4"
+        <Expander Header="Termine" IsExpanded="True" Margin="0,0,0,4"
                   x:Name="DateExpander" Visibility="Collapsed">
             <StackPanel x:Name="DateContentPanel"/>
         </Expander>

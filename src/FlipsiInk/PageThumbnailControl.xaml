@@ -7,7 +7,7 @@
         <UniformGrid Columns="2" DockPanel.Dock="Top" Margin="4,4,4,0">
             <Button x:Name="BtnAddPage" Content="➕" FontSize="14" ToolTip="Neue Seite hinzufügen"
                     Margin="2" Height="32" Background="#2D2D2D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-            <Button x:Name="BtnDeletePage" Content="🗑️" FontSize="14" ToolTip="Seite löschen"
+            <Button x:Name="BtnDeletePage" Content="✕" FontSize="14" ToolTip="Seite löschen"
                     Margin="2" Height="32" Background="#2D2D2D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
         </UniformGrid>
 

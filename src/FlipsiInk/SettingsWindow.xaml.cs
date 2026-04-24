@@ -6,271 +6,127 @@
 // the Free Software Foundation.
 #nullable enable
 using System;
-using System.Linq;
 using System.Windows;
-using Microsoft.Win32;
 
 namespace FlipsiInk;
 
-/// <summary>
-/// Einstellungs-Window für FlipsiInk.
-/// </summary>
 public partial class SettingsWindow : Window
 {
-    private readonly Config _config;
+    private static readonly string[] ColorNames = new[]
+    {
+        "Black", "DarkBlue", "Blue", "Red", "Green",
+        "Orange", "Purple", "Brown", "Gray", "Teal"
+    };
 
     public SettingsWindow()
     {
         InitializeComponent();
-        _config = App.Config;
 
-        // PageTemplateType-Werte in ComboBox laden
-        TemplateCombo.ItemsSource = Enum.GetValues(typeof(PageTemplateType))
-            .Cast<PageTemplateType>()
-            .Select(t => t.ToString())
-            .ToList();
+        if (Application.Current.MainWindow != null && Application.Current.MainWindow != this)
+            Owner = Application.Current.MainWindow;
+        else if (Application.Current.MainWindow != null)
+            Owner = Application.Current.MainWindow;
 
-        LoadValues();
-        UpdateModelStatus();
+        LoadSettings();
     }
 
-    /// <summary>
-    /// Lädt die aktuellen Config-Werte in die UI-Controls.
-    /// </summary>
-    private void LoadValues()
+    private void LoadSettings()
     {
-        ModelPathBox.Text = _config.ModelPath;
-
-        // Sprache
-        SelectComboByTag(LanguageCombo, _config.Language);
+        var config = App.Config;
 
         // Theme
-        SelectComboByTag(ThemeCombo, _config.Theme);
-
-        // Auto-Update
-        AutoUpdateCheck.IsChecked = _config.AutoUpdate;
-
-        // Update-Kanal
-        SelectComboByTag(UpdateChannelCombo, _config.UpdateChannel);
-
-        // Stiftgröße
-        SelectComboByTag(PenSizeCombo, _config.DefaultPenSize.ToString());
-
-        // Stiftfarbe
-        SelectComboByTag(PenColorCombo, _config.DefaultPenColor);
-
-        // Auto-Erkennen
-        AutoRecognizeCheck.IsChecked = _config.AutoRecognize;
-
-        // Seitenformat – Standard A4
-        SelectComboByTag(PageSizeCombo, "A4");
-
-        // Zeilenabstand – Standard 25
-        SelectComboByTag(LineSpacingCombo, "25");
-    }
-
-    /// <summary>
-    /// Wählt das ComboBox-Item dessen Tag mit dem Wert übereinstimmt.
-    /// </summary>
-    private static void SelectComboByTag(System.Windows.Controls.ComboBox combo, string tagValue)
-    {
-        for (int i = 0; i < combo.Items.Count; i++)
+        ThemeCombo.SelectedIndex = config.Theme switch
         {
-            if (combo.Items[i] is System.Windows.Controls.ComboBoxItem item &&
-                item.Tag?.ToString() == tagValue)
-            {
-                combo.SelectedIndex = i;
-                return;
-            }
-        }
-        // Fallback: erstes Element
-        if (combo.Items.Count > 0) combo.SelectedIndex = 0;
-    }
-
-    /// <summary>
-    /// Liest den Tag-Wert des ausgewählten ComboBoxItems.
-    /// </summary>
-    private static string GetSelectedTag(System.Windows.Controls.ComboBox combo)
-    {
-        if (combo.SelectedItem is System.Windows.Controls.ComboBoxItem item)
-            return item.Tag?.ToString() ?? "";
-        return combo.SelectedItem?.ToString() ?? "";
-    }
-
-    /// <summary>
-    /// Aktualisiert das Modell-Status-Label.
-    /// </summary>
-    private void UpdateModelStatus()
-    {
-        var path = ModelPathBox.Text.Trim();
-        if (string.IsNullOrEmpty(path))
-        {
-            ModelStatusLabel.Content = "⚠️ Kein Modell-Pfad konfiguriert";
-            return;
-        }
-
-        if (System.IO.File.Exists(path))
-        {
-            var size = new System.IO.FileInfo(path).Length;
-            ModelStatusLabel.Content = $"✅ Geladen ({FormatSize(size)})";
-        }
-        else
-        {
-            ModelStatusLabel.Content = "❌ Modell nicht gefunden";
-        }
-    }
-
-    /// <summary>
-    /// Formatiert eine Dateigröße für die Anzeige.
-    /// </summary>
-    private static string FormatSize(long bytes)
-    {
-        string[] units = ["B", "KB", "MB", "GB"];
-        double size = bytes;
-        int unit = 0;
-        while (size >= 1024 && unit < units.Length - 1) { size /= 1024; unit++; }
-        return $"{size:0.#} {units[unit]}";
-    }
-
-    /// <summary>
-    /// Browse-Button für Modell-Pfad.
-    /// </summary>
-    private void BrowseModel_Click(object sender, RoutedEventArgs e)
-    {
-        var dlg = new OpenFileDialog
-        {
-            Filter = "ONNX-Modell|*.onnx|Alle Dateien|*.*",
-            Title = "Modell-Datei auswählen"
+            "light" => 1,
+            "dark" => 2,
+            _ => 0
         };
-        if (dlg.ShowDialog() == true)
-        {
-            ModelPathBox.Text = dlg.FileName;
-            UpdateModelStatus();
-        }
-    }
 
-    /// <summary>
-    /// Öffnet den Modell-Download-Dialog.
-    /// </summary>
-    private void DownloadModel_Click(object sender, RoutedEventArgs e)
-    {
-        var downloader = new ModelDownloader();
-        var dlg = new ModelDownloadDialog(downloader)
+        // Template
+        TemplateCombo.SelectedIndex = Math.Clamp(config.DefaultTemplateIndex, 0, 10);
+
+        // Pen color
+        var colorIdx = Array.IndexOf(ColorNames, config.DefaultPenColor);
+        PenColorCombo.SelectedIndex = colorIdx >= 0 ? colorIdx : 0;
+
+        // Pen size
+        PenThin.IsChecked = config.DefaultPenSize <= 1;
+        PenMedium.IsChecked = config.DefaultPenSize > 1 && config.DefaultPenSize <= 3;
+        PenThick.IsChecked = config.DefaultPenSize > 3;
+
+        // Language
+        LanguageCombo.SelectedIndex = config.Language == "en" ? 1 : 0;
+
+        // Auto-save interval
+        AutoSaveInterval.Text = config.AutoSaveIntervalMinutes.ToString();
+
+        // Canvas opacity
+        CanvasOpacity.Text = config.CanvasOpacity.ToString("0.0");
+
+        // Startup
+        StartupCombo.SelectedIndex = config.StartupBehavior switch
         {
-            Owner = this
+            "last" => 1,
+            _ => 0
         };
-        dlg.ShowDialog();
-        UpdateModelStatus();
+
+        // Toolbar layout
+        ToolbarLayoutCombo.SelectedIndex = config.ToolbarLayout == "classic" ? 1 : 0;
+
+        // Auto-update
+        AutoUpdateCheck.IsChecked = config.AutoUpdate;
     }
 
-    /// <summary>
-    /// Speichert alle Einstellungen in die Config.
-    /// </summary>
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        _config.ModelPath = ModelPathBox.Text.Trim();
-        _config.Language = GetSelectedTag(LanguageCombo);
-        _config.Theme = GetSelectedTag(ThemeCombo);
-        _config.AutoUpdate = AutoUpdateCheck.IsChecked == true;
-        _config.UpdateChannel = GetSelectedTag(UpdateChannelCombo);
+        var config = App.Config;
 
-        if (double.TryParse(GetSelectedTag(PenSizeCombo), out var penSize))
-            _config.DefaultPenSize = penSize;
+        // Theme
+        config.Theme = ThemeCombo.SelectedIndex switch
+        {
+            1 => "light",
+            2 => "dark",
+            _ => "system"
+        };
 
-        _config.DefaultPenColor = GetSelectedTag(PenColorCombo);
-        _config.AutoRecognize = AutoRecognizeCheck.IsChecked == true;
+        // Template
+        config.DefaultTemplateIndex = TemplateCombo.SelectedIndex;
 
-        _config.Save();
+        // Pen color
+        config.DefaultPenColor = ColorNames[PenColorCombo.SelectedIndex];
 
-        // Lokalisierung neu initialisieren
-        Localization.Init(_config.Language);
+        // Pen size
+        config.DefaultPenSize = PenThin.IsChecked == true ? 1 :
+                                PenThick.IsChecked == true ? 5 : 2.5;
 
+        // Language
+        config.Language = LanguageCombo.SelectedIndex == 1 ? "en" : "de";
+
+        // Auto-save interval
+        if (int.TryParse(AutoSaveInterval.Text, out int interval))
+            config.AutoSaveIntervalMinutes = interval;
+
+        // Canvas opacity
+        if (double.TryParse(CanvasOpacity.Text, out double opacity))
+            config.CanvasOpacity = Math.Clamp(opacity, 0, 1);
+
+        // Startup
+        config.StartupBehavior = StartupCombo.SelectedIndex == 1 ? "last" : "blank";
+
+        // Toolbar
+        config.ToolbarLayout = ToolbarLayoutCombo.SelectedIndex == 1 ? "classic" : "modern";
+
+        // Auto-update
+        config.AutoUpdate = AutoUpdateCheck.IsChecked == true;
+
+        config.Save();
         DialogResult = true;
         Close();
     }
 
-    /// <summary>
-    /// Bricht ohne Speichern ab.
-    /// </summary>
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
         Close();
-    }
-
-    /// <summary>
-    /// Zeigt den Über-Dialog.
-    /// </summary>
-    private void About_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show(
-            $"FlipsiInk v{App.Version}\n\n" +
-            "AI-powered Handwriting & Math Notes App\n" +
-            "Copyright © 2026 Fabian Kirchweger\n\n" +
-            "Lizenziert unter GPL v3.",
-            "Über FlipsiInk",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
-    }
-}
-
-/// <summary>
-/// Einfacher Dialog für Modell-Downloads (Platzhalter).
-/// </summary>
-public class ModelDownloadDialog : Window
-{
-    public ModelDownloadDialog(ModelDownloader downloader)
-    {
-        Title = "Modell herunterladen";
-        Width = 450;
-        Height = 350;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(12) };
-
-        var label = new System.Windows.Controls.TextBlock
-        {
-            Text = "Verfügbare Modelle:",
-            FontWeight = FontWeights.Bold,
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-        panel.Children.Add(label);
-
-        foreach (var model in downloader.GetAvailableModels())
-        {
-            var btn = new System.Windows.Controls.Button
-            {
-                Content = $"📥 {model.Name} ({model.Size})",
-                Tag = model,
-                Margin = new Thickness(0, 4, 0, 4),
-                Padding = new Thickness(8, 4, 8, 4)
-            };
-            btn.Click += OnModelSelect;
-            panel.Children.Add(btn);
-        }
-
-        var closeBtn = new System.Windows.Controls.Button
-        {
-            Content = "Schließen",
-            Width = 90,
-            Margin = new Thickness(0, 12, 0, 0),
-            IsCancel = true
-        };
-        panel.Children.Add(closeBtn);
-
-        Content = panel;
-    }
-
-    private void OnModelSelect(object sender, RoutedEventArgs e)
-    {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is ModelInfo model)
-        {
-            MessageBox.Show(
-                $"Modell: {model.Name}\nBeschreibung: {model.Description}\nGröße: {model.Size}\n\n" +
-                "Download-URLs sind noch Platzhalter (TODO: echte URLs wenn Modelle verfügbar).",
-                model.Name,
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
     }
 }

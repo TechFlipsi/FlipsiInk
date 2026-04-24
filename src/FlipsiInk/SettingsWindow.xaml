@@ -1,162 +1,183 @@
-<!-- FlipsiInk - AI-powered Handwriting & Math Notes App
-  - Copyright (C) 2026 Fabian Kirchweger
-  -
-  - This program is free software: you can redistribute it and/or modify
-  - it under the terms of the GNU General Public License v3 as published by
-  - the Free Software Foundation. -->
 <Window x:Class="FlipsiInk.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="FlipsiInk – Einstellungen"
-        Width="600" Height="500"
-        ResizeMode="CanResize"
+        Title="Einstellungen" Width="480" Height="560"
         WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#1E1E1E"
         ShowInTaskbar="False">
 
-    <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Window.Resources>
+        <Style x:Key="SettingsHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+        <Style x:Key="SettingsLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+        <Style x:Key="SettingsCombo" TargetType="ComboBox">
+            <Setter Property="Background" Value="#252525"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style x:Key="SettingsTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#252525"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style x:Key="SettingsCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,4"/>
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D7"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1A8FEF" TargetName="bg"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CancelButton" TargetType="Button">
+            <Setter Property="Background" Value="#444"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#555" TargetName="bg"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+    <DockPanel Margin="20">
+        <!-- Header -->
+        <TextBlock DockPanel.Dock="Top" Text="Einstellungen" Style="{StaticResource SettingsHeader}" FontSize="20"/>
+
+        <!-- Buttons -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Abbrechen" Style="{StaticResource CancelButton}" Click="Cancel_Click" Margin="0,0,8,0"/>
+            <Button Content="Speichern" Style="{StaticResource ActionButton}" Click="Save_Click"/>
+        </StackPanel>
+
+        <!-- Settings Content -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <!-- Theme -->
+                <TextBlock Text="Theme" Style="{StaticResource SettingsLabel}"/>
+                <ComboBox x:Name="ThemeCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                    <ComboBoxItem Content="System"/>
+                    <ComboBoxItem Content="Hell"/>
+                    <ComboBoxItem Content="Dunkel"/>
+                </ComboBox>
 
-                <!-- 🔌 Verbindung -->
-                <GroupBox Header="🔌 Verbindung" Margin="0,0,0,8">
-                    <Grid Margin="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <!-- Default Template -->
+                <TextBlock Text="Standard-Seitenvorlage" Style="{StaticResource SettingsLabel}"/>
+                <ComboBox x:Name="TemplateCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="1">
+                    <ComboBoxItem Content="Blanko"/>
+                    <ComboBoxItem Content="Liniert (breit)"/>
+                    <ComboBoxItem Content="Liniert (schmal)"/>
+                    <ComboBoxItem Content="Kariert (klein)"/>
+                    <ComboBoxItem Content="Kariert (mittel)"/>
+                    <ComboBoxItem Content="Kariert (groß)"/>
+                    <ComboBoxItem Content="Punktiert (klein)"/>
+                    <ComboBoxItem Content="Punktiert (mittel)"/>
+                    <ComboBoxItem Content="Punktiert (groß)"/>
+                    <ComboBoxItem Content="Cornell Notes"/>
+                    <ComboBoxItem Content="Isometrisch"/>
+                </ComboBox>
 
-                        <Label Grid.Row="0" Grid.Column="0" Content="Modell-Pfad:" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="ModelPathBox" Margin="4" VerticalAlignment="Center"/>
-                        <Button Grid.Row="0" Grid.Column="2" Content="Durchsuchen…" Margin="4" Click="BrowseModel_Click"/>
+                <!-- Default Pen Color -->
+                <TextBlock Text="Standard-Stiftfarbe" Style="{StaticResource SettingsLabel}"/>
+                <ComboBox x:Name="PenColorCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                    <ComboBoxItem Content="Schwarz"/>
+                    <ComboBoxItem Content="Dunkelblau"/>
+                    <ComboBoxItem Content="Blau"/>
+                    <ComboBoxItem Content="Rot"/>
+                    <ComboBoxItem Content="Grün"/>
+                    <ComboBoxItem Content="Orange"/>
+                    <ComboBoxItem Content="Lila"/>
+                    <ComboBoxItem Content="Braun"/>
+                    <ComboBoxItem Content="Grau"/>
+                    <ComboBoxItem Content="Türkis"/>
+                </ComboBox>
 
-                        <Label Grid.Row="1" Grid.Column="0" Content="Status:" VerticalAlignment="Center"/>
-                        <Label Grid.Row="1" Grid.Column="1" x:Name="ModelStatusLabel" Content="–" Margin="4" VerticalAlignment="Center"/>
+                <!-- Default Pen Thickness -->
+                <TextBlock Text="Standard-Stiftdicke" Style="{StaticResource SettingsLabel}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <RadioButton x:Name="PenThin" Content="Dünn (1px)" Foreground="#CCC" FontSize="13" Margin="0,0,16,0" GroupName="PenSize"/>
+                    <RadioButton x:Name="PenMedium" Content="Mittel (2.5px)" Foreground="#CCC" FontSize="13" Margin="0,0,16,0" GroupName="PenSize" IsChecked="True"/>
+                    <RadioButton x:Name="PenThick" Content="Dick (5px)" Foreground="#CCC" FontSize="13" GroupName="PenSize"/>
+                </StackPanel>
 
-                        <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Content="📥 Modell herunterladen…" Margin="4,8,4,4" Click="DownloadModel_Click"/>
-                    </Grid>
-                </GroupBox>
+                <!-- Language -->
+                <TextBlock Text="Sprache" Style="{StaticResource SettingsLabel}"/>
+                <ComboBox x:Name="LanguageCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                    <ComboBoxItem Content="Deutsch"/>
+                    <ComboBoxItem Content="English"/>
+                </ComboBox>
 
-                <!-- ⚙️ Allgemein -->
-                <GroupBox Header="⚙️ Allgemein" Margin="0,0,0,8">
-                    <Grid Margin="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                <!-- Auto-save -->
+                <TextBlock Text="Auto-Speichern Intervall (Minuten, 0 = deaktiviert)" Style="{StaticResource SettingsLabel}"/>
+                <TextBox x:Name="AutoSaveInterval" Style="{StaticResource SettingsTextBox}" Text="0"/>
 
-                        <Label Grid.Row="0" Grid.Column="0" Content="Sprache:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="LanguageCombo" Margin="4" VerticalAlignment="Center">
-                            <ComboBoxItem Content="Deutsch (DE)" Tag="de"/>
-                            <ComboBoxItem Content="English (EN)" Tag="en"/>
-                            <ComboBoxItem Content="Español (ES)" Tag="es"/>
-                            <ComboBoxItem Content="Français (FR)" Tag="fr"/>
-                            <ComboBoxItem Content="中文 (ZH)" Tag="zh"/>
-                            <ComboBoxItem Content="日本語 (JA)" Tag="ja"/>
-                        </ComboBox>
+                <!-- Canvas opacity -->
+                <TextBlock Text="Vorlagen-Deckkraft (0.0 - 1.0)" Style="{StaticResource SettingsLabel}"/>
+                <TextBox x:Name="CanvasOpacity" Style="{StaticResource SettingsTextBox}" Text="1.0"/>
 
-                        <Label Grid.Row="1" Grid.Column="0" Content="Theme:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="ThemeCombo" Margin="4" VerticalAlignment="Center">
-                            <ComboBoxItem Content="System" Tag="system"/>
-                            <ComboBoxItem Content="Hell" Tag="light"/>
-                            <ComboBoxItem Content="Dunkel" Tag="dark"/>
-                        </ComboBox>
+                <!-- Startup behavior -->
+                <TextBlock Text="Startverhalten" Style="{StaticResource SettingsLabel}"/>
+                <ComboBox x:Name="StartupCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                    <ComboBoxItem Content="Leeres Notizbuch starten"/>
+                    <ComboBoxItem Content="Letztes Notizbuch öffnen"/>
+                </ComboBox>
 
-                        <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="AutoUpdateCheck" Content="Auto-Update prüfen" Margin="4" VerticalAlignment="Center"/>
+                <!-- Toolbar layout -->
+                <TextBlock Text="Toolbar-Layout" Style="{StaticResource SettingsLabel}"/>
+                <ComboBox x:Name="ToolbarLayoutCombo" Style="{StaticResource SettingsCombo}" SelectedIndex="0">
+                    <ComboBoxItem Content="Modern (horizontal)"/>
+                    <ComboBoxItem Content="Klassisch (vertikal)"/>
+                </ComboBox>
 
-                        <Label Grid.Row="3" Grid.Column="0" Content="Update-Kanal:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="3" Grid.Column="1" x:Name="UpdateChannelCombo" Margin="4" VerticalAlignment="Center">
-                            <ComboBoxItem Content="Stable" Tag="stable"/>
-                            <ComboBoxItem Content="Pre-release" Tag="prerelease"/>
-                        </ComboBox>
-
-                        <Label Grid.Row="4" Grid.Column="0" Content="Standard-Stiftgröße:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="4" Grid.Column="1" x:Name="PenSizeCombo" Margin="4" VerticalAlignment="Center" IsEditable="True">
-                            <ComboBoxItem Content="1" Tag="1"/>
-                            <ComboBoxItem Content="2.5" Tag="2.5"/>
-                            <ComboBoxItem Content="5" Tag="5"/>
-                        </ComboBox>
-
-                        <Label Grid.Row="5" Grid.Column="0" Content="Standard-Stiftfarbe:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="5" Grid.Column="1" x:Name="PenColorCombo" Margin="4" VerticalAlignment="Center">
-                            <ComboBoxItem Content="Schwarz" Tag="Black"/>
-                            <ComboBoxItem Content="Blau" Tag="Blue"/>
-                            <ComboBoxItem Content="Rot" Tag="Red"/>
-                            <ComboBoxItem Content="Grün" Tag="Green"/>
-                        </ComboBox>
-
-                        <CheckBox Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" x:Name="AutoRecognizeCheck" Content="Auto-Erkennen (Text beim Schreiben erkennen)" Margin="4" VerticalAlignment="Center"/>
-                    </Grid>
-                </GroupBox>
-
-                <!-- 📄 Seiten -->
-                <GroupBox Header="📄 Seiten" Margin="0,0,0,8">
-                    <Grid Margin="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Label Grid.Row="0" Grid.Column="0" Content="Standard-Vorlage:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="TemplateCombo" Margin="4" VerticalAlignment="Center"/>
-
-                        <Label Grid.Row="1" Grid.Column="0" Content="Seitenformat:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="PageSizeCombo" Margin="4" VerticalAlignment="Center">
-                            <ComboBoxItem Content="A4" Tag="A4"/>
-                            <ComboBoxItem Content="A5" Tag="A5"/>
-                            <ComboBoxItem Content="Letter" Tag="Letter"/>
-                        </ComboBox>
-
-                        <Label Grid.Row="2" Grid.Column="0" Content="Zeilenabstand:" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="LineSpacingCombo" Margin="4" VerticalAlignment="Center">
-                            <ComboBoxItem Content="18 px" Tag="18"/>
-                            <ComboBoxItem Content="25 px" Tag="25"/>
-                            <ComboBoxItem Content="28 px" Tag="28"/>
-                        </ComboBox>
-                    </Grid>
-                </GroupBox>
-
-                <!-- ⚡ Tastenkürzel -->
-                <GroupBox Header="⚡ Tastenkürzel" Margin="0,0,0,8">
-                    <StackPanel Margin="4">
-                        <TextBlock Margin="0,2" Text="Quick Actions:  Ctrl+Shift+H"/>
-                        <TextBlock Margin="0,2" Text="Dashboard:       Ctrl+Shift+D"/>
-                        <TextBlock Margin="0,2" Text="Einstellungen:   Ctrl+Shift+S"/>
-                    </StackPanel>
-                </GroupBox>
-
+                <!-- Auto-update -->
+                <CheckBox x:Name="AutoUpdateCheck" Content="Automatisch nach Updates suchen" Style="{StaticResource SettingsCheckBox}" IsChecked="True"/>
             </StackPanel>
         </ScrollViewer>
-
-        <!-- Buttons unten -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button Content="Speichern" Width="90" Margin="0,0,8,0" Click="Save_Click" IsDefault="True"/>
-            <Button Content="Abbrechen" Width="90" Margin="0,0,8,0" Click="Cancel_Click" IsCancel="True"/>
-            <Button Content="Über" Width="90" Click="About_Click"/>
-        </StackPanel>
-    </Grid>
+    </DockPanel>
 </Window>

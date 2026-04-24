@@ -2,7 +2,7 @@
 ; Copyright (C) 2026 Fabian Kirchweger / TechFlipsi
 
 #define AppName "FlipsiInk"
-#define AppVersion "0.3.1"
+#define AppVersion "0.3.2"
 #define AppPublisher "TechFlipsi"
 #define AppURL "https://github.com/TechFlipsi/FlipsiInk"
 #define AppExeName "FlipsiInk.exe"

@@ -4,7 +4,7 @@
              Background="#252525" Width="240" Padding="12">
     <StackPanel>
         <!-- Backlinks section -->
-        <TextBlock Text="🔗 Rückverweise" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,0,0,8"/>
+        <TextBlock Text="Rückverweise" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,0,0,8"/>
         <ItemsControl x:Name="BacklinksList" MaxHeight="200">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -20,7 +20,7 @@
         <Separator Margin="0,12" Background="#444"/>
 
         <!-- Outgoing links section -->
-        <TextBlock Text="📤 Ausgehende Verknüpfungen" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,0,0,8"/>
+        <TextBlock Text="Ausgehende Verknüpfungen" FontWeight="Bold" Foreground="White" FontSize="14" Margin="0,0,0,8"/>
         <ItemsControl x:Name="OutgoingLinksList" MaxHeight="200">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>

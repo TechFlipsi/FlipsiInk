@@ -11,7 +11,7 @@
         <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48" Margin="0">
             <Button x:Name="BtnNewNotebook" Content="➕ Neu" DockPanel.Dock="Right"
                     Style="{StaticResource AccentButton}" Margin="8,6" ToolTip="Neues Notizbuch erstellen"/>
-            <Button x:Name="BtnToggleView" Content="📊" DockPanel.Dock="Right"
+            <Button x:Name="BtnToggleView" Content="▤" DockPanel.Dock="Right"
                     Width="40" Height="40" Margin="0,4,4,4"
                     Background="#2D2D2D" Foreground="White" BorderBrush="#444"
                     ToolTip="Raster-/Listenansicht wechseln" Cursor="Hand"/>
@@ -40,11 +40,11 @@
                 </ListBox.ItemsPanel>
                 <ListBox.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="📋 Öffnen" Click="MenuOpen_Click"/>
-                        <MenuItem Header="✏️ Eigenschaften" Click="MenuProperties_Click"/>
+                        <MenuItem Header="Öffnen" Click="MenuOpen_Click"/>
+                        <MenuItem Header="Eigenschaften" Click="MenuProperties_Click"/>
                         <MenuItem Header="⭐ Favorit" Click="MenuFavorite_Click"/>
                         <Separator/>
-                        <MenuItem Header="🗑️ Löschen" Click="MenuDelete_Click"/>
+                        <MenuItem Header="Löschen" Click="MenuDelete_Click"/>
                     </ContextMenu>
                 </ListBox.ContextMenu>
             </ListBox>
