@@ -140,12 +140,12 @@
                                 <Button Content="🗑️ Löschen" Click="Delete_Click" Tag="{Binding Id}" Margin="0,0,4,0">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
-                                            <Border Background="#D32F2F" CornerRadius="4" Padding="12,6" Cursor="Hand">
+                                            <Border Background="#D32F2F" CornerRadius="4" Padding="12,6" Cursor="Hand" x:Name="DeleteBg">
                                                 <TextBlock Text="{TemplateBinding Content}" Foreground="White" FontSize="12"/>
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#E53935" TargetName="bg"/>
+                                                    <Setter TargetName="DeleteBg" Property="Background" Value="#E53935"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
