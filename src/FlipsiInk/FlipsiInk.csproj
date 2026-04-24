@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <AssemblyName>FlipsiInk</AssemblyName>
     <RootNamespace>FlipsiInk</RootNamespace>
     <Nullable>enable</Nullable>
