@@ -24,6 +24,12 @@ public partial class SettingsWindow : Window
         "#0078D7", "#7B1FA2", "#00897B", "#E65100", "#C62828", "#2E7D32"
     };
 
+    // Canvas background theme names mapped to hex colors
+    private static readonly string[] CanvasBgPresets = new[]
+    {
+        "#FFFFFF", "#FFF8E1", "#F5E6CC", "#F5F5F5"
+    };
+
     public SettingsWindow()
     {
         InitializeComponent();
@@ -50,14 +56,9 @@ public partial class SettingsWindow : Window
         AccentColorCombo.SelectedIndex = Array.IndexOf(AccentColors, config.AccentColor ?? "#0078D7");
         if (AccentColorCombo.SelectedIndex < 0) AccentColorCombo.SelectedIndex = 0;
 
-        // Canvas background
-        CanvasBgCombo.SelectedIndex = config.CanvasBackground ?? "theme" switch
-        {
-            "cream" => 1,
-            "sepia" => 2,
-            "lightgray" => 3,
-            _ => 0
-        };
+        // Canvas background - match hex color to preset index
+        CanvasBgCombo.SelectedIndex = Array.IndexOf(CanvasBgPresets, config.CanvasBgColor ?? "#FFFFFF");
+        if (CanvasBgCombo.SelectedIndex < 0) CanvasBgCombo.SelectedIndex = 0;
 
         // Toolbar position
         ToolbarPositionCombo.SelectedIndex = config.ToolbarPosition switch
@@ -69,10 +70,10 @@ public partial class SettingsWindow : Window
         };
 
         // Toolbar opacity
-        ToolbarOpacitySlider.Value = (config.ToolbarOpacity ?? 0.85) * 100;
+        ToolbarOpacitySlider.Value = config.ToolbarOpacity * 100;
 
         // Animations
-        AnimationsCheck.IsChecked = config.AnimationsEnabled ?? true;
+        AnimationsCheck.IsChecked = config.AnimationsEnabled;
 
         // Pen color
         var colorIdx = Array.IndexOf(ColorNames, config.DefaultPenColor);
@@ -93,10 +94,10 @@ public partial class SettingsWindow : Window
         };
 
         // Pressure
-        PressureCheck.IsChecked = config.PressureSensitivity ?? true;
+        PressureCheck.IsChecked = config.PressureSensitivity;
 
         // Palm rejection
-        PalmRejectionCheck.IsChecked = config.PalmRejection ?? true;
+        PalmRejectionCheck.IsChecked = config.PalmRejection;
 
         // Input mode
         InputModeCombo.SelectedIndex = config.InputMode switch
@@ -110,7 +111,7 @@ public partial class SettingsWindow : Window
         TemplateCombo.SelectedIndex = Math.Clamp(config.DefaultTemplateIndex, 0, 10);
 
         // Canvas opacity (slider 0-100)
-        CanvasOpacitySlider.Value = (config.CanvasOpacity) * 100;
+        CanvasOpacitySlider.Value = config.CanvasOpacity * 100;
 
         // Auto-save interval
         AutoSaveCombo.SelectedIndex = config.AutoSaveIntervalMinutes switch
@@ -133,7 +134,7 @@ public partial class SettingsWindow : Window
         ShapeRecognitionCheck.IsChecked = config.ShapeRecognition;
 
         // PDF resolution
-        PdfResolutionCombo.SelectedIndex = config.PdfImportDpi switch
+        PdfResolutionCombo.SelectedIndex = (int)config.PdfImportDpi switch
         {
             72 => 0,
             300 => 2,
@@ -141,7 +142,9 @@ public partial class SettingsWindow : Window
         };
 
         // Active model
-        ActiveModelLabel.Text = !string.IsNullOrEmpty(config.ModelPath) ? System.IO.Path.GetFileNameWithoutExtension(config.ModelPath) : "(nicht geladen)";
+        ActiveModelLabel.Text = !string.IsNullOrEmpty(config.ModelPath)
+            ? System.IO.Path.GetFileNameWithoutExtension(config.ModelPath)
+            : "(nicht geladen)";
 
         // Auto model update
         AutoModelUpdateCheck.IsChecked = config.AutoModelUpdate;
@@ -150,15 +153,14 @@ public partial class SettingsWindow : Window
         LanguageCombo.SelectedIndex = config.Language == "en" ? 1 : 0;
 
         // Storage paths
-        NotesFolderBox.Text = config.NotesFolder ?? System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
+        NotesFolderBox.Text = config.GetNotesFolder();
         ModelsFolderBox.Text = config.ModelsFolderPath ?? System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlipsiInk", "Models");
-        ExportFolderBox.Text = config.ExportFolder ?? System.IO.Path.Combine(
+        ExportFolderBox.Text = config.ExportFolderPath ?? System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk", "Export");
 
         // Max backups
-        MaxBackupsCombo.SelectedIndex = (config.MaxBackupsPerNote ?? 1) switch
+        MaxBackupsCombo.SelectedIndex = config.MaxBackupsPerNote switch
         {
             0 => 0,
             1 => 1,
@@ -200,14 +202,8 @@ public partial class SettingsWindow : Window
         // Accent color
         config.AccentColor = AccentColors[AccentColorCombo.SelectedIndex];
 
-        // Canvas background
-        config.CanvasBackground = CanvasBgCombo.SelectedIndex switch
-        {
-            1 => "cream",
-            2 => "sepia",
-            3 => "lightgray",
-            _ => "theme"
-        };
+        // Canvas background - save as hex color
+        config.CanvasBgColor = CanvasBgPresets[CanvasBgCombo.SelectedIndex];
 
         // Toolbar position
         config.ToolbarPosition = ToolbarPositionCombo.SelectedIndex switch
@@ -241,10 +237,10 @@ public partial class SettingsWindow : Window
         };
 
         // Pressure
-        config.PressureSensitivity = PressureCheck.IsChecked;
+        config.PressureSensitivity = PressureCheck.IsChecked == true;
 
         // Palm rejection
-        config.PalmRejection = PalmRejectionCheck.IsChecked;
+        config.PalmRejection = PalmRejectionCheck.IsChecked == true;
 
         // Input mode
         config.InputMode = InputModeCombo.SelectedIndex switch
@@ -275,7 +271,7 @@ public partial class SettingsWindow : Window
         config.AutoTitleEnabled = AutoTitleCheck.IsChecked == true;
 
         // Empty notes
-        config.SkipEmptyNotes = SkipEmptyNotesCheck.IsChecked;
+        config.SkipEmptyNotes = SkipEmptyNotesCheck.IsChecked == true;
 
         // Shape recognition
         config.ShapeRecognition = ShapeRecognitionCheck.IsChecked == true;
@@ -289,15 +285,15 @@ public partial class SettingsWindow : Window
         };
 
         // Auto model update
-        config.AutoModelUpdate = AutoModelUpdateCheck.IsChecked;
+        config.AutoModelUpdate = AutoModelUpdateCheck.IsChecked == true;
 
         // Language
         config.Language = LanguageCombo.SelectedIndex == 1 ? "en" : "de";
 
         // Storage paths
-        config.NotesFolder = NotesFolderBox.Text;
+        config.NotesFolderPath = NotesFolderBox.Text;
         config.ModelsFolderPath = ModelsFolderBox.Text;
-        config.ExportFolder = ExportFolderBox.Text;
+        config.ExportFolderPath = ExportFolderBox.Text;
 
         // Max backups
         config.MaxBackupsPerNote = MaxBackupsCombo.SelectedIndex switch
@@ -337,7 +333,9 @@ public partial class SettingsWindow : Window
             var mmw = new ModelManagerWindow { Owner = this };
             mmw.ShowDialog();
             // Refresh active model label after closing
-            ActiveModelLabel.Text = App.Config.ActiveModel ?? "(nicht geladen)";
+            ActiveModelLabel.Text = !string.IsNullOrEmpty(App.Config.ModelPath)
+                ? System.IO.Path.GetFileNameWithoutExtension(App.Config.ModelPath)
+                : "(nicht geladen)";
         }
         catch { }
     }
