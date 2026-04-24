@@ -1682,7 +1682,7 @@ public partial class MainWindow : Window
             var dateEvent = _lastDetectedDates[0];
             string label = dateEvent.DateTime?.ToString("dd.MM.yyyy") ?? dateEvent.RawText;
             if (dateEvent.HasTime && dateEvent.Time != null)
-                label += $" um {dateEvent.Time.Value:hh\:mm}";
+                label += $" um {dateEvent.Time.Value:hh:mm}";
             Clipboard.SetText(label);
             StatusText.Text = "✓ Datum kopiert";
         }

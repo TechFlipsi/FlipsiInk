@@ -153,7 +153,7 @@ public partial class SmartSnapshotPanel : UserControl
                 // Date preview
                 string dateLabel = dateEvent.DateTime?.ToString("dd.MM.yyyy") ?? dateEvent.RawText;
                 if (dateEvent.HasTime && dateEvent.Time != null)
-                    dateLabel += $" um {dateEvent.Time.Value:hh\\:mm}";
+                    dateLabel += $" um {dateEvent.Time.Value:hh:mm}";
 
                 var header = new TextBlock
                 {

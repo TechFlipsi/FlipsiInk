@@ -84,7 +84,7 @@ public partial class BacklinksPanel : Border
         }
 
         NoUnlinkedText.Visibility = Visibility.Collapsed;
-        UnlinkedMentionsList.ItemsSource = mentions.ConvertAll(m => $"„{m.Text}" an Position {m.Position}");
+        UnlinkedMentionsList.ItemsSource = mentions.ConvertAll(m => $"„{m.Text}“ an Position {m.Position}");
     }
 
     // ─── Private helpers ────────────────────────────────────────────
