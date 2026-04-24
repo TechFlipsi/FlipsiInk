@@ -30,6 +30,7 @@ public class Config
     public bool AutoRecognize { get; set; } = false;
     public bool AutoCalcEnabled { get; set; } = true;
     public string ToolbarLayout { get; set; } = "modern"; // "classic" = vertical left, "modern" = horizontal top
+    public string Setting_NotebookViewMode { get; set; } = "grid"; // "grid" or "list"
 
     private string ConfigPath => Path.Combine(ConfigDir, "config.json");
 

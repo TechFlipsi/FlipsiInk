@@ -75,10 +75,20 @@ public partial class MainWindow : Window
     // Handschrift-Index (Issue #30)
     private NoteSearchIndex _searchIndex = new();
 
+    // Notebook metadata & cover (Issue #22)
+    private readonly NotebookMetadataManager _metaManager = new();
+
     // Page management (Issue #15)
     private Notebook _currentNotebook = new();
     private PageManager _pageManager;
     private bool _isSwitchingPage;
+
+    // Tabs, Bookmarks & Quick Access (Issue #21)
+    private readonly TabManager _tabManager = new();
+    private readonly BookmarkManager _bookmarkManager = new();
+    private readonly RecentNotebooksManager _recentNotebooks = new();
+    private TabBarControl? _tabBarControl;
+    private BookmarkPanel? _bookmarkPanel;
 
     public MainWindow()
     {
@@ -98,6 +108,8 @@ public partial class MainWindow : Window
         try { SetupSearchIndex(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSearchIndex: {ex}"); }
         try { SetupSmartLinks(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSmartLinks: {ex}"); }
         try { SetupPageManagement(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupPageManagement: {ex}"); }
+        try { SetupTabsAndBookmarks(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTabsAndBookmarks: {ex}"); }
+        try { SetupRecentFiles(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupRecentFiles: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
@@ -399,6 +411,7 @@ public partial class MainWindow : Window
         BtnModelManager.Click += (s, e) => OpenModelManager();
         BtnSettings.Click += (s, e) => OpenSettings();
         BtnSearch.Click += (s, e) => OpenSearch();
+        BtnNotebooks.Click += (s, e) => OpenNotebookList();
     }
 
     private void SetTool(InkCanvasEditingMode mode, Button activeBtn)
@@ -739,7 +752,11 @@ public partial class MainWindow : Window
             _currentNotebook.Name = filename;
             _currentNotebook.ModifiedAt = DateTime.UtcNow;
             var noteMgr = new NoteManager(saveDir);
-            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook);
+            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook, _metaManager.GetMetadata(_currentNotebook.Id));
+
+            // Track as recent file (Issue #21)
+            _recentNotebooks.AddRecent(_currentNotebook.Id);
+            _tabBarControl?.RefreshTabs();
 
             // Handschrift-Index: OCR-Text indizieren (Issue #30)
             try
@@ -764,6 +781,153 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             StatusText.Text = $"✗ Speichern fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    #endregion
+
+    #region Tabs, Bookmarks & Quick Access (Issue #21)
+
+    private void SetupTabsAndBookmarks()
+    {
+        // Tab bar control is created in XAML, wire up events
+        _tabBarControl = TabBar;
+        _tabBarControl.SetNameResolver(id =>
+        {
+            var noteMgr = new NoteManager(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk"));
+            return noteMgr.FindNotebookById(id)?.Name ?? "Notizbuch";
+        });
+        _tabBarControl.TabActivated += OnTabActivated;
+        _tabBarControl.TabClosed += OnTabClosed;
+        _tabBarControl.TabPinned += id => { _tabManager.PinTab(id); _tabBarControl.RefreshTabs(); };
+        _tabBarControl.TabUnpinned += id => { _tabManager.UnpinTab(id); _tabBarControl.RefreshTabs(); };
+
+        // Open initial tab for current notebook
+        _tabManager.OpenTab(_currentNotebook.Id);
+        _tabBarControl.RefreshTabs();
+
+        // Bookmark panel
+        _bookmarkPanel = BookmarkSidebar;
+        _bookmarkPanel.BookmarkAdded += OnBookmarkAdded;
+        _bookmarkPanel.BookmarkRemoved += OnBookmarkRemoved;
+        _bookmarkPanel.NavigateToBookmark += OnNavigateToBookmark;
+
+        // Bookmark toggle button
+        BtnBookmarks.Click += (s, e) =>
+        {
+            BookmarkSidebar.Visibility = BookmarkSidebar.Visibility == Visibility.Visible
+                ? Visibility.Collapsed : Visibility.Visible;
+            if (BookmarkSidebar.Visibility == Visibility.Visible)
+                _bookmarkPanel.SetNotebook(_currentNotebook.Id, _pageManager.CurrentPageNumber);
+        };
+
+        // Recent files button
+        BtnRecentFiles.Click += (s, e) =>
+        {
+            RefreshRecentFilesList();
+            RecentFilesPopup.IsOpen = true;
+        };
+    }
+
+    private void OnTabActivated(Guid notebookId)
+    {
+        // Save current page state before switching
+        SaveCurrentPageStrokes();
+
+        _tabManager.ActiveTabId = notebookId;
+
+        // TODO: Load the notebook for the activated tab
+        // For now, update UI state
+        _tabBarControl?.RefreshTabs();
+        _bookmarkPanel?.SetNotebook(notebookId, _pageManager.CurrentPageNumber);
+        UpdatePageIndicator();
+    }
+
+    private void OnTabClosed(Guid notebookId)
+    {
+        _tabManager.CloseTab(notebookId, force: true);
+        _tabBarControl?.RefreshTabs();
+
+        // If the closed tab was active, switch to remaining active tab
+        if (_tabManager.ActiveTabId.HasValue)
+        {
+            OnTabActivated(_tabManager.ActiveTabId.Value);
+        }
+    }
+
+    private void OnBookmarkAdded(Guid notebookId, int _)
+    {
+        var pageNumber = _pageManager.CurrentPageNumber;
+        _bookmarkManager.AddBookmark(notebookId, pageNumber);
+        _bookmarkPanel?.RefreshBookmarks();
+        StatusText.Text = $"🔖 Lesezeichen auf Seite {pageNumber} hinzugefügt";
+    }
+
+    private void OnBookmarkRemoved(Guid notebookId, int pageNumber)
+    {
+        _bookmarkManager.RemoveBookmark(notebookId, pageNumber);
+        _bookmarkPanel?.RefreshBookmarks();
+    }
+
+    private void OnNavigateToBookmark(int pageNumber)
+    {
+        SwitchToPage(pageNumber);
+    }
+
+    /// <summary>
+    /// Opens a notebook in a new tab (or activates existing tab).
+    /// </summary>
+    public void OpenNotebookInTab(Notebook notebook)
+    {
+        // Save current state
+        SaveCurrentPageStrokes();
+
+        _currentNotebook = notebook;
+        _tabManager.OpenTab(notebook.Id);
+        _tabBarControl?.RefreshTabs();
+
+        // Track in recent files
+        _recentNotebooks.AddRecent(notebook.Id);
+
+        // Update bookmark panel
+        _bookmarkPanel?.SetNotebook(notebook.Id, _pageManager.CurrentPageNumber);
+    }
+
+    private void SetupRecentFiles()
+    {
+        // Recent files are populated on demand from RecentFilesPopup
+    }
+
+    private void RefreshRecentFilesList()
+    {
+        var recent = _recentNotebooks.GetRecent();
+        var items = new System.Collections.Generic.List<string>();
+        var noteMgr = new NoteManager(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk"));
+
+        foreach (var id in recent)
+        {
+            var nb = noteMgr.FindNotebookById(id);
+            if (nb != null)
+                items.Add($"📄 {nb.Name}");
+            else
+                items.Add($"📄 {id}");
+        }
+
+        if (items.Count == 0)
+            items.Add("(Keine Einträge)");
+
+        RecentFilesList.ItemsSource = items;
+    }
+
+    private void RecentFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Content is string name)
+        {
+            // Extract notebook name from display string
+            RecentFilesPopup.IsOpen = false;
+            StatusText.Text = $"Öffne: {name}";
+            // TODO: Load the selected notebook
         }
     }
 
@@ -1491,6 +1655,104 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Notebook List & Cover (Issue #22)
+
+    private void OpenNotebookList()
+    {
+        var saveDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "FlipsiInk");
+        var noteMgr = new NoteManager(saveDir);
+        var listWindow = new NotebookListView(noteMgr, _metaManager)
+        {
+            Owner = this
+        };
+
+        listWindow.NewNotebookRequested += () => CreateNotebookWithCover(noteMgr, listWindow);
+        listWindow.NotebookOpened += nb => OpenExistingNotebook(nb, noteMgr);
+
+        listWindow.ShowDialog();
+    }
+
+    private void CreateNotebookWithCover(NoteManager noteMgr, NotebookListView listView)
+    {
+        // Show cover dialog first
+        var dialog = new NotebookCoverDialog();
+        dialog.Owner = listView;
+
+        if (dialog.ShowDialog() == true)
+        {
+            var meta = dialog.Result;
+            var nb = noteMgr.CreateNotebook(meta.Title, null, PageTemplateType.Blank);
+            nb.Color = meta.Color;
+            nb.ModifiedAt = DateTime.UtcNow;
+            noteMgr.SaveNotebook(nb);
+
+            // Save metadata
+            _metaManager.UpdateMetadata(nb.Id, m =>
+            {
+                m.Title = meta.Title;
+                m.Description = meta.Description;
+                m.Color = meta.Color;
+                m.Template = meta.Template;
+                m.Author = dialog.Author;
+            });
+
+            // Apply accent color from cover
+            ApplyNotebookAccentColor(nb.Color);
+
+            listView.RefreshList();
+            StatusText.Text = $"📓 Notizbuch \"{meta.Title}\" erstellt";
+        }
+    }
+
+    private void OpenExistingNotebook(Notebook nb, NoteManager noteMgr)
+    {
+        // Load the full notebook
+        var full = noteMgr.LoadNotebook(nb.Id);
+        _currentNotebook = full;
+        _currentNotebook.LastOpened = DateTime.UtcNow;
+        noteMgr.SaveNotebook(_currentNotebook);
+
+        // Apply accent color from cover
+        ApplyNotebookAccentColor(_currentNotebook.Color);
+
+        // Load first page
+        if (_currentNotebook.Pages.Count > 0)
+        {
+            _pageManager = new PageManager(_currentNotebook);
+            _pageManager.GoToPage(1);
+            LoadCurrentPageStrokes();
+            RefreshPageThumbnails();
+            UpdatePageIndicator();
+        }
+
+        StatusText.Text = $"📓 \"{_currentNotebook.Name}\" geöffnet";
+    }
+
+    /// <summary>
+    /// Applies the notebook cover color as accent color to UI elements.
+    /// </summary>
+    private void ApplyNotebookAccentColor(string colorHex)
+    {
+        try
+        {
+            var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorHex);
+            var accent = new SolidColorBrush(color);
+            accent.Freeze();
+
+            // Apply to top bar elements
+            AppTitle.Foreground = accent;
+            PageIndicator.Foreground = accent;
+        }
+        catch
+        {
+            // Invalid color, ignore
+        }
+    }
+
+    #endregion
+
     #region Settings
 
     private void OpenModelManager()
@@ -1569,6 +1831,15 @@ public partial class MainWindow : Window
                 SwitchToPage(_pageManager.CurrentPageNumber + 1);
                 e.Handled = true;
             }
+        }
+        // Tab navigation: Ctrl+Tab / Ctrl+Shift+Tab (Issue #21)
+        else if (e.Key == Key.Tab && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                _tabBarControl?.SwitchToPreviousTab();
+            else
+                _tabBarControl?.SwitchToNextTab();
+            e.Handled = true;
         }
     }
 

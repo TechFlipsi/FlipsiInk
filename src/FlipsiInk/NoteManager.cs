@@ -96,6 +96,11 @@ public class NoteManager
     private readonly string _basePath;
     private readonly string _indexPath;
     private readonly object _lock = new();
+    private NotebookMetadata? _loadedMetadata;
+
+    /// <summary>Metadata from last loaded .flipsiink file, or null.</summary>
+    public NotebookMetadata? LastLoadedMetadata => _loadedMetadata;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -356,6 +361,16 @@ public class NoteManager
         }
     }
 
+    /// <summary>Sucht ein Notizbuch anhand seiner ID im Index.</summary>
+    public Notebook? FindNotebookById(Guid id)
+    {
+        lock (_lock)
+        {
+            var index = LoadIndex();
+            return index.Notebooks.FirstOrDefault(n => n.Id == id);
+        }
+    }
+
     /// <summary>Gibt alle als Favorit markierten Notizbücher zurück.</summary>
     public List<Notebook> GetFavoriteNotebooks()
     {
@@ -468,7 +483,7 @@ public class NoteManager
     /// <summary>
     /// Speichert ein Notizbuch als einzelne .flipsiink-Datei (JSON mit allen Seiten).
     /// </summary>
-    public string SaveFlipsiInk(Notebook notebook)
+    public string SaveFlipsiInk(Notebook notebook, NotebookMetadata? meta = null)
     {
         lock (_lock)
         {
@@ -481,6 +496,10 @@ public class NoteManager
             {
                 Version = App.Version,
                 Name = notebook.Name,
+                Author = meta?.Author,
+                Description = meta?.Description,
+                Color = notebook.Color ?? meta?.Color,
+                CoverTemplate = meta?.Template.ToString(),
                 Pages = notebook.Pages.Select(p => new FlipsiInkPage
                 {
                     PageNumber = p.PageNumber,
@@ -514,6 +533,7 @@ public class NoteManager
                 var notebook = new Notebook
                 {
                     Name = flipsiData.Name ?? Path.GetFileNameWithoutExtension(filePath),
+                    Color = flipsiData.Color ?? "#FF9500",
                     Template = Enum.TryParse<PageTemplateType>(flipsiData.Pages[0].Template, out var t) ? t : PageTemplateType.Blank,
                     Pages = flipsiData.Pages.Select(p => new NotePage
                     {
@@ -523,6 +543,15 @@ public class NoteManager
                         Zoom = p.Zoom,
                         Theme = p.Theme ?? "system"
                     }).ToList()
+                };
+                // Store metadata from file for later retrieval
+                _loadedMetadata = new NotebookMetadata
+                {
+                    Title = flipsiData.Name ?? "Unbenannt",
+                    Author = flipsiData.Author ?? string.Empty,
+                    Description = flipsiData.Description ?? string.Empty,
+                    Color = flipsiData.Color ?? "#007AFF",
+                    Template = Enum.TryParse<CoverTemplate>(flipsiData.CoverTemplate, out var ct) ? ct : CoverTemplate.SolidColor
                 };
                 notebook.PageCount = notebook.Pages.Count;
                 return notebook;
@@ -574,6 +603,10 @@ internal class FlipsiInkFile
 {
     public string Version { get; set; } = "";
     public string Name { get; set; } = "";
+    public string? Author { get; set; }
+    public string? Description { get; set; }
+    public string? Color { get; set; }
+    public string? CoverTemplate { get; set; }
     public List<FlipsiInkPage> Pages { get; set; } = [];
 }
 

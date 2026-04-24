@@ -9,6 +9,9 @@
         Background="#1E1E1E">
 
     <DockPanel>
+        <!-- Tab Bar (Issue #21) -->
+        <local:TabBarControl DockPanel.Dock="Top" x:Name="TabBar" Height="32"/>
+
         <!-- Top Bar -->
         <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48" x:Name="TopBar">
             <StackPanel Orientation="Horizontal" Margin="8,0">
@@ -30,12 +33,17 @@
                 <Button x:Name="BtnCalc" Content="🧮" Style="{StaticResource ToolButton}" ToolTip="Mathe berechnen (Ctrl+Shift+M)" Background="#0078D7"/>
                 <Button x:Name="BtnAutoTidy" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
                 <Separator Margin="4,8"/>
+                <Button x:Name="BtnNotebooks" Content="📓" Style="{StaticResource ToolButton}" ToolTip="Notizbücher"/>
+                <Separator Margin="4,8"/>
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
                 <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
                 <Button x:Name="BtnLayout" Content="📐" Style="{StaticResource ToolButton}" ToolTip="Layout wechseln (Klassisch/Modern)"/>
                 <Button x:Name="BtnModelManager" Content="📦" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten"/>
                 <Button x:Name="BtnSettings" Content="⚙️" Style="{StaticResource ToolButton}" ToolTip="Einstellungen"/>
                 <Button x:Name="BtnCheckUpdate" Content="🔄" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen"/>
+                <Separator Margin="4,8"/>
+                <ToggleButton x:Name="BtnBookmarks" Content="🔖" Style="{StaticResource ToolButton}" ToolTip="Lesezeichen"/>
+                <Button x:Name="BtnRecentFiles" Content="📁" Style="{StaticResource ToolButton}" ToolTip="Zuletzt geöffnet"/>
             </StackPanel>
         </DockPanel>
 
@@ -115,6 +123,25 @@
 
         <!-- Left: Page Thumbnail Strip (Issue #15) -->
         <local:PageThumbnailControl x:Name="PageThumbnails" DockPanel.Dock="Left" Width="100"/>
+
+        <!-- Left: Bookmark Panel (Issue #21) -->
+        <local:BookmarkPanel x:Name="BookmarkSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
+
+        <!-- Recent Files Popup (Issue #21) -->
+        <Popup x:Name="RecentFilesPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnRecentFiles}" StaysOpen="False" AllowsTransparency="True">
+            <Border Background="#2D2D2D" CornerRadius="4" Padding="8" MinWidth="200" MaxHeight="300">
+                <StackPanel>
+                    <TextBlock Text="Zuletzt geöffnet" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
+                    <ItemsControl x:Name="RecentFilesList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding}" Background="Transparent" Foreground="White" BorderThickness="0" Padding="4,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" Click="RecentFile_Click" FontSize="12" Margin="0,1"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </Popup>
 
         <!-- Right Panel: Recognition Results -->
         <Border DockPanel.Dock="Right" Background="#252525" Width="280" Padding="12" x:Name="RightPanel">

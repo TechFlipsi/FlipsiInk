@@ -41,6 +41,7 @@ public class NotebookMetadata
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
     public int PageCount { get; set; }
+    public string Author { get; set; } = string.Empty;
     public string? ThumbnailPath { get; set; }
     public string? CustomCoverPath { get; set; }
     public long FileSize { get; set; }

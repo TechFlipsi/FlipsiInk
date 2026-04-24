@@ -1,0 +1,81 @@
+<Window x:Class="FlipsiInk.NotebookCoverDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Notizbuch-Eigenschaften"
+        Width="520" Height="620"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1E1E1E">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cover Preview -->
+        <Border Grid.Row="0" x:Name="CoverPreviewBorder"
+                Width="180" Height="252"
+                CornerRadius="6"
+                Margin="0,0,0,16"
+                HorizontalAlignment="Center"/>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="1" Text="Titel" Foreground="White" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBox Grid.Row="2" x:Name="TitleBox" Background="#2D2D2D" Foreground="White"
+                 BorderBrush="#444" FontSize="14" Padding="6,4" Margin="0,0,0,12"/>
+
+        <!-- Author -->
+        <TextBlock Grid.Row="3" Text="Autor" Foreground="White" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBox Grid.Row="4" x:Name="AuthorBox" Background="#2D2D2D" Foreground="White"
+                 BorderBrush="#444" FontSize="14" Padding="6,4" Margin="0,0,0,12"/>
+
+        <!-- Description -->
+        <TextBlock Grid.Row="5" Text="Beschreibung" Foreground="White" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBox Grid.Row="6" x:Name="DescriptionBox" Background="#2D2D2D" Foreground="White"
+                 BorderBrush="#444" FontSize="14" Padding="6,4" Margin="0,0,0,12"
+                 AcceptsReturn="True" TextWrapping="Wrap" Height="60"
+                 VerticalScrollBarVisibility="Auto"/>
+
+        <!-- Color Selection -->
+        <TextBlock Grid.Row="7" Text="Farbe / Design" Foreground="White" FontWeight="Bold" Margin="0,0,0,8"/>
+        <StackPanel Grid.Row="7" Margin="0,22,0,0">
+            <WrapPanel x:Name="ColorPanel" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                <TextBlock Text="Vorlage:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="TemplateCombo" Width="160" Background="#2D2D2D" Foreground="White"
+                         SelectionChanged="TemplateCombo_SelectionChanged">
+                    <ComboBoxItem Content="Einfarbig" IsSelected="True"/>
+                    <ComboBoxItem Content="Verlauf"/>
+                    <ComboBoxItem Content="Gestreift"/>
+                    <ComboBoxItem Content="Gepunktet"/>
+                </ComboBox>
+            </StackPanel>
+            <!-- Read-only metadata -->
+            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                <TextBlock Text="Erstellt: " Foreground="#888" FontSize="11"/>
+                <TextBlock x:Name="CreatedLabel" Foreground="#888" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Geändert: " Foreground="#888" FontSize="11"/>
+                <TextBlock x:Name="ModifiedLabel" Foreground="#888" FontSize="11"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Abbrechen" Width="90" Height="32" Margin="0,0,8,0"
+                    Background="#2D2D2D" Foreground="White" BorderBrush="#444"
+                    Click="Cancel_Click" Cursor="Hand"/>
+            <Button Content="OK" Width="90" Height="32"
+                    Background="#0078D7" Foreground="White" BorderThickness="0"
+                    Click="Ok_Click" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>
