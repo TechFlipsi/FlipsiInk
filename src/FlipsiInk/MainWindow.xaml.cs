@@ -223,6 +223,19 @@ public partial class MainWindow : Window
         _linkManager.LinkNavigationRequested += OnLinkNavigationRequested;
         BacklinksSidebar.LinkNavigationRequested += OnLinkNavigationRequested;
 
+        // Wire up sticky note link click events
+        _stickyNoteManager.LinkClicked += OnLinkNavigationRequested;
+        _stickyNoteManager.NotesChanged += (s, e) =>
+        {
+            // Update link index from all sticky note texts
+            foreach (var note in _stickyNoteManager.GetAllData())
+            {
+                _linkManager.UpdateLinksFromContent(_currentNotebook.Id, _pageManager.CurrentPageNumber, note.Text);
+            }
+            if (BacklinksSidebar.Visibility == Visibility.Visible)
+                RefreshBacklinks();
+        };
+
         // Modern toolbar button
         BtnStickyNote_M.Checked += (s, e) =>
         {

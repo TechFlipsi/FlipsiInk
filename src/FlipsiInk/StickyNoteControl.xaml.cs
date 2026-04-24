@@ -404,6 +404,21 @@ public partial class StickyNoteControl : UserControl
             mw.RestoreCanvasEditingMode();
         }
         Changed?.Invoke(this, EventArgs.Empty);
+
+        // Apply link visual styling to [[link]] text (Issue #33)
+        ApplyLinkStyling();
+    }
+
+    /// <summary>
+    /// Applies visual styling to [[link]] text in the note.
+    /// Makes linked text appear blue and underlined.
+    /// </summary>
+    private void ApplyLinkStyling()
+    {
+        // WPF TextBox doesn't support rich inline formatting natively,
+        // so we rely on the link overlay for visual indication.
+        // The overlay is shown when the note doesn't have focus.
+        UpdateLinkOverlay();
     }
 
     // ─── Click on border to bring to front ────────────────────────────
