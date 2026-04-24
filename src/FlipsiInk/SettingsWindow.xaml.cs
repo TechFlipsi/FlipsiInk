@@ -360,10 +360,18 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            using var dialog = new System.Windows.Forms.FolderBrowserDialog();
-            dialog.SelectedPath = target.Text;
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                target.Text = dialog.SelectedPath;
+            // Use OpenFileDialog in folder-picking mode (WPF-only, no WinForms dependency)
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.Title = "Ordner auswählen";
+            dialog.CheckFileExists = false;
+            dialog.CheckPathExists = true;
+            dialog.FileName = "FolderSelection";
+            dialog.InitialDirectory = System.IO.Directory.Exists(target.Text) ? target.Text : "";
+            // Workaround: user must select any file inside the folder, then we take the directory
+            dialog.Filter = "Ordner|*.folder|Alle Dateien|*.*";
+            dialog.FilterIndex = 2;
+            if (dialog.ShowDialog() == true)
+                target.Text = System.IO.Path.GetDirectoryName(dialog.FileName) ?? dialog.FileName;
         }
         catch { }
     }

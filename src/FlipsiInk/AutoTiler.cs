@@ -56,6 +56,7 @@ public class AutoTiler
         }
 
         // Strategy 2: Detect dates in strokes (common in notes)
+        var textForDate = recognizedText ?? string.Empty;
         var dates = DateDetector.Detect(textForDate);
         if (dates.Count > 0)
         {
