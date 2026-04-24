@@ -84,9 +84,6 @@ public partial class StickyNoteControl : UserControl
     /// <summary>Raised when the user clicks the delete button.</summary>
     public event EventHandler? DeleteRequested;
 
-    /// <summary>Raised when position, size, text, or state changes.</summary>
-    public event EventHandler? Changed;
-
     public StickyNoteControl()
     {
         InitializeComponent();
