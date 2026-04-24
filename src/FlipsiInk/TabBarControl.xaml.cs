@@ -35,9 +35,22 @@ public partial class TabBarControl : UserControl
     public event Action<Guid>? TabPinned;
     public event Action<Guid>? TabUnpinned;
 
-    public TabBarControl(TabManager tabManager)
+    public TabBarControl()
     {
         InitializeComponent();
+    }
+
+    public TabBarControl(TabManager tabManager) : this()
+    {
+        _tabManager = tabManager;
+        _tabManager.TabsChanged += RefreshTabs;
+    }
+
+    /// <summary>
+    /// Initialize with a TabManager instance after XAML construction.
+    /// </summary>
+    public void Initialize(TabManager tabManager)
+    {
         _tabManager = tabManager;
         _tabManager.TabsChanged += RefreshTabs;
     }

@@ -886,6 +886,7 @@ public partial class MainWindow : Window
     {
         // Tab bar control is created in XAML, wire up events
         _tabBarControl = TabBar;
+        _tabBarControl.Initialize(_tabManager);
         _tabBarControl.SetNameResolver(id =>
         {
             var noteMgr = new NoteManager(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk"));
