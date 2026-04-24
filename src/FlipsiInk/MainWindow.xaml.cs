@@ -63,6 +63,9 @@ public partial class MainWindow : Window
     private OcrEngine? _ocrEngine;
     private bool _modelLoaded = false;
 
+    // KI-Modell-Management
+    private readonly ModelManager _modelManager = new();
+
     // ShapeRecognizer für Auto-Tidy (Issue #34)
     private readonly ShapeRecognizer _shapeRecognizer = new();
 
@@ -71,6 +74,11 @@ public partial class MainWindow : Window
 
     // Handschrift-Index (Issue #30)
     private NoteSearchIndex _searchIndex = new();
+
+    // Page management (Issue #15)
+    private Notebook _currentNotebook = new();
+    private PageManager _pageManager;
+    private bool _isSwitchingPage;
 
     public MainWindow()
     {
@@ -89,6 +97,7 @@ public partial class MainWindow : Window
         try { SetupContextActionBar(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupContextActionBar: {ex}"); }
         try { SetupSearchIndex(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSearchIndex: {ex}"); }
         try { SetupSmartLinks(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSmartLinks: {ex}"); }
+        try { SetupPageManagement(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupPageManagement: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;
@@ -387,6 +396,7 @@ public partial class MainWindow : Window
         BtnRecognize.Click += async (s, e) => await RecognizeText();
         BtnCalc.Click += async (s, e) => await RecognizeAndCalculate();
         BtnSave.Click += (s, e) => SaveNote();
+        BtnModelManager.Click += (s, e) => OpenModelManager();
         BtnSettings.Click += (s, e) => OpenSettings();
         BtnSearch.Click += (s, e) => OpenSearch();
     }
@@ -567,6 +577,10 @@ public partial class MainWindow : Window
         try
         {
             _ocrEngine = new OcrEngine();
+            // Use ModelManager to resolve the model path
+            var modelPath = _modelManager.GetActiveModelPath();
+            if (modelPath != null)
+                App.Config.ModelPath = modelPath;
             await Task.Run(() => _ocrEngine.LoadModel());
             _modelLoaded = true;
             ModelStatus.Text = $"Modell: geladen ✓ ({_ocrEngine.ModelName})";
@@ -710,35 +724,22 @@ public partial class MainWindow : Window
             "FlipsiInk");
         Directory.CreateDirectory(saveDir);
 
+        // Save current page strokes to page manager before exporting (Issue #15)
+        SaveCurrentPageStrokes();
+
         var filename = $"note_{DateTime.Now:yyyyMMdd_HHmmss}";
         var pngPath = Path.Combine(saveDir, filename + ".png");
-        var jsonPath = Path.Combine(saveDir, filename + ".json");
 
         try
         {
             var bitmap = RenderStrokesToBitmap();
             bitmap.Save(pngPath, ImageFormat.Png);
 
-            var strokesData = MainCanvas.Strokes.Select(s => new
-            {
-                Color = s.DrawingAttributes.Color.ToString(),
-                Width = s.DrawingAttributes.Width,
-                Height = s.DrawingAttributes.Height,
-                IsHighlighter = s.DrawingAttributes.IsHighlighter,
-                Points = s.StylusPoints.Select(p => new
-                {
-                    X = p.X, Y = p.Y, PressureFactor = p.PressureFactor
-                })
-            });
-            var noteData = new
-            {
-                Version = App.Version,
-                Template = _currentTemplate.ToString(),
-                Theme = _currentTheme.ToString(),
-                Zoom = _zoomManager.ZoomLevel,
-                Strokes = strokesData
-            };
-            File.WriteAllText(jsonPath, JsonSerializer.Serialize(noteData, new JsonSerializerOptions { WriteIndented = true }));
+            // Save as .flipsiink multi-page file (Issue #15)
+            _currentNotebook.Name = filename;
+            _currentNotebook.ModifiedAt = DateTime.UtcNow;
+            var noteMgr = new NoteManager(saveDir);
+            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook);
 
             // Handschrift-Index: OCR-Text indizieren (Issue #30)
             try
@@ -758,7 +759,7 @@ public partial class MainWindow : Window
                 System.Diagnostics.Debug.WriteLine($"SearchIndex: {idxEx.Message}");
             }
 
-            StatusText.Text = $"✓ Gespeichert: {filename}.png + .json";
+            StatusText.Text = $"✓ Gespeichert: {Path.GetFileName(flipsiPath)}";
         }
         catch (Exception ex)
         {
@@ -1327,6 +1328,169 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Page Management (Issue #15)
+
+    private void SetupPageManagement()
+    {
+        _pageManager = new PageManager(_currentNotebook);
+
+        // Wire up thumbnail strip events
+        PageThumbnails.NavigateToPage += OnThumbnailNavigate;
+        PageThumbnails.AddPageRequested += OnAddPage;
+        PageThumbnails.DeletePageRequested += OnDeletePage;
+        PageThumbnails.ReorderPages += OnReorderPages;
+
+        // Wire up page manager events
+        _pageManager.PageChanged += OnPageChanged;
+        _pageManager.PageCountChanged += OnPageCountChanged;
+
+        // Initial refresh
+        RefreshPageThumbnails();
+        UpdatePageIndicator();
+    }
+
+    private void OnThumbnailNavigate(int pageIndex0)
+    {
+        SwitchToPage(pageIndex0 + 1); // Convert 0-based to 1-based
+    }
+
+    private void OnAddPage()
+    {
+        // Save current page strokes first
+        SaveCurrentPageStrokes();
+
+        var newPage = _pageManager.AddPage(_currentTemplate);
+        _pageManager.GoToPage(_pageManager.PageCount); // Navigate to new page
+
+        // Apply current template to new page
+        MainCanvas.Strokes.Clear();
+        MainCanvas.Background = PageTemplate.GetBackgroundBrush(_currentTemplate);
+
+        // Clear undo/redo for the new page
+        _undoStack.Clear();
+        _redoStack.Clear();
+        _strokesBeforeChange = null;
+
+        StatusText.Text = $"📄 Neue Seite {newPage.PageNumber} hinzugefügt";
+    }
+
+    private void OnDeletePage(int pageIndex0)
+    {
+        if (_pageManager.PageCount <= 1)
+        {
+            StatusText.Text = "⚠️ Letzte Seite kann nicht gelöscht werden!";
+            return;
+        }
+
+        int pageNumber = pageIndex0 + 1;
+        if (_pageManager.RemovePage(pageNumber))
+        {
+            // If we deleted the current page, navigate to an adjacent one
+            int currentPage = Math.Min(pageNumber, _pageManager.PageCount);
+            _pageManager.GoToPage(currentPage);
+            LoadCurrentPageStrokes();
+            StatusText.Text = $"🗑️ Seite {pageNumber} gelöscht";
+        }
+    }
+
+    private void OnReorderPages(int fromIndex, int toIndex)
+    {
+        if (_pageManager.MovePage(fromIndex, toIndex))
+        {
+            RefreshPageThumbnails();
+            UpdatePageIndicator();
+            StatusText.Text = "📄 Seitenreihenfolge geändert";
+        }
+    }
+
+    private void OnPageChanged(object? sender, PageChangedEventArgs e)
+    {
+        UpdatePageIndicator();
+        PageThumbnails.SetCurrentPage(e.NewPageNumber - 1); // 0-based for control
+    }
+
+    private void OnPageCountChanged(object? sender, PageCountChangedEventArgs e)
+    {
+        RefreshPageThumbnails();
+        UpdatePageIndicator();
+    }
+
+    /// <summary>
+    /// Switches to a different page, saving current page strokes first.
+    /// </summary>
+    private void SwitchToPage(int pageNumber)
+    {
+        if (_isSwitchingPage) return;
+        _isSwitchingPage = true;
+
+        try
+        {
+            // Save current page strokes
+            SaveCurrentPageStrokes();
+
+            // Navigate
+            _pageManager.GoToPage(pageNumber);
+
+            // Load new page strokes
+            LoadCurrentPageStrokes();
+        }
+        finally
+        {
+            _isSwitchingPage = false;
+        }
+    }
+
+    /// <summary>
+    /// Saves the current ink canvas strokes to the page manager.
+    /// </summary>
+    private void SaveCurrentPageStrokes()
+    {
+        _pageManager.SaveCurrentPage(MainCanvas.Strokes);
+    }
+
+    /// <summary>
+    /// Loads strokes for the current page from the page manager onto the canvas.
+    /// </summary>
+    private void LoadCurrentPageStrokes()
+    {
+        MainCanvas.Strokes.Clear();
+        var strokes = _pageManager.LoadPage(_pageManager.CurrentPageNumber);
+        if (strokes.Count > 0)
+            MainCanvas.Strokes.Add(strokes);
+
+        // Apply the page's template
+        var page = _pageManager.GetPage(_pageManager.CurrentPageNumber);
+        if (page != null)
+        {
+            MainCanvas.Background = PageTemplate.GetBackgroundBrush(page.Template);
+        }
+
+        // Clear undo/redo for the loaded page
+        _undoStack.Clear();
+        _redoStack.Clear();
+        _strokesBeforeChange = MainCanvas.Strokes.Count > 0 ? MainCanvas.Strokes.Clone() : null;
+
+        UpdatePageIndicator();
+    }
+
+    /// <summary>
+    /// Refreshes the thumbnail strip to reflect the current page list.
+    /// </summary>
+    private void RefreshPageThumbnails()
+    {
+        PageThumbnails.RefreshThumbnails(_pageManager);
+    }
+
+    /// <summary>
+    /// Updates the page indicator in the status bar (e.g., "Seite 2/5").
+    /// </summary>
+    private void UpdatePageIndicator()
+    {
+        PageIndicator.Text = $"Seite {_pageManager.CurrentPageNumber}/{_pageManager.PageCount}";
+    }
+
+    #endregion
+
     #region Settings
 
     private void OpenSettings()
@@ -1371,6 +1535,23 @@ public partial class MainWindow : Window
         else if (e.Key == Key.D0 && Keyboard.Modifiers == ModifierKeys.Control)
         {
             _zoomManager.ResetZoom(); e.Handled = true;
+        }
+        // Page navigation: Ctrl+PgUp / Ctrl+PgDn (Issue #15)
+        else if (e.Key == Key.PageUp && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            if (_pageManager.HasPreviousPage)
+            {
+                SwitchToPage(_pageManager.CurrentPageNumber - 1);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.PageDown && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            if (_pageManager.HasNextPage)
+            {
+                SwitchToPage(_pageManager.CurrentPageNumber + 1);
+                e.Handled = true;
+            }
         }
     }
 

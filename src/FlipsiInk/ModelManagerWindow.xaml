@@ -1,0 +1,164 @@
+<Window x:Class="FlipsiInk.ModelManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KI-Modelle verwalten" Width="700" Height="520"
+        WindowStartupLocation="CenterOwner"
+        Background="#1E1E1E" ResizeMode="CanResize"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+        <Style x:Key="HeaderLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style x:Key="BodyText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D7"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1A8FEF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Background" Value="#D32F2F"/>
+            <ControlTemplate TargetType="Button">
+                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#E53935"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Background" Value="#444"/>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="16">
+        <!-- Header -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock Text="📦 KI-Modelle verwalten" Style="{StaticResource HeaderLabel}" VerticalAlignment="Center"/>
+            <TextBlock x:Name="ModelsDirLabel" DockPanel.Dock="Right" VerticalAlignment="Center"
+                       Foreground="Gray" FontSize="11" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+
+        <!-- Progress bar area -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <StackPanel>
+                <ProgressBar x:Name="DownloadProgress" Height="6" Minimum="0" Maximum="100" Value="0"
+                             Foreground="#0078D7" Background="#333" Visibility="Collapsed"/>
+                <TextBlock x:Name="StatusLabel" Text="" Foreground="Gray" FontSize="11" Margin="0,4,0,0"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Close button -->
+        <DockPanel DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Schließen" Style="{StaticResource SecondaryButton}" Click="Close_Click"/>
+        </DockPanel>
+
+        <!-- Model list -->
+        <ListView x:Name="ModelList" Background="#252525" BorderThickness="1" BorderBrush="#444"
+                  Foreground="White" SelectionMode="Single" Margin="0,0,0,8">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#2D2D2D" CornerRadius="6" Padding="12,8" Margin="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Row 0: Name + Badge -->
+                            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="White" Margin="0,0,8,0"/>
+                                <Border Background="#0078D7" CornerRadius="3" Padding="4,1" Visibility="{Binding RecommendedBadge}">
+                                    <TextBlock Text="EMPFOHLEN" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                                </Border>
+                                <Border Background="#4CAF50" CornerRadius="3" Padding="4,1" Margin="4,0,0,0" Visibility="{Binding InstalledBadge}">
+                                    <TextBlock Text="✓ INSTALLIERT" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                                </Border>
+                                <Border Background="#FF9800" CornerRadius="3" Padding="4,1" Margin="4,0,0,0" Visibility="{Binding ActiveBadge}">
+                                    <TextBlock Text="AKTIV" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                                </Border>
+                                <Border Background="#9C27B0" CornerRadius="3" Padding="4,1" Margin="4,0,0,0" Visibility="{Binding UpdateBadge}">
+                                    <TextBlock Text="UPDATE" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Row 1: Description -->
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding Description}" FontSize="11" Foreground="#AAA" Margin="0,2,0,0"/>
+
+                            <!-- Row 2: Meta info -->
+                            <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="0" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding Size}" FontSize="11" Foreground="#888" Margin="0,0,12,0"/>
+                                <TextBlock Text="{Binding Quantization}" FontSize="11" Foreground="#888" Margin="0,0,12,0"/>
+                                <TextBlock Text="{Binding RamRequirement}" FontSize="11" Foreground="#888" Margin="0,0,12,0"/>
+                                <TextBlock Text="{Binding InstalledVersion}" FontSize="11" Foreground="#6A9" Margin="0,0,12,0"/>
+                            </StackPanel>
+
+                            <!-- Row 3: Tier -->
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="{Binding TierLabel}" FontSize="10" Foreground="#666" FontStyle="Italic" Margin="0,2,0,0"/>
+
+                            <!-- Actions -->
+                            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
+                                <Button Content="📥 Herunterladen" Style="{StaticResource ActionButton}"
+                                        Visibility="{Binding DownloadVisible}" Click="Download_Click" Tag="{Binding Id}" Margin="0,0,4,0"/>
+                                <Button Content="🔄 Update" Style="{StaticResource ActionButton}"
+                                        Visibility="{Binding UpdateVisible}" Click="Update_Click" Tag="{Binding Id}" Margin="0,0,4,0"/>
+                                <Button Content="🗑️ Löschen" Click="Delete_Click" Tag="{Binding Id}" Margin="0,0,4,0">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="#D32F2F" CornerRadius="4" Padding="12,6" Cursor="Hand">
+                                                <TextBlock Text="{TemplateBinding Content}" Foreground="White" FontSize="12"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#E53935" TargetName="bg"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Visibility" Value="{Binding DeleteVisible}"/>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="✓ Aktivieren" Style="{StaticResource ActionButton}"
+                                        Visibility="{Binding ActivateVisible}" Click="Activate_Click" Tag="{Binding Id}" Margin="0,0,4,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </DockPanel>
+</Window>

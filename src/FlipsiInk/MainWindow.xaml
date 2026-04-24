@@ -33,6 +33,7 @@
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
                 <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
                 <Button x:Name="BtnLayout" Content="📐" Style="{StaticResource ToolButton}" ToolTip="Layout wechseln (Klassisch/Modern)"/>
+                <Button x:Name="BtnModelManager" Content="📦" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten"/>
                 <Button x:Name="BtnSettings" Content="⚙️" Style="{StaticResource ToolButton}" ToolTip="Einstellungen"/>
                 <Button x:Name="BtnCheckUpdate" Content="🔄" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen"/>
             </StackPanel>

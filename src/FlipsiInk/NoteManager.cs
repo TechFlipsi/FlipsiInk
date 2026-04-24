@@ -462,4 +462,143 @@ public class NoteManager
         if (Directory.Exists(nbPath))
             Directory.Delete(nbPath, recursive: true);
     }
+
+    // ─── .flipsiink Datei-Export/Import (Issue #15) ─────────────────────────
+
+    /// <summary>
+    /// Speichert ein Notizbuch als einzelne .flipsiink-Datei (JSON mit allen Seiten).
+    /// </summary>
+    public string SaveFlipsiInk(Notebook notebook)
+    {
+        lock (_lock)
+        {
+            var nbPath = GetNotebookPathInternal(notebook.Id);
+            Directory.CreateDirectory(nbPath);
+
+            var filePath = Path.Combine(nbPath, $"{SanitizeFilename(notebook.Name)}.flipsiink");
+
+            var exportData = new FlipsiInkFile
+            {
+                Version = App.Version,
+                Name = notebook.Name,
+                Pages = notebook.Pages.Select(p => new FlipsiInkPage
+                {
+                    PageNumber = p.PageNumber,
+                    Template = p.Template.ToString(),
+                    StrokesBase64 = p.StrokesJson,
+                    Zoom = p.Zoom,
+                    Theme = p.Theme
+                }).ToList()
+            };
+
+            var json = JsonSerializer.Serialize(exportData, JsonOptions);
+            File.WriteAllText(filePath, json);
+            return filePath;
+        }
+    }
+
+    /// <summary>
+    /// Lädt ein Notizbuch aus einer .flipsiink-Datei.
+    /// Rückwärtskompatibel: alte Einzelseiten-JSONs werden automatisch konvertiert.
+    /// </summary>
+    public Notebook LoadFlipsiInk(string filePath)
+    {
+        lock (_lock)
+        {
+            var json = File.ReadAllText(filePath);
+
+            // Try multi-page format first
+            var flipsiData = JsonSerializer.Deserialize<FlipsiInkFile>(json, JsonOptions);
+            if (flipsiData?.Pages != null && flipsiData.Pages.Count > 0)
+            {
+                var notebook = new Notebook
+                {
+                    Name = flipsiData.Name ?? Path.GetFileNameWithoutExtension(filePath),
+                    Template = Enum.TryParse<PageTemplateType>(flipsiData.Pages[0].Template, out var t) ? t : PageTemplateType.Blank,
+                    Pages = flipsiData.Pages.Select(p => new NotePage
+                    {
+                        PageNumber = p.PageNumber,
+                        Template = Enum.TryParse<PageTemplateType>(p.Template, out var pt) ? pt : PageTemplateType.Blank,
+                        StrokesJson = p.StrokesBase64 ?? string.Empty,
+                        Zoom = p.Zoom,
+                        Theme = p.Theme ?? "system"
+                    }).ToList()
+                };
+                notebook.PageCount = notebook.Pages.Count;
+                return notebook;
+            }
+
+            // Fallback: try old single-page .json format (backward compatible)
+            var oldNote = JsonSerializer.Deserialize<OldNoteFormat>(json, JsonOptions);
+            if (oldNote?.Strokes != null)
+            {
+                var template = Enum.TryParse<PageTemplateType>(oldNote.Template, out var ot) ? ot : PageTemplateType.Blank;
+                var notebook = new Notebook
+                {
+                    Name = Path.GetFileNameWithoutExtension(filePath),
+                    Template = template,
+                    Pages = new List<NotePage>
+                    {
+                        new NotePage
+                        {
+                            PageNumber = 1,
+                            Template = template,
+                            StrokesJson = oldNote.StrokesBase64 ?? string.Empty,
+                            Zoom = oldNote.Zoom,
+                            Theme = oldNote.Theme ?? "system"
+                        }
+                    }
+                };
+                notebook.PageCount = 1;
+                return notebook;
+            }
+
+            throw new InvalidOperationException($"Ungültiges Dateiformat: {filePath}");
+        }
+    }
+
+    private static string SanitizeFilename(string name)
+    {
+        foreach (var c in Path.GetInvalidFileNameChars())
+            name = name.Replace(c, '_');
+        return string.IsNullOrWhiteSpace(name) ? "notebook" : name;
+    }
+}
+
+// ─── .flipsiInk Dateiformat-Modelle (Issue #15) ───────────────────────────────
+
+/// <summary>
+/// Repräsentiert eine .flipsiInk-Datei (Multi-Page JSON-Format).
+/// </summary>
+internal class FlipsiInkFile
+{
+    public string Version { get; set; } = "";
+    public string Name { get; set; } = "";
+    public List<FlipsiInkPage> Pages { get; set; } = [];
+}
+
+/// <summary>
+/// Repräsentiert eine einzelne Seite in einer .flipsiInk-Datei.
+/// </summary>
+internal class FlipsiInkPage
+{
+    public int PageNumber { get; set; }
+    public string Template { get; set; } = "Blank";
+    /// <summary>Strokes als Base64-ISF oder JSON-serialisierte Punktdaten.</summary>
+    public string? StrokesBase64 { get; set; }
+    public double Zoom { get; set; } = 1.0;
+    public string Theme { get; set; } = "system";
+}
+
+/// <summary>
+/// Altes Einzelseiten-Format für Rückwärtskompatibilität.
+/// </summary>
+internal class OldNoteFormat
+{
+    public string? Version { get; set; }
+    public string? Template { get; set; }
+    public string? Theme { get; set; }
+    public double Zoom { get; set; }
+    public object? Strokes { get; set; }
+    public string? StrokesBase64 { get; set; }
 }
