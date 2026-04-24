@@ -1,4 +1,4 @@
-# FlipsiInk v0.1.1
+# FlipsiInk v0.2.0
 
 [![Build](https://img.shields.io/github/actions/workflow/status/TechFlipsi/FlipsiInk/build.yml?branch=main&label=Build)](https://github.com/TechFlipsi/FlipsiInk/actions)
 [![Version](https://img.shields.io/github/v/release/TechFlipsi/FlipsiInk?label=Version)](https://github.com/TechFlipsi/FlipsiInk/releases/latest)
@@ -7,6 +7,8 @@
 [![Discord](https://img.shields.io/discord/1496261911677894867?label=Discord)](https://discord.gg/HnCZY54U7)
 
 🖊️ **KI-gestützte Handschrift- & Mathe-Notiz-App** – von [TechFlipsi](https://github.com/TechFlipsi)
+
+📖 **[Betriebsanleitung / Manual](MANUAL.md)** – Installation, Features, Mathe-System, Tastenkürzel & mehr
 
 > ⚠️ **EARLY ALPHA – Noch keine voll funktionsfähige Version!** Die App befindet sich in aktiver Entwicklung. Features können unvollständig oder fehlerhaft sein. Für Tests und Feedback willkommen!
 
@@ -17,9 +19,17 @@
 - 🧹 Radierer (Stroke-basiert)
 - ↩️ Undo/Redo (50 Schritte)
 - 🔤 **Handschrifterkennung** via ONNX Runtime
-- 🧮 **Mathe-Ausdrücke berechnen** – schreibe "3x + 5 = 20" → App berechnet x = 5
+- 🧮 **Intelligenter Mathe-Trigger** – "=" tippen → automatisch berechnen
+- 📐 **55 Formeln & 40 Konstanten** – Geometrie, Algebra, Physik, Finanz, Trigonometrie
+- ⛓️ **Kettenrechnung** – Zeile beginnt mit +,-,*,/ → vorheriges Ergebnis als Basis
+- 🛡️ **Offline-Integrität** – Unterscheidet Mathe von Text ("Das ist = richtig" → keine Berechnung)
+- ✨ **Auto-Tidy** – Krumme Zeilen gerade, Formen perfekt, Abstände gleichmäßig
+- 🖱️ **Kontext-Sensitive Leiste** – Markierung → Zusammenfassen, Todo, Graph, Währung
+- 🔍 **Smart-Detection** – E-Mail, Telefon, URL automatisch klickbar
+- 🔎 **Volltextsuche** – SQLite FTS5 sucht in allen handschriftlichen Notizen
 - 🌓 Dark/Light Mode (System/Hell/Dunkel)
 - 💾 Speichern als PNG + JSON
+- 📐 **Layout-Switcher** – Modern (horizontal) + Klassisch (vertikal)
 - 🔄 **Auto-Update** – prüft alle 15 Min + manueller Button (🔄)
 - 🔌 Komplett offline – kein Internet nötig (außer für Updates)
 - 🇩🇪🇬🇧 Deutsch & Englisch
@@ -36,17 +46,6 @@
 3. Fertig! 🎉
 
 > ⚠️ **Alpha-Hinweis:** Dies ist eine frühe Entwicklungsversion. Datenverlust möglich – regelmäßig Backup machen!
-
-## Geplante Features
-- 📄 PDF Import & Annotation
-- 📁 Ordnerstruktur & Notiz-Verwaltung
-- 📏 Lineal & Messwerkzeuge
-- 📐 Seitenvorlagen (blanko, liniert, kariert, gepunktet, Cornell...)
-- 🎤 Audio-Aufnahme & Playback
-- 📸 Bilder & Sticker einfügen
-- 🖱️ Lasso-Auswahl & Verschieben
-- 📑 Multi-Page Notizen
-- ⌨️ Text-Eingabe per Tastatur
 
 ## Tastenkürzel
 | Shortcut | Funktion |

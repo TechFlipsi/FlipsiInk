@@ -1,27 +1,35 @@
-## FlipsiInk v0.1.1
+## FlipsiInk v0.2.0
 
 ⚠️ **EARLY ALPHA – Noch keine voll funktionsfähige Version!**
 
-### Bug Fixes
-- 🐛 NullReferenceException beim Start behoben – TemplateCombo_SelectionChanged feuerte vor InitializeComponent()
-
 ### Neues
-- 🔄 Auto-Updater: Prüft alle 15 Min auf neue Versionen + manueller Button (🔄) in der Toolbar
-- Auto-Download + Silent-Install wenn Update gefunden
+- ✨ Intelligenter Mathe-Trigger: Auto-Berechnung bei "=" Eingabe
+- ✨ Komplexe Rechen-Logik: Punkt-vor-Strich, Klammern, Potenzen, Wurzeln, Kettenrechnung
+- ✨ Offline-Integrität: Unterscheidet Mathe von normalem Text
+- ✨ Auto-Tidy: Layout-Reinigung, Formen geradeziehen, Abstände gleichmäßig
+- ✨ Kontext-Sensitive Aktionsleiste bei Selektion
+- ✨ Smart-Detection: E-Mail, Telefon, URL automatisch klickbar
+- ✨ Volltextsuche (SQLite FTS5) über alle gespeicherten Notizen
+- ✨ Mathe-Datenbank: 40 Konstanten, 55 Formeln (Geometrie, Algebra, Physik, Finanz)
+- ✨ Auto-Updater: 15-Min-Prüfung + manueller Button
+- ✨ Layout-Switcher: Modern (horizontal) + Klassisch (vertikal)
+
+### Behoben
+- 🐛 NullReferenceException beim Start
+- 🐛 Namespace-Ambiguities (Point, Size, Rect)
 
 ---
 
 ## FlipsiInk v0.1.0
 
-Erste Alpha-Version von FlipsiInk – AI-powered Handwriting & Math Notes App.
+Erste Alpha-Version.
 
 ### Features
 - ✏️ Stift-Canvas mit Druckempfindlichkeit
-- 📄 Seitenvorlagen (Blanko, Liniert, Kariert, Punktiert, Cornell, Isometrisch)
-- 🔤 OCR-Texterkennung (ONNX-basiert)
+- 📄 Seitenvorlagen
+- 🔤 OCR-Texterkennung
 - 🧮 Mathe-Ausdrücke berechnen
-- 🔄 Undo/Redo
-- 🔍 Zoom
+- 🔄 Undo/Redo + Zoom
 - 🌓 Dark/Light Mode
 - 💾 Speichern & Laden
-- 🖊️ Eingabe-Modus: Stift/Touch/Beides
+- 🖊️ Eingabe-Modus: Stift/Touch/Beide
