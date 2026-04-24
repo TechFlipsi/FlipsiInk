@@ -28,4 +28,4 @@
                    Foreground="#6C757D" FontStyle="Italic"
                    Margin="0,8,0,0"/>
     </StackPanel>
-</Control>
+</UserControl>
