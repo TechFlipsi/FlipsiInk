@@ -7,13 +7,12 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Ink;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -112,7 +111,7 @@ public class ExportManager
         if (strokes.Count > 0)
             ink.Strokes.Add(strokes.Clone());
 
-        ink.Measure(new Size(width, height));
+        ink.Measure(new System.Windows.Size(width, height));
         ink.Arrange(new Rect(0, 0, width, height));
 
         var rtb = new RenderTargetBitmap(width, height, dpi, dpi, PixelFormats.Pbgra32);
@@ -167,7 +166,7 @@ public class ExportManager
         }
         ink.Strokes.Add(offsetStrokes);
 
-        ink.Measure(new Size(w, h));
+        ink.Measure(new System.Windows.Size(w, h));
         ink.Arrange(new Rect(0, 0, w, h));
 
         var rtb = new RenderTargetBitmap(w, h, dpi, dpi, PixelFormats.Pbgra32);

@@ -386,7 +386,7 @@ public partial class StickyNoteControl : UserControl
     private void NoteText_GotFocus(object sender, RoutedEventArgs e)
     {
         // Prevent ink canvas from capturing pen input while editing text
-        var window = Window.GetParent(this) as Window;
+        var window = Window.GetWindow(this);
         if (window is MainWindow mw)
         {
             mw.MainCanvas.EditingMode = InkCanvasEditingMode.None;
@@ -395,7 +395,7 @@ public partial class StickyNoteControl : UserControl
 
     private void NoteText_LostFocus(object sender, RoutedEventArgs e)
     {
-        var window = Window.GetParent(this) as Window;
+        var window = Window.GetWindow(this);
         if (window is MainWindow mw)
         {
             mw.RestoreCanvasEditingMode();

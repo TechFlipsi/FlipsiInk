@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Ink;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using System.Windows.Media;
 
 namespace FlipsiInk;
 

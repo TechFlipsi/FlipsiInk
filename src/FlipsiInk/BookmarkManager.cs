@@ -280,7 +280,7 @@ public class TabManager
     /// <summary>
     /// ID des aktuell aktiven Tabs.
     /// </summary>
-    public Guid? ActiveTabId { get; private set; }
+    public Guid? ActiveTabId { get; internal set; }
 
     /// <summary>
     /// Event das ausgelöst wird, wenn sich die Tab-Liste ändert.
