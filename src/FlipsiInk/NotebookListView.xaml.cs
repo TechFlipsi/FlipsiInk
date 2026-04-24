@@ -281,7 +281,9 @@ public partial class NotebookListView : Window
     private void BtnSortBy_Click(object sender, RoutedEventArgs e)
     {
         // Simple sort toggle - could expand to popup menu
-        App.Config.Setting_NotebookSortOrder = App.Config.Setting_NotebookSortOrder == "name" ? "date" : "name";
+        // Sort toggle: name ↔ date
+        var currentOrder = App.Config.Get("NotebookSortOrder", "name");
+        App.Config.Set("NotebookSortOrder", currentOrder == "name" ? "date" : "name");
         App.Config.Save();
         RefreshList(SearchBox.Text);
     }

@@ -243,12 +243,12 @@ public partial class PageOverviewControl : UserControl, INotifyPropertyChanged
                 // We can't easily hide items in ItemsControl,
                 // so we rebuild the view. For simplicity, we'll use a CollectionView.
             }
-            var view = System.ComponentModel.CollectionViewSource.GetDefaultView(Thumbnails);
+            var view = System.Windows.Data.CollectionViewSource.GetDefaultView(Thumbnails);
             view.Filter = obj => obj is PageThumbItem t && t.IsFlagged;
         }
         else
         {
-            var view = System.ComponentModel.CollectionViewSource.GetDefaultView(Thumbnails);
+            var view = System.Windows.Data.CollectionViewSource.GetDefaultView(Thumbnails);
             view.Filter = null;
         }
     }

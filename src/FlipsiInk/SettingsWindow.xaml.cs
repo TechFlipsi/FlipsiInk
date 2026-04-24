@@ -331,7 +331,7 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            var mmw = new ModelManagerWindow { Owner = this };
+            var mmw = new ModelManagerWindow(((MainWindow)Application.Current.MainWindow)?._modelManager ?? new ModelManager()) { Owner = this };
             mmw.ShowDialog();
             // Refresh active model label after closing
             ActiveModelLabel.Text = !string.IsNullOrEmpty(App.Config.ModelPath)

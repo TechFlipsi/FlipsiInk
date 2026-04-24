@@ -89,6 +89,7 @@
 
             <!-- ═══ LEFT: Backlinks Panel (slide-in) ═══ -->
             <local:BacklinksPanel x:Name="BacklinksSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
+            <local:BookmarkPanel x:Name="BookmarkSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
 
             <!-- ═══ RIGHT: Recognition Results Panel (slide-in, toggleable) ═══ -->
             <Border DockPanel.Dock="Right" Background="#1E1E1E" Width="260" CornerRadius="12,0,0,12" x:Name="RightPanel" Visibility="Collapsed">

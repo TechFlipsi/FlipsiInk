@@ -81,7 +81,7 @@ public partial class MainWindow : Window
     private bool _modelLoaded = false;
 
     // KI-Modell-Management
-    private readonly ModelManager _modelManager = new();
+    internal readonly ModelManager _modelManager = new();
 
     // ShapeRecognizer für Auto-Tidy (Issue #34) + v0.4.0 auto shape recognition
     private readonly ShapeRecognizer _shapeRecognizer = new();
@@ -626,7 +626,7 @@ public partial class MainWindow : Window
         {
             // Hide all chrome
             TopBar.Visibility = Visibility.Collapsed;
-            StatusBar.Visibility = Visibility.Collapsed;
+            BottomBar.Visibility = Visibility.Collapsed;
             RightPanel.Visibility = Visibility.Collapsed;
             TabBar.Visibility = Visibility.Collapsed;
             FloatingToolbar.Visibility = Visibility.Collapsed;
@@ -637,7 +637,7 @@ public partial class MainWindow : Window
         {
             // Restore chrome
             TopBar.Visibility = Visibility.Visible;
-            StatusBar.Visibility = Visibility.Visible;
+            BottomBar.Visibility = Visibility.Visible;
             if (_rightPanelVisible) RightPanel.Visibility = Visibility.Visible;
             TabBar.Visibility = Visibility.Visible;
             FloatingToolbar.Visibility = Visibility.Visible;
@@ -972,17 +972,11 @@ public partial class MainWindow : Window
         };
 
         // Classic toolbar button
-        BtnStickyNote.Checked += (s, e) =>
+        BtnStickyNote.Click += (s, e) =>
         {
-            _stickyNoteMode = true;
-            BtnStickyNote.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
-            StatusText.Text = "Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
-        };
-        BtnStickyNote.Unchecked += (s, e) =>
-        {
-            _stickyNoteMode = false;
-            BtnStickyNote.Background = null;
-            StatusText.Text = "Bereit";
+            _stickyNoteMode = !_stickyNoteMode;
+            BtnStickyNote.Background = _stickyNoteMode ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215)) : null;
+            StatusText.Text = _stickyNoteMode ? "Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen" : "Bereit";
         };
 
         // Click on canvas grid to place a sticky note
