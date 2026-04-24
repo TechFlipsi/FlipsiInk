@@ -3,7 +3,7 @@
 ; GPL v3
 
 #define AppName "FlipsiInk"
-#define AppVersion "0.1.0"
+#define AppVersion "0.4.0"
 #define AppPublisher "TechFlipsi"
 #define AppPublisherURL "https://github.com/TechFlipsi/FlipsiInk"
 #define AppExeName "FlipsiInk.exe"

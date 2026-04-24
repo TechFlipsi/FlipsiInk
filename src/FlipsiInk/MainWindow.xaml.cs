@@ -103,6 +103,23 @@ public partial class MainWindow : Window
     // Handschrift-Index (Issue #30)
     private NoteSearchIndex _searchIndex = new();
 
+    // ═══ v0.4.0: Shape Drawing Tool ═══
+    private enum ShapeTool { None, Line, Rectangle, Circle }
+    private ShapeTool _activeShapeTool = ShapeTool.None;
+    private bool _isDrawingShape = false;
+    private Point _shapeStartPoint;
+    private Stroke? _previewShapeStroke;
+
+    // ═══ v0.4.0: Auto-Save ═══
+    private System.Threading.Timer? _autoSaveTimer;
+    private bool _hasUnsavedChanges = false;
+
+    // ═══ v0.4.0: PDF Import ═══
+    private PdfImporter? _pdfImporter;
+
+    // ═══ v0.4.0: Right Panel Visibility ═══
+    private bool _rightPanelVisible = false;
+
     // Notebook metadata & cover (Issue #22)
     private readonly NotebookMetadataManager _metaManager = new();
 
@@ -149,6 +166,12 @@ public partial class MainWindow : Window
         MainCanvas.StrokeCollected += OnStrokeCollected;
         MainCanvas.StrokeErasing += (s, e) => { /* stroke removed */ };
 
+        // Auto-save on close (v0.4.0)
+        Closing += MainWindow_Closing;
+
+        // Setup auto-save timer
+        try { SetupAutoSave(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupAutoSave: {ex}"); }
+
         // UI is now fully initialized – enable event handlers
         _initialized = true;
 
@@ -167,6 +190,710 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.FitToCurve = true;
         MainCanvas.DefaultDrawingAttributes.StylusTip = StylusTip.Ellipse;
         MainCanvas.DefaultDrawingAttributes.IgnorePressure = false;
+
+        // Shape drawing: use Stylus events for line/rect/circle tools
+        MainCanvas.StylusDown += Canvas_StylusDown;
+        MainCanvas.StylusMove += Canvas_StylusMove;
+        MainCanvas.StylusUp += Canvas_StylusUp;
+        // Also support mouse for non-stylus input
+        MainCanvas.PreviewMouseDown += Canvas_PreviewMouseDown;
+        MainCanvas.PreviewMouseMove += Canvas_PreviewMouseMove;
+        MainCanvas.PreviewMouseUp += Canvas_PreviewMouseUp;
+
+        // Mark strokes as changed for auto-save tracking
+        MainCanvas.StrokeCollected += (s, e) => { _hasUnsavedChanges = true; };
+        MainCanvas.Strokes.StrokesChanged += (s, e) => { _hasUnsavedChanges = true; };
+    }
+
+    #endregion
+
+    #region Shape Drawing Tools (v0.4.0)
+
+    /// <summary>Activates a shape tool (Line, Rectangle, Circle).</summary>
+    private void ActivateShapeTool(ShapeTool shape)
+    {
+        _activeShapeTool = shape;
+        MainCanvas.EditingMode = InkCanvasEditingMode.Ink;
+        MainCanvas.DefaultDrawingAttributes.Color = _currentColor;
+        MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
+        MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
+
+        // Highlight active shape tool button
+        UpdateToolButtonHighlight();
+    }
+
+    private void DeactivateShapeTool()
+    {
+        _activeShapeTool = ShapeTool.None;
+        _isDrawingShape = false;
+        if (_previewShapeStroke != null)
+        {
+            MainCanvas.Strokes.Remove(_previewShapeStroke);
+            _previewShapeStroke = null;
+        }
+        UpdateToolButtonHighlight();
+    }
+
+    private void UpdateToolButtonHighlight()
+    {
+        // Reset all tool buttons
+        var allBtns = _currentLayout == "modern"
+            ? new[] { BtnPen_M, BtnHighlighter_M, BtnEraser_M, BtnSelect_M, BtnLine_M, BtnRect_M, BtnCircle_M }
+            : new[] { BtnPen, BtnHighlighter, BtnEraser, BtnSelect, BtnLine, BtnRect, BtnCircle };
+        foreach (var btn in allBtns)
+            btn.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+
+        // Highlight active tool
+        Button? activeBtn = _activeShapeTool switch
+        {
+            ShapeTool.Line => _currentLayout == "modern" ? BtnLine_M : BtnLine,
+            ShapeTool.Rectangle => _currentLayout == "modern" ? BtnRect_M : BtnRect,
+            ShapeTool.Circle => _currentLayout == "modern" ? BtnCircle_M : BtnCircle,
+            _ => null
+        };
+
+        if (activeBtn != null)
+            activeBtn.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+    }
+
+    private void Canvas_StylusDown(object sender, StylusDownEventArgs e)
+    {
+        if (_activeShapeTool == ShapeTool.None) return;
+        e.Handled = true;
+        StartShapeDraw(e.GetPosition(MainCanvas));
+    }
+
+    private void Canvas_StylusMove(object sender, StylusEventArgs e)
+    {
+        if (!_isDrawingShape) return;
+        e.Handled = true;
+        UpdateShapeDraw(e.GetPosition(MainCanvas));
+    }
+
+    private void Canvas_StylusUp(object sender, StylusEventArgs e)
+    {
+        if (!_isDrawingShape) return;
+        e.Handled = true;
+        FinishShapeDraw(e.GetPosition(MainCanvas));
+    }
+
+    private void Canvas_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // Only handle if not stylus (mouse fallback)
+        if (_activeShapeTool == ShapeTool.None || e.StylusDevice != null) return;
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        e.Handled = true;
+        StartShapeDraw(e.GetPosition(MainCanvas));
+    }
+
+    private void Canvas_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDrawingShape || e.StylusDevice != null) return;
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        UpdateShapeDraw(e.GetPosition(MainCanvas));
+    }
+
+    private void Canvas_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isDrawingShape || e.StylusDevice != null) return;
+        e.Handled = true;
+        FinishShapeDraw(e.GetPosition(MainCanvas));
+    }
+
+    private void StartShapeDraw(Point position)
+    {
+        _isDrawingShape = true;
+        _shapeStartPoint = position;
+        _previewShapeStroke = null;
+    }
+
+    private void UpdateShapeDraw(Point currentPoint)
+    {
+        // Remove previous preview stroke
+        if (_previewShapeStroke != null)
+            MainCanvas.Strokes.Remove(_previewShapeStroke);
+
+        // Create new preview stroke
+        var stroke = CreateShapeStroke(_shapeStartPoint, currentPoint);
+        if (stroke != null)
+        {
+            MainCanvas.Strokes.Add(stroke);
+            _previewShapeStroke = stroke;
+        }
+    }
+
+    private void FinishShapeDraw(Point endPoint)
+    {
+        _isDrawingShape = false;
+
+        // Remove preview
+        if (_previewShapeStroke != null)
+            MainCanvas.Strokes.Remove(_previewShapeStroke);
+
+        // Create final shape stroke
+        var stroke = CreateShapeStroke(_shapeStartPoint, endPoint);
+        if (stroke != null)
+        {
+            MainCanvas.Strokes.Add(stroke);
+            _hasUnsavedChanges = true;
+        }
+
+        _previewShapeStroke = null;
+    }
+
+    /// <summary>Creates a stroke for the current shape tool between two points.</summary>
+    private Stroke? CreateShapeStroke(Point start, Point end)
+    {
+        var attr = new DrawingAttributes
+        {
+            Color = _currentColor,
+            Width = _currentSize,
+            Height = _currentSize,
+            StylusTip = StylusTip.Ellipse,
+            FitToCurve = false,
+            IsHighlighter = false
+        };
+
+        var points = new StylusPointCollection();
+
+        switch (_activeShapeTool)
+        {
+            case ShapeTool.Line:
+                // Simple straight line from start to end
+                points.Add(new StylusPoint(start.X, start.Y));
+                points.Add(new StylusPoint(end.X, end.Y));
+                break;
+
+            case ShapeTool.Rectangle:
+            {
+                // Four corners of the rectangle
+                var x1 = Math.Min(start.X, end.X);
+                var y1 = Math.Min(start.Y, end.Y);
+                var x2 = Math.Max(start.X, end.X);
+                var y2 = Math.Max(start.Y, end.Y);
+                points.Add(new StylusPoint(x1, y1));
+                points.Add(new StylusPoint(x2, y1));
+                points.Add(new StylusPoint(x2, y2));
+                points.Add(new StylusPoint(x1, y2));
+                points.Add(new StylusPoint(x1, y1)); // close the rect
+                break;
+            }
+
+            case ShapeTool.Circle:
+            {
+                // Approximate circle/ellipse with 32 points
+                var cx = (start.X + end.X) / 2;
+                var cy = (start.Y + end.Y) / 2;
+                var rx = Math.Abs(end.X - start.X) / 2;
+                var ry = Math.Abs(end.Y - start.Y) / 2;
+                if (rx < 1) rx = 1;
+                if (ry < 1) ry = 1;
+                const int segments = 32;
+                for (int i = 0; i <= segments; i++)
+                {
+                    var angle = 2 * Math.PI * i / segments;
+                    points.Add(new StylusPoint(cx + rx * Math.Cos(angle), cy + ry * Math.Sin(angle)));
+                }
+                break;
+            }
+
+            default:
+                return null;
+        }
+
+        return points.Count > 1 ? new Stroke(points) { DrawingAttributes = attr } : null;
+    }
+
+    #endregion
+
+    #region Floating Toolbar Handlers (v0.4.0)
+
+    private void SetupFloatingToolbar()
+    {
+        // Floating toolbar drag events are wired in XAML
+        // Additional setup for toolbar buttons
+    }
+
+    private void FloatingToolbar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isDraggingToolbar = true;
+        _toolbarDragStart = e.GetPosition(this);
+        _toolbarOffsetX = Canvas.GetLeft(FloatingToolbar);
+        _toolbarOffsetY = Canvas.GetTop(FloatingToolbar);
+        // If not positioned yet, use actual offset
+        if (double.IsNaN(_toolbarOffsetX)) _toolbarOffsetX = FloatingToolbar.Margin.Left;
+        if (double.IsNaN(_toolbarOffsetY)) _toolbarOffsetY = FloatingToolbar.Margin.Top;
+        FloatingToolbar.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void FloatingToolbar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDraggingToolbar)
+        {
+            _isDraggingToolbar = false;
+            FloatingToolbar.ReleaseMouseCapture();
+            e.Handled = true;
+        }
+    }
+
+    private void FloatingToolbar_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDraggingToolbar) return;
+        var pos = e.GetPosition(this);
+        var dx = pos.X - _toolbarDragStart.X;
+        var dy = pos.Y - _toolbarDragStart.Y;
+        var newLeft = _toolbarOffsetX + dx;
+        var newTop = _toolbarOffsetY + dy;
+
+        // Clamp within window bounds
+        newLeft = Math.Max(0, Math.Min(newLeft, ActualWidth - FloatingToolbar.ActualWidth));
+        newTop = Math.Max(0, Math.Min(newTop, ActualHeight - FloatingToolbar.ActualHeight));
+
+        FloatingToolbar.Margin = new Thickness(newLeft, newTop, 0, 0);
+        FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Left;
+        FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
+        e.Handled = true;
+    }
+
+    private void DockToolbarTop(object sender, RoutedEventArgs e)
+    {
+        FloatingToolbar.Margin = new Thickness(300, 0, 0, 0);
+        FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Left;
+        FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
+    }
+
+    private void DockToolbarLeft(object sender, RoutedEventArgs e)
+    {
+        FloatingToolbar.Margin = new Thickness(0, 100, 0, 0);
+        FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Left;
+        FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
+    }
+
+    private void DockToolbarRight(object sender, RoutedEventArgs e)
+    {
+        FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Right;
+        FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
+        FloatingToolbar.Margin = new Thickness(0, 100, 8, 0);
+    }
+
+    private void ResetToolbarPosition(object sender, RoutedEventArgs e)
+    {
+        FloatingToolbar.Margin = new Thickness(300, 0, 0, 0);
+        FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Left;
+        FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
+    }
+
+    private void PositionFloatingToolbar()
+    {
+        // Position toolbar at default location after layout loads
+        FloatingToolbar.Margin = new Thickness(300, 8, 0, 0);
+    }
+
+    // ── Floating Toolbar Button Handlers ──
+
+    private void BtnPen_F_Click(object sender, RoutedEventArgs e)
+    {
+        DeactivateShapeTool();
+        SetTool(InkCanvasEditingMode.Ink, BtnPen_F);
+    }
+
+    private void BtnHighlighter_F_Click(object sender, RoutedEventArgs e)
+    {
+        DeactivateShapeTool();
+        SetHighlighter(BtnHighlighter_F);
+    }
+
+    private void BtnEraser_F_Click(object sender, RoutedEventArgs e)
+    {
+        DeactivateShapeTool();
+        SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser_F);
+    }
+
+    private void BtnSelect_F_Click(object sender, RoutedEventArgs e)
+    {
+        DeactivateShapeTool();
+        SetTool(InkCanvasEditingMode.Select, BtnSelect_F);
+    }
+
+    private void BtnText_F_Click(object sender, RoutedEventArgs e)
+    {
+        DeactivateShapeTool();
+        SetTool(InkCanvasEditingMode.Select, BtnText_F);
+        StatusText.Text = "Text-Modus: Lasso waehlen, dann 'Aa' im Kontextmenue";
+    }
+
+    private void BtnColorPicker_F_Click(object sender, RoutedEventArgs e)
+    {
+        ColorPopup_F.IsOpen = true;
+    }
+
+    private void QuickColor1_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetColorFromSwatch(_recentColors.Count > 0 ? _recentColors[0] : Colors.Black);
+    }
+
+    private void QuickColor2_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetColorFromSwatch(_recentColors.Count > 1 ? _recentColors[1] : Color.FromRgb(0, 0, 139));
+    }
+
+    private void QuickColor3_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetColorFromSwatch(_recentColors.Count > 2 ? _recentColors[2] : Colors.Red);
+    }
+
+    private void QuickSize1_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetSize(1, null);
+        UpdateQuickSizeDots();
+    }
+
+    private void QuickSize2_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetSize(2.5, null);
+        UpdateQuickSizeDots();
+    }
+
+    private void QuickSize3_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetSize(5, null);
+        UpdateQuickSizeDots();
+    }
+
+    private void BtnShapeRecognition_Click(object sender, RoutedEventArgs e)
+    {
+        _shapeRecognitionEnabled = BtnShapeRecognition.IsChecked == true;
+        StatusText.Text = _shapeRecognitionEnabled
+            ? "Formerkennung: Ein"
+            : "Formerkennung: Aus";
+    }
+
+    private void BtnInputMode_F_Click(object sender, RoutedEventArgs e)
+    {
+        // Cycle through input modes
+        if (_inputModeManager != null)
+        {
+            _inputModeManager.CycleMode();
+            StatusText.Text = $"Eingabemodus: {_inputModeManager.CurrentMode}";
+        }
+    }
+
+    private void UpdateQuickColorDots()
+    {
+        if (QuickColor1 != null && _recentColors.Count > 0)
+            QuickColor1.Fill = new SolidColorBrush(_recentColors[0]);
+        if (QuickColor2 != null && _recentColors.Count > 1)
+            QuickColor2.Fill = new SolidColorBrush(_recentColors[1]);
+        if (QuickColor3 != null && _recentColors.Count > 2)
+            QuickColor3.Fill = new SolidColorBrush(_recentColors[2]);
+        if (CurrentColorIndicator_F != null)
+            CurrentColorIndicator_F.Fill = new SolidColorBrush(_currentColor);
+    }
+
+    private void UpdateQuickSizeDots()
+    {
+        // Visual feedback for selected size
+        if (QuickSize1 != null) QuickSize1.Fill = _currentSize <= 1.5 ? Brushes.White : Brushes.Gray;
+        if (QuickSize2 != null) QuickSize2.Fill = _currentSize > 1.5 && _currentSize < 4 ? Brushes.White : Brushes.Gray;
+        if (QuickSize3 != null) QuickSize3.Fill = _currentSize >= 4 ? Brushes.White : Brushes.Gray;
+    }
+
+    private void SetColorFromSwatch(Color color)
+    {
+        _currentColor = color;
+        MainCanvas.DefaultDrawingAttributes.Color = color;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
+
+        // Update recent colors (avoid duplicates)
+        _recentColors.Remove(color);
+        _recentColors.Insert(0, color);
+        if (_recentColors.Count > 5) _recentColors.RemoveAt(_recentColors.Count - 1);
+
+        UpdateQuickColorDots();
+    }
+
+    #endregion
+
+    #region Zen Mode (v0.4.0)
+
+    private void ToggleZenMode(object sender, RoutedEventArgs e)
+    {
+        _zenModeActive = !_zenModeActive;
+        if (_zenModeActive)
+        {
+            // Hide all chrome
+            TopBar.Visibility = Visibility.Collapsed;
+            StatusBar.Visibility = Visibility.Collapsed;
+            RightPanel.Visibility = Visibility.Collapsed;
+            TabBar.Visibility = Visibility.Collapsed;
+            FloatingToolbar.Visibility = Visibility.Collapsed;
+            BtnZenMode.Content = "\u25D0"; // circle outline
+            StatusText.Text = "Zen-Modus: Ein (ESC zum Beenden)";
+        }
+        else
+        {
+            // Restore chrome
+            TopBar.Visibility = Visibility.Visible;
+            StatusBar.Visibility = Visibility.Visible;
+            if (_rightPanelVisible) RightPanel.Visibility = Visibility.Visible;
+            TabBar.Visibility = Visibility.Visible;
+            FloatingToolbar.Visibility = Visibility.Visible;
+            BtnZenMode.Content = "\u25D1"; // circle
+            StatusText.Text = "Zen-Modus: Aus";
+        }
+    }
+
+    private void ShowRightPanel(object sender, RoutedEventArgs e)
+    {
+        _rightPanelVisible = !_rightPanelVisible;
+        RightPanel.Visibility = _rightPanelVisible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void TogglePageNavPanel(object sender, RoutedEventArgs e)
+    {
+        PageNavPanel.Visibility = PageNavPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    #endregion
+
+    #region Page Overview (v0.4.0)
+
+    private void TogglePageOverview(object? sender, RoutedEventArgs e)
+    {
+        var panel = PageOverviewPanel;
+        if (panel.Visibility == Visibility.Visible)
+        {
+            panel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            // Refresh and show
+            var nb = _noteManager?.CurrentNotebook;
+            if (nb != null)
+            {
+                var pageMgr = GetType().GetField("_pageManager", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(this) as PageManager;
+                int currentIdx = pageMgr?.CurrentPageIndex ?? 0;
+                PageOverview.Refresh(nb, currentIdx);
+            }
+            panel.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void OnPageOverviewNavigate(int pageNumber)
+    {
+        // Navigate to the clicked page (1-based)
+        SwitchToPage(pageNumber);
+    }
+
+    private void OnPageOverviewFlag(int pageNumber, string? flagColor)
+    {
+        var nb = _noteManager?.CurrentNotebook;
+        if (nb == null) return;
+
+        var page = nb.Pages.Find(p => p.PageNumber == pageNumber);
+        if (page == null) return;
+
+        if (flagColor == null)
+        {
+            // Remove flag
+            page.IsFlagged = false;
+            page.FlagColor = string.Empty;
+        }
+        else
+        {
+            // Set flag
+            page.IsFlagged = true;
+            page.FlagColor = flagColor;
+        }
+
+        // Save
+        _noteManager?.SaveCurrentNotebook();
+
+        // Refresh overview
+        var pageMgr = GetType().GetField("_pageManager", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.GetValue(this) as PageManager;
+        int currentIdx = pageMgr?.CurrentPageIndex ?? 0;
+        PageOverview.Refresh(nb, currentIdx);
+    }
+
+    #endregion
+
+    #region Smart Context Popup (v0.4.0)
+
+    private void ContextToText_Click(object sender, RoutedEventArgs e)
+    {
+        SmartContextPopup.IsOpen = false;
+        _ = RecognizeText();
+    }
+
+    private void ContextToCalc_Click(object sender, RoutedEventArgs e)
+    {
+        SmartContextPopup.IsOpen = false;
+        _ = RecognizeAndCalculate();
+    }
+
+    private void ContextToCut_Click(object sender, RoutedEventArgs e)
+    {
+        SmartContextPopup.IsOpen = false;
+        var selected = MainCanvas.GetSelectedStrokes();
+        if (selected.Count > 0)
+        {
+            MainCanvas.CutSelection();
+            StatusText.Text = $"{selected.Count} Striche ausgeschnitten";
+        }
+    }
+
+    private void ContextToCopy_Click(object sender, RoutedEventArgs e)
+    {
+        SmartContextPopup.IsOpen = false;
+        var selected = MainCanvas.GetSelectedStrokes();
+        if (selected.Count > 0)
+        {
+            MainCanvas.CopySelection();
+            StatusText.Text = $"{selected.Count} Striche kopiert";
+        }
+    }
+
+    #endregion
+
+    #region Template Combo (v0.4.0)
+
+    private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initialized || sender is not ComboBox combo) return;
+        var selected = combo.SelectedItem as ComboBoxItem;
+        if (selected == null) return;
+
+        _currentTemplate = selected.Content?.ToString() switch
+        {
+            "Blanko" => PageTemplateType.Blank,
+            "Liniert (schmal)" => PageTemplateType.LinedNarrow,
+            "Liniert (breit)" => PageTemplateType.LinedWide,
+            "Kariert (klein)" => PageTemplateType.GridSmall,
+            "Kariert (mittel)" => PageTemplateType.GridMedium,
+            "Kariert (gro\u00DF)" => PageTemplateType.GridLarge,
+            "Punktiert (klein)" => PageTemplateType.DottedSmall,
+            "Punktiert (mittel)" => PageTemplateType.DottedMedium,
+            "Punktiert (gro\u00DF)" => PageTemplateType.DottedLarge,
+            "Cornell Notes" => PageTemplateType.Cornell,
+            "Isometrisch" => PageTemplateType.Isometric,
+            _ => PageTemplateType.LinedWide
+        };
+
+        DrawPageTemplate();
+    }
+
+    #endregion
+
+    #region Shape Recognition on Stroke End (v0.4.0)
+
+    private void SetupShapeRecognition()
+    {
+        MainCanvas.StrokeCollected += OnStrokeCollectedForShapeRecognition;
+        _shapeRecognitionTimer = new System.Threading.Timer(OnShapeRecognitionTimeout, null,
+            TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+    }
+
+    private void OnStrokeCollectedForShapeRecognition(object? sender, InkCanvasStrokeCollectedEventArgs e)
+    {
+        if (!_shapeRecognitionEnabled) return;
+        _lastCollectedStroke = e.Stroke;
+        // Reset timer – when user stops drawing, we'll check after 500ms
+        _shapeRecognitionTimer?.Change(TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(400));
+    }
+
+    private void OnShapeRecognitionTimeout(object? state)
+    {
+        if (_lastCollectedStroke == null || !_shapeRecognitionEnabled) return;
+        var stroke = _lastCollectedStroke;
+        _lastCollectedStroke = null;
+
+        // Suspend timer during processing
+        _shapeRecognitionTimer?.Change(TimeSpan.FromDays(1), TimeSpan.FromDays(1));
+
+        try
+        {
+            var result = _shapeRecognizer.RecognizeStroke(stroke);
+            if (result != null && result.Confidence > 0.75)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // Replace stroke with clean shape
+                    if (MainCanvas.Strokes.Contains(stroke))
+                    {
+                        var cleanStroke = CreateCleanShapeStroke(result, stroke.DrawingAttributes);
+                        if (cleanStroke != null)
+                        {
+                            MainCanvas.Strokes.Remove(stroke);
+                            MainCanvas.Strokes.Add(cleanStroke);
+                            StatusText.Text = $"Form erkannt: {result.ShapeType} ({result.Confidence:P0})";
+                        }
+                    }
+                });
+            }
+        }
+        catch { /* ignore shape recognition failures */ }
+
+        // Resume timer
+        _shapeRecognitionTimer?.Change(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+    }
+
+    private Stroke? CreateCleanShapeStroke(ShapeRecognizer.RecognizedShape shape, DrawingAttributes attr)
+    {
+        var points = new StylusPointCollection();
+        var bbox = shape.BoundingBox;
+
+        switch (shape.ShapeType)
+        {
+            case ShapeRecognizer.ShapeType.Line:
+                points.Add(new StylusPoint(shape.StartPoint.X, shape.StartPoint.Y));
+                points.Add(new StylusPoint(shape.EndPoint.X, shape.EndPoint.Y));
+                break;
+
+            case ShapeRecognizer.ShapeType.Rectangle:
+            {
+                points.Add(new StylusPoint(bbox.X, bbox.Y));
+                points.Add(new StylusPoint(bbox.X + bbox.Width, bbox.Y));
+                points.Add(new StylusPoint(bbox.X + bbox.Width, bbox.Y + bbox.Height));
+                points.Add(new StylusPoint(bbox.X, bbox.Y + bbox.Height));
+                points.Add(new StylusPoint(bbox.X, bbox.Y));
+                break;
+            }
+
+            case ShapeRecognizer.ShapeType.Circle:
+            case ShapeRecognizer.ShapeType.Ellipse:
+            {
+                var cx = bbox.X + bbox.Width / 2;
+                var cy = bbox.Y + bbox.Height / 2;
+                var rx = bbox.Width / 2;
+                var ry = bbox.Height / 2;
+                for (int i = 0; i <= 32; i++)
+                {
+                    var angle = 2 * Math.PI * i / 32;
+                    points.Add(new StylusPoint(cx + rx * Math.Cos(angle), cy + ry * Math.Sin(angle)));
+                }
+                break;
+            }
+
+            case ShapeRecognizer.ShapeType.Triangle:
+            {
+                // Approximate: use top-center, bottom-left, bottom-right
+                points.Add(new StylusPoint(bbox.X + bbox.Width / 2, bbox.Y));
+                points.Add(new StylusPoint(bbox.X + bbox.Width, bbox.Y + bbox.Height));
+                points.Add(new StylusPoint(bbox.X, bbox.Y + bbox.Height));
+                points.Add(new StylusPoint(bbox.X + bbox.Width / 2, bbox.Y));
+                break;
+            }
+
+            default:
+                return null;
+        }
+
+        return points.Count > 1 ? new Stroke(points) { DrawingAttributes = attr.Clone() } : null;
     }
 
     #endregion
@@ -478,18 +1205,18 @@ public partial class MainWindow : Window
         BtnHighlighter.Click += (s, e) => SetHighlighter(BtnHighlighter);
         BtnEraser.Click += (s, e) => SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser);
         BtnSelect.Click += (s, e) => SetTool(InkCanvasEditingMode.Select, BtnSelect);
-        BtnLine.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnLine);
-        BtnRect.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnRect);
-        BtnCircle.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnCircle);
+        BtnLine.Click += (s, e) => ActivateShapeTool(ShapeTool.Line);
+        BtnRect.Click += (s, e) => ActivateShapeTool(ShapeTool.Rectangle);
+        BtnCircle.Click += (s, e) => ActivateShapeTool(ShapeTool.Circle);
 
         // Modern tools (duplicate buttons with _M suffix)
         BtnPen_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnPen_M);
         BtnHighlighter_M.Click += (s, e) => SetHighlighter(BtnHighlighter_M);
         BtnEraser_M.Click += (s, e) => SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser_M);
         BtnSelect_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Select, BtnSelect_M);
-        BtnLine_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnLine_M);
-        BtnRect_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnRect_M);
-        BtnCircle_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnCircle_M);
+        BtnLine_M.Click += (s, e) => ActivateShapeTool(ShapeTool.Line);
+        BtnRect_M.Click += (s, e) => ActivateShapeTool(ShapeTool.Rectangle);
+        BtnCircle_M.Click += (s, e) => ActivateShapeTool(ShapeTool.Circle);
 
         // Color picker – both layouts
         BtnColorPicker.Click += (s, e) => ColorPopup.IsOpen = true;
@@ -528,6 +1255,10 @@ public partial class MainWindow : Window
 
     private void SetTool(InkCanvasEditingMode mode, Button activeBtn)
     {
+        // Deactivate shape tool if switching to a different tool
+        if (mode != InkCanvasEditingMode.Ink || _activeShapeTool != ShapeTool.None)
+            _activeShapeTool = ShapeTool.None;
+
         MainCanvas.EditingMode = mode;
         if (mode == InkCanvasEditingMode.Ink)
         {
@@ -863,38 +1594,78 @@ public partial class MainWindow : Window
             "FlipsiInk");
         Directory.CreateDirectory(saveDir);
 
-        // Save current page strokes to page manager before exporting (Issue #15)
+        // Save current page strokes before writing file
         SaveCurrentPageStrokes();
 
-        var filename = $"note_{DateTime.Now:yyyyMMdd_HHmmss}";
-        var pngPath = Path.Combine(saveDir, filename + ".png");
+        // Remove empty pages (v0.4.0: skip pages with no content)
+        _currentNotebook.Pages.RemoveAll(p =>
+            (p.Strokes == null || p.Strokes.Count == 0) && string.IsNullOrWhiteSpace(p.StrokesJson));
+        if (_currentNotebook.Pages.Count == 0)
+            _currentNotebook.Pages.Add(new NotePage { PageNumber = 1, Template = _currentTemplate });
+        _currentNotebook.PageCount = _currentNotebook.Pages.Count;
+
+        // Auto-title: if untitled and AI model available, try to generate title
+        if ((_currentNotebook.Name == string.Empty || _currentNotebook.Name.StartsWith("Untitled") || _currentNotebook.Name.StartsWith("note_")) && App.Config.AutoTitleNotes)
+        {
+            var recognizedText = RecognizedText?.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(recognizedText))
+            {
+                // Use first meaningful line as title, truncated
+                var firstLine = recognizedText.Split('\n').FirstOrDefault(l => l.Trim().Length > 0)?.Trim();
+                if (!string.IsNullOrEmpty(firstLine))
+                {
+                    _currentNotebook.Name = firstLine.Length > 60 ? firstLine[..60] + "..." : firstLine;
+                    _currentNotebook.AutoTitled = true;
+                }
+                else
+                {
+                    _currentNotebook.Name = $"Note_{DateTime.Now:yyyyMMdd_HHmmss}";
+                    _currentNotebook.AutoTitled = false;
+                }
+            }
+            else
+            {
+                _currentNotebook.Name = $"Note_{DateTime.Now:yyyyMMdd_HHmmss}";
+                _currentNotebook.AutoTitled = false;
+            }
+        }
+        else if (string.IsNullOrEmpty(_currentNotebook.Name))
+        {
+            _currentNotebook.Name = $"Note_{DateTime.Now:yyyyMMdd_HHmmss}";
+        }
+
+        _currentNotebook.ModifiedAt = DateTime.UtcNow;
 
         try
         {
-            var bitmap = RenderStrokesToBitmap();
-            bitmap.Save(pngPath, ImageFormat.Png);
+            // Save as .fink file (ZIP container with ISF stroke data)
+            var sanitized = SanitizeFilename(_currentNotebook.Name);
+            var finkPath = Path.Combine(saveDir, sanitized + ".fink");
 
-            // Save as .flipsiink multi-page file (Issue #15)
-            _currentNotebook.Name = filename;
-            _currentNotebook.ModifiedAt = DateTime.UtcNow;
+            // Also save via NoteManager for backward compat
             var noteMgr = new NoteManager(saveDir);
-            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook, _metaManager.GetMetadata(_currentNotebook.Id), _stickyNoteManager?.GetAllData(), _linkManager.GetAllLinkData());
+            noteMgr.SaveNotebook(_currentNotebook);
 
-            // Track as recent file (Issue #21)
+            // Save .fink format
+            FinkFormat.Save(finkPath, _currentNotebook);
+
+            _currentNotebook.FinkFilePath = finkPath;
+
+            // Track as recent file
             _recentNotebooks.AddRecent(_currentNotebook.Id);
             _tabBarControl?.RefreshTabs();
 
-            // Handschrift-Index: OCR-Text indizieren (Issue #30)
+            // Index OCR text for search
             try
             {
-                var ocrText = RecognizedText.Text;
+                var ocrText = RecognizedText?.Text;
                 if (!string.IsNullOrEmpty(ocrText))
                 {
-                    var existingId = _searchIndex.FindByFilename(filename);
+                    var existingId = _searchIndex.FindByFilename(_currentNotebook.Name);
                     if (existingId >= 0)
                         _searchIndex.UpdateNote(existingId, ocrText);
                     else
-                        _searchIndex.IndexNote(filename, ocrText);
+                        _searchIndex.IndexNote(_currentNotebook.Name, ocrText);
                 }
             }
             catch (Exception idxEx)
@@ -902,11 +1673,258 @@ public partial class MainWindow : Window
                 System.Diagnostics.Debug.WriteLine($"SearchIndex: {idxEx.Message}");
             }
 
-            StatusText.Text = $"✓ Gespeichert: {Path.GetFileName(flipsiPath)}";
+            _hasUnsavedChanges = false;
+            StatusText.Text = $"✓ Gespeichert: {Path.GetFileName(finkPath)}";
         }
         catch (Exception ex)
         {
             StatusText.Text = $"✗ Speichern fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    private static string SanitizeFilename(string name)
+    {
+        foreach (var c in Path.GetInvalidFileNameChars())
+            name = name.Replace(c, '_');
+        return string.IsNullOrWhiteSpace(name) ? "Untitled" : name;
+    }
+
+    /// <summary>
+    /// Auto-save: silently saves the current note without prompting.
+    /// Called on app close and periodically based on Settings interval.
+    /// </summary>
+    private void AutoSave()
+    {
+        if (!_hasUnsavedChanges) return;
+        // Save current page strokes first
+        SaveCurrentPageStrokes();
+
+        // Remove empty pages
+        _currentNotebook.Pages.RemoveAll(p =>
+            (p.Strokes == null || p.Strokes.Count == 0) && string.IsNullOrWhiteSpace(p.StrokesJson));
+        if (_currentNotebook.Pages.Count == 0)
+            _currentNotebook.Pages.Add(new NotePage { PageNumber = 1, Template = _currentTemplate });
+        _currentNotebook.PageCount = _currentNotebook.Pages.Count;
+
+        if (string.IsNullOrEmpty(_currentNotebook.Name))
+            _currentNotebook.Name = $"Note_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+        _currentNotebook.ModifiedAt = DateTime.UtcNow;
+
+        try
+        {
+            var saveDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
+            Directory.CreateDirectory(saveDir);
+
+            var sanitized = SanitizeFilename(_currentNotebook.Name);
+            var finkPath = Path.Combine(saveDir, sanitized + ".fink");
+            FinkFormat.Save(finkPath, _currentNotebook);
+            _currentNotebook.FinkFilePath = finkPath;
+
+            // Also update NoteManager
+            var noteMgr = new NoteManager(saveDir);
+            noteMgr.SaveNotebook(_currentNotebook);
+
+            _hasUnsavedChanges = false;
+            System.Diagnostics.Debug.WriteLine($"Auto-saved: {finkPath}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Auto-save failed: {ex.Message}");
+        }
+    }
+
+    private void SetupAutoSave()
+    {
+        var intervalMinutes = App.Config.AutoSaveIntervalMinutes;
+        if (intervalMinutes <= 0) intervalMinutes = 5; // default 5 min
+
+        _autoSaveTimer = new System.Threading.Timer(_ =>
+        {
+            try { Dispatcher.Invoke(AutoSave); } catch { }
+        }, null, TimeSpan.FromMinutes(intervalMinutes), TimeSpan.FromMinutes(intervalMinutes));
+    }
+
+    /// <summary>
+    /// Opens a .fink file or legacy .flipsiink file.
+    /// </summary>
+    private void OpenNote(string filePath)
+    {
+        try
+        {
+            Notebook notebook;
+
+            if (filePath.EndsWith(".fink", StringComparison.OrdinalIgnoreCase))
+            {
+                notebook = FinkFormat.Load(filePath);
+                notebook.FinkFilePath = filePath;
+            }
+            else if (filePath.EndsWith(".flipsiink", StringComparison.OrdinalIgnoreCase) ||
+                     filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                // Legacy format
+                var saveDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
+                var noteMgr = new NoteManager(saveDir);
+                notebook = noteMgr.LoadFlipsiInk(filePath);
+            }
+            else
+            {
+                throw new InvalidOperationException("Nicht unterstütztes Dateiformat. Bitte .fink oder .flipsiink Dateien öffnen.");
+            }
+
+            _currentNotebook = notebook;
+            _pageManager = new PageManager(_currentNotebook);
+
+            // Load first page strokes
+            if (_currentNotebook.Pages.Count > 0 && _currentNotebook.Pages[0].Strokes?.Count > 0)
+            {
+                MainCanvas.Strokes.Clear();
+                MainCanvas.Strokes.Add(_currentNotebook.Pages[0].Strokes);
+            }
+            else
+            {
+                MainCanvas.Strokes.Clear();
+            }
+
+            _hasUnsavedChanges = false;
+            StatusText.Text = $"✓ Geöffnet: {_currentNotebook.Name}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fehler beim Öffnen:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Imports a PDF and creates a new notebook with each page as an annotated background.
+    /// </summary>
+    private async void ImportPdf()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "PDF importieren",
+            Filter = "PDF-Dateien|*.pdf",
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            StatusText.Text = "PDF wird importiert...";
+
+            _pdfImporter?.Dispose();
+            _pdfImporter = new PdfImporter();
+            var pageCount = _pdfImporter.LoadPdf(dialog.FileName);
+
+            if (pageCount == 0)
+            {
+                MessageBox.Show("Die PDF-Datei enthält keine Seiten.", "PDF-Import", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Create new notebook from PDF
+            var saveDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
+            Directory.CreateDirectory(saveDir);
+
+            var pdfName = Path.GetFileNameWithoutExtension(dialog.FileName);
+            var notebook = new Notebook
+            {
+                Name = pdfName,
+                Color = "#FF6B35",
+                PdfSourcePath = dialog.FileName
+            };
+
+            // Render each PDF page and add as page with background
+            for (int i = 0; i < pageCount; i++)
+            {
+                var page = new NotePage
+                {
+                    PageNumber = i + 1,
+                    Template = PageTemplateType.Blank // PDF provides its own background
+                };
+
+                // Render PDF page as background image
+                var bgPath = Path.Combine(saveDir, $"pdf_bg_{Guid.NewGuid():N}_{i + 1}.png");
+                _pdfImporter.SavePageAsPng(i, bgPath);
+
+                notebook.Pages.Add(page);
+            }
+
+            notebook.PageCount = notebook.Pages.Count;
+
+            // Save as .fink
+            var finkPath = Path.Combine(saveDir, SanitizeFilename(pdfName) + ".fink");
+            FinkFormat.Save(finkPath, notebook);
+            notebook.FinkFilePath = finkPath;
+
+            // Register with NoteManager
+            var noteMgr = new NoteManager(saveDir);
+            noteMgr.SaveNotebook(notebook);
+
+            // Open in current view
+            _currentNotebook = notebook;
+            _pageManager = new PageManager(_currentNotebook);
+            MainCanvas.Strokes.Clear();
+
+            // Set the first PDF page as canvas background
+            if (pageCount > 0)
+            {
+                try
+                {
+                    var firstBg = Path.Combine(saveDir, $"pdf_bg_{notebook.Pages[0].Id:N}_1.png");
+                    if (!File.Exists(firstBg))
+                        firstBg = Path.Combine(saveDir, "pdf_bg_temp_1.png");
+                    if (File.Exists(firstBg))
+                    {
+                        var bgBitmap = new BitmapImage(new Uri(firstBg, UriKind.Absolute));
+                        CanvasBackgroundImage.Source = bgBitmap;
+                        CanvasBackgroundImage.Visibility = Visibility.Visible;
+                    }
+                }
+                catch { /* non-critical */ }
+            }
+
+            _hasUnsavedChanges = false;
+            StatusText.Text = $"✓ PDF importiert: {pageCount} Seiten";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"PDF-Import fehlgeschlagen:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "✗ PDF-Import fehlgeschlagen";
+        }
+    }
+
+    /// <summary>
+    /// Exports the recognized text in the right panel to a .txt file.
+    /// Original handwriting remains untouched.
+    /// </summary>
+    private void ExportRecognizedTextToFile()
+    {
+        var text = RecognizedText?.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            MessageBox.Show("Kein erkannter Text zum Exportieren.", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Erkannten Text exportieren",
+            Filter = "Textdateien|*.txt|Alle Dateien|*.*",
+            DefaultFileName = SanitizeFilename(_currentNotebook.Name) + "_text"
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            FinkFormat.ExportRecognizedText(dialog.FileName, text);
+            StatusText.Text = $"✓ Text exportiert: {Path.GetFileName(dialog.FileName)}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Export fehlgeschlagen:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -2099,6 +3117,18 @@ public partial class MainWindow : Window
     #endregion
 
     #region Keyboard Shortcuts
+
+    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // Auto-save on close - no prompt, just save silently (v0.4.0)
+        try { AutoSave(); } catch { /* best effort */ }
+
+        // Dispose resources
+        _autoSaveTimer?.Dispose();
+        _shapeRecognitionTimer?.Dispose();
+        _pdfImporter?.Dispose();
+        _ocrEngine?.Dispose();
+    }
 
     protected override void OnKeyDown(KeyEventArgs e)
     {

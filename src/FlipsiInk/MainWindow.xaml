@@ -348,6 +348,30 @@
         </Border>
 
         <!-- ═══════════════════════════════════════════════════════
+             PAGE OVERVIEW PANEL (v0.4.0)
+             Slide-in panel with thumbnail grid + page flags
+             ═══════════════════════════════════════════════════════ -->
+        <Border x:Name="PageOverviewPanel"
+                HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                Background="#1A1A1A" Width="280" CornerRadius="12,0,0,12"
+                Visibility="Collapsed" Margin="0,36,0,24"
+                BorderBrush="#333" BorderThickness="1,0,0,0">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="-4" BlurRadius="16" Opacity="0.4" Color="Black" Direction="0"/>
+            </Border.Effect>
+            <local:PageOverviewControl x:Name="PageOverview"/>
+        </Border>
+
+        <!-- Page Overview toggle button (bottom-right, above page nav) -->
+        <Button x:Name="BtnPageOverview" Content="&#x2261;"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Margin="0,0,12,64"
+                Width="36" Height="36"
+                Style="{StaticResource ToolButton}"
+                ToolTip="Seitenuebersicht"
+                Click="TogglePageOverview" FontSize="16" FontWeight="Bold"/>
+
+        <!-- ═══════════════════════════════════════════════════════
              LAYER 5: Smart Context Popup (Nebo-style)
              Appears near lasso selection with Aa / Sum / Cut
              ═══════════════════════════════════════════════════════ -->
