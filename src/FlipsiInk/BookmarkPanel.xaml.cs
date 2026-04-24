@@ -18,7 +18,7 @@ namespace FlipsiInk;
 /// </summary>
 public partial class BookmarkPanel : UserControl
 {
-    private readonly BookmarkManager _bookmarkManager;
+    private BookmarkManager _bookmarkManager = null!;
     private Guid _currentNotebookId;
     public ObservableCollection<Bookmark> Bookmarks { get; } = new();
 
@@ -26,11 +26,21 @@ public partial class BookmarkPanel : UserControl
     public event Action<Guid, int>? BookmarkAdded;
     public event Action<Guid, int>? BookmarkRemoved;
 
-    public BookmarkPanel(BookmarkManager bookmarkManager)
+    public BookmarkPanel()
     {
         InitializeComponent();
-        _bookmarkManager = bookmarkManager;
+    }
 
+    public BookmarkPanel(BookmarkManager bookmarkManager) : this()
+    {
+        _bookmarkManager = bookmarkManager;
+        BtnAddBookmark.Click += OnAddBookmark;
+        BookmarkList.ItemsSource = Bookmarks;
+    }
+
+    public void Initialize(BookmarkManager bookmarkManager)
+    {
+        _bookmarkManager = bookmarkManager;
         BtnAddBookmark.Click += OnAddBookmark;
         BookmarkList.ItemsSource = Bookmarks;
     }

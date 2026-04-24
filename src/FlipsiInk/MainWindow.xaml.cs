@@ -903,6 +903,7 @@ public partial class MainWindow : Window
 
         // Bookmark panel
         _bookmarkPanel = BookmarkSidebar;
+        _bookmarkPanel.Initialize(_bookmarkManager);
         _bookmarkPanel.BookmarkAdded += OnBookmarkAdded;
         _bookmarkPanel.BookmarkRemoved += OnBookmarkRemoved;
         _bookmarkPanel.NavigateToBookmark += OnNavigateToBookmark;
