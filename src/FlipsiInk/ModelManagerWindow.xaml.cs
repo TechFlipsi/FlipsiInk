@@ -142,7 +142,7 @@ public partial class ModelManagerWindow : Window
         var name = catalog?.Name ?? id;
 
         var result = MessageBox.Show(
-            $""„{name}“ wirklich löschen?", "Modell löschen",
+            $"'{name}' wirklich löschen?", "Modell löschen",
             MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
         if (result != MessageBoxResult.Yes) return;

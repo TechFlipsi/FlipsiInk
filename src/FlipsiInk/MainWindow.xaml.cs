@@ -2164,7 +2164,7 @@ public partial class MainWindow : Window
         else
         {
             System.Windows.MessageBox.Show(
-                $"Notizbuch „{e.TargetName}" nicht gefunden.",
+                $"Notizbuch '{e.TargetName}' nicht gefunden.",
                 "Verknüpfung",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
