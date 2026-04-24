@@ -36,6 +36,7 @@
                 <Button x:Name="BtnNotebooks" Content="📓" Style="{StaticResource ToolButton}" ToolTip="Notizbücher"/>
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnSave" Content="💾" Style="{StaticResource ToolButton}" ToolTip="Speichern"/>
+                <Button x:Name="BtnExport" Content="📤" Style="{StaticResource ToolButton}" ToolTip="Export &amp; Teilen (Ctrl+E)"/>
                 <Button x:Name="BtnTheme" Content="🌓" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln"/>
                 <Button x:Name="BtnLayout" Content="📐" Style="{StaticResource ToolButton}" ToolTip="Layout wechseln (Klassisch/Modern)"/>
                 <Button x:Name="BtnModelManager" Content="📦" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten"/>
@@ -89,6 +90,8 @@
                 <Button x:Name="BtnAutoTidy_M" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
                 <Separator Margin="4,4"/>
                 <Button x:Name="BtnInputMode_M" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
+                <Separator Margin="4,4"/>
+                <ToggleButton x:Name="BtnStickyNote_M" Content="📝" Style="{StaticResource ToolButton}" ToolTip="Klebezettel-Modus"/>
             </StackPanel>
         </Border>
 
@@ -118,6 +121,8 @@
                 <Button x:Name="BtnAutoTidy_C" Content="✨" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen"/>
                 <Separator Margin="4,8"/>
                 <Button x:Name="BtnInputMode" Content="🖊️" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
+                <Separator Margin="4,8"/>
+                <ToggleButton x:Name="BtnStickyNote" Content="📝" Style="{StaticResource ToolButton}" ToolTip="Klebezettel-Modus"/>
             </StackPanel>
         </Border>
 
@@ -207,6 +212,8 @@
         <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <Grid x:Name="CanvasGrid">
                 <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
+                <!-- Sticky Note overlay (floats above ink strokes) -->
+                <Canvas x:Name="StickyNoteOverlay" Width="1200" Height="1600" IsHitTestVisible="True" ClipToBounds="True"/>
                 <!-- Kontext-sensitive Aktionsleiste (Issue #35) -->
                 <Popup x:Name="ContextActionPopup" Placement="Relative" PlacementTarget="{Binding ElementName=CanvasGrid}" AllowsTransparency="True" StaysOpen="False">
                     <Border Background="#2D2D2D" CornerRadius="6" Padding="4,2" BorderBrush="#0078D7" BorderThickness="1">

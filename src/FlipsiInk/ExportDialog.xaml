@@ -1,0 +1,71 @@
+<Window x:Class="FlipsiInk.ExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Export & Teilen"
+        Width="480" Height="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1E1E1E"
+        ShowInTaskbar="False">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Text="📤 Export &amp; Teilen" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,16"/>
+
+        <!-- Format Selection -->
+        <TextBlock Grid.Row="1" Text="Format" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,4"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
+            <RadioButton x:Name="RbPng" Content="PNG" Foreground="White" FontSize="13" Margin="0,0,16,0" IsChecked="True" GroupName="Format"/>
+            <RadioButton x:Name="RbPdf" Content="PDF" Foreground="White" FontSize="13" Margin="0,0,16,0" GroupName="Format"/>
+            <RadioButton x:Name="RbSvg" Content="SVG" Foreground="White" FontSize="13" GroupName="Format"/>
+        </StackPanel>
+
+        <!-- DPI / Quality -->
+        <TextBlock Grid.Row="3" Text="Qualität / DPI" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,4"/>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,12">
+            <RadioButton x:Name="RbDpi72" Content="72 DPI" Foreground="White" FontSize="12" Margin="0,0,12,0" GroupName="Dpi"/>
+            <RadioButton x:Name="RbDpi150" Content="150 DPI" Foreground="White" FontSize="12" Margin="0,0,12,0" IsChecked="True" GroupName="Dpi"/>
+            <RadioButton x:Name="RbDpi300" Content="300 DPI" Foreground="White" FontSize="12" GroupName="Dpi"/>
+        </StackPanel>
+
+        <!-- Page Range -->
+        <TextBlock Grid.Row="5" Text="Seitenbereich" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,4"/>
+        <StackPanel Grid.Row="6" Margin="0,0,0,12">
+            <RadioButton x:Name="RbCurrentPage" Content="Aktuelle Seite" Foreground="White" FontSize="12" IsChecked="True" GroupName="PageRange" Margin="0,0,0,4"/>
+            <RadioButton x:Name="RbAllPages" Content="Alle Seiten" Foreground="White" FontSize="12" GroupName="PageRange" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <RadioButton x:Name="RbCustomRange" Content="Benutzerdefiniert:" Foreground="White" FontSize="12" GroupName="PageRange" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtRangeStart" Width="50" Height="24" Background="#2D2D2D" Foreground="White" BorderBrush="#444" Text="1" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="12" TextAlignment="Center"/>
+                <TextBlock Text="–" Foreground="White" VerticalAlignment="Center" Margin="4,0"/>
+                <TextBox x:Name="TxtRangeEnd" Width="50" Height="24" Background="#2D2D2D" Foreground="White" BorderBrush="#444" Text="1" VerticalAlignment="Center" Margin="0,0,0,0" FontSize="12" TextAlignment="Center"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Include Metadata -->
+        <CheckBox x:Name="ChkMetadata" Grid.Row="7" Content="Metadaten einbeziehen (Titel, Datum, Autor)" Foreground="White" FontSize="12" IsChecked="True" Margin="0,0,0,12" VerticalAlignment="Top"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="BtnCopyClipboard" Content="📋 Kopieren" Width="100" Height="32" Margin="0,0,8,0"
+                    Background="#0078D7" Foreground="White" BorderThickness="0" FontSize="13" Cursor="Hand"/>
+            <Button x:Name="BtnShare" Content="🔗 Teilen" Width="100" Height="32" Margin="0,0,8,0"
+                    Background="#6C5CE7" Foreground="White" BorderThickness="0" FontSize="13" Cursor="Hand"/>
+            <Button x:Name="BtnExport" Content="📤 Export" Width="100" Height="32" Margin="0,0,8,0"
+                    Background="#27AE60" Foreground="White" BorderThickness="0" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+            <Button x:Name="BtnCancel" Content="Abbrechen" Width="80" Height="32"
+                    Background="#444" Foreground="White" BorderThickness="0" FontSize="13" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>

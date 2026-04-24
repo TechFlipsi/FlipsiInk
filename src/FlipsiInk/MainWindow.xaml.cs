@@ -72,6 +72,11 @@ public partial class MainWindow : Window
     // Kontext-Aktionsleiste (Issue #35)
     private ContextActionBar? _contextActionBar;
 
+    // Sticky Notes (Issue #26)
+    private StickyNoteManager? _stickyNoteManager;
+    private StickyNoteColor _nextStickyColor = StickyNoteColor.Gelb;
+    private bool _stickyNoteMode = false;
+
     // Handschrift-Index (Issue #30)
     private NoteSearchIndex _searchIndex = new();
 
@@ -97,6 +102,7 @@ public partial class MainWindow : Window
 
         try { SetupToolButtons(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupToolButtons: {ex}"); }
         try { SetupCanvas(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupCanvas: {ex}"); }
+        try { SetupStickyNotes(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupStickyNotes: {ex}"); }
         try { SetupZoom(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupZoom: {ex}"); }
         try { SetupTheme(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTheme: {ex}"); }
         try { SetupTemplateCombo(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTemplateCombo: {ex}"); }
@@ -196,6 +202,65 @@ public partial class MainWindow : Window
     #endregion
 
     #region Zoom (Issue #25)
+
+    // ─── Sticky Notes Setup (Issue #26) ─────────────────────────────
+
+    private void SetupStickyNotes()
+    {
+        _stickyNoteManager = new StickyNoteManager(StickyNoteOverlay);
+
+        // Modern toolbar button
+        BtnStickyNote_M.Checked += (s, e) =>
+        {
+            _stickyNoteMode = true;
+            BtnStickyNote_M.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+            StatusText.Text = "📝 Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
+        };
+        BtnStickyNote_M.Unchecked += (s, e) =>
+        {
+            _stickyNoteMode = false;
+            BtnStickyNote_M.Background = null;
+            StatusText.Text = "Bereit";
+        };
+
+        // Classic toolbar button
+        BtnStickyNote.Checked += (s, e) =>
+        {
+            _stickyNoteMode = true;
+            BtnStickyNote.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+            StatusText.Text = "📝 Klicke auf die Leinwand, um einen Klebezettel hinzuzufügen";
+        };
+        BtnStickyNote.Unchecked += (s, e) =>
+        {
+            _stickyNoteMode = false;
+            BtnStickyNote.Background = null;
+            StatusText.Text = "Bereit";
+        };
+
+        // Click on overlay canvas to place a sticky note
+        StickyNoteOverlay.MouseLeftButtonDown += StickyNoteOverlay_Click;
+    }
+
+    private void StickyNoteOverlay_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (!_stickyNoteMode) return;
+
+        var pos = e.GetPosition(StickyNoteOverlay);
+        _stickyNoteManager!.AddNote(pos.X, pos.Y, _nextStickyColor);
+
+        // Cycle through colors
+        var colors = Enum.GetValues<StickyNoteColor>();
+        var idx = Array.IndexOf(colors, _nextStickyColor);
+        _nextStickyColor = colors[(idx + 1) % colors.Length];
+
+        StatusText.Text = $"📝 Klebezettel hinzugefügt ({_nextStickyColor})";
+    }
+
+    /// <summary>Restores the ink canvas editing mode (called when a sticky note loses focus).</summary>
+    public void RestoreCanvasEditingMode()
+    {
+        MainCanvas.EditingMode = _currentTool;
+    }
 
     private void SetupZoom()
     {
@@ -412,6 +477,7 @@ public partial class MainWindow : Window
         BtnSettings.Click += (s, e) => OpenSettings();
         BtnSearch.Click += (s, e) => OpenSearch();
         BtnNotebooks.Click += (s, e) => OpenNotebookList();
+        BtnExport.Click += (s, e) => OpenExportDialog();
     }
 
     private void SetTool(InkCanvasEditingMode mode, Button activeBtn)
@@ -1753,6 +1819,76 @@ public partial class MainWindow : Window
 
     #endregion
 
+        #region Export & Teilen (Issue #23)
+
+    /// <summary>
+    /// Opens the export dialog for exporting/sharing pages.
+    /// </summary>
+    private void OpenExportDialog()
+    {
+        // Save current page strokes first
+        SaveCurrentPageStrokes();
+
+        var dialog = new ExportDialog(_pageManager, MainCanvas, _ocrEngine, _currentNotebook.Name)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() == true && dialog.Exported)
+        {
+            StatusText.Text = $"📤 Exportiert: {Path.GetFileName(dialog.ExportedFilePath)}";
+        }
+    }
+
+    /// <summary>
+    /// Copies the current page as image to clipboard.
+    /// Quick action without opening the full dialog.
+    /// </summary>
+    private void CopyPageToClipboard()
+    {
+        try
+        {
+            int canvasW = (int)MainCanvas.ActualWidth;
+            int canvasH = (int)MainCanvas.ActualHeight;
+            if (canvasW <= 0 || canvasH <= 0) { canvasW = 1200; canvasH = 1600; }
+
+            // Check for selection first
+            var selected = MainCanvas.GetSelectedStrokes();
+            if (selected.Count > 0)
+            {
+                ExportManager.CopySelectedImageToClipboard(selected, 150);
+                StatusText.Text = "📋 Auswahl in Zwischenablage kopiert";
+            }
+            else
+            {
+                var strokes = _pageManager.LoadPage(_pageManager.CurrentPageNumber);
+                ExportManager.CopyImageToClipboard(strokes, MainCanvas.Background, canvasW, canvasH, 150);
+                StatusText.Text = "📋 Seite als Bild in Zwischenablage kopiert";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"✗ Kopieren fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Copies recognized OCR text to clipboard.
+    /// </summary>
+    private void CopyOcrTextToClipboard()
+    {
+        var text = RecognizedText.Text;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            StatusText.Text = "⚠️ Kein erkannter Text zum Kopieren!";
+            return;
+        }
+        ExportManager.CopyTextToClipboard(text);
+        StatusText.Text = "📋 Text in Zwischenablage kopiert";
+    }
+
+    #endregion
+
     #region Settings
 
     private void OpenModelManager()
@@ -1839,6 +1975,18 @@ public partial class MainWindow : Window
                 _tabBarControl?.SwitchToPreviousTab();
             else
                 _tabBarControl?.SwitchToNextTab();
+            e.Handled = true;
+        }
+        // Export dialog: Ctrl+E (Issue #23)
+        else if (e.Key == Key.E && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            OpenExportDialog();
+            e.Handled = true;
+        }
+        // Copy page to clipboard: Ctrl+Shift+C (Issue #23)
+        else if (e.Key == Key.C && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            CopyPageToClipboard();
             e.Handled = true;
         }
     }
