@@ -33,8 +33,24 @@ public partial class MainWindow : Window
     // Initialization flag – prevents events firing before UI is ready
     private bool _initialized = false;
 
-    // Layout mode
-    private string _currentLayout = "modern"; // "modern" or "classic"
+    // Layout mode (legacy, now always "floating")
+    private string _currentLayout = "floating";
+
+    // ═══ v0.4.0: Floating Toolbar Drag State ═══
+    private bool _isDraggingToolbar = false;
+    private Point _toolbarDragStart;
+    private double _toolbarOffsetX, _toolbarOffsetY;
+
+    // ═══ v0.4.0: Zen Mode ═══
+    private bool _zenModeActive = false;
+
+    // ═══ v0.4.0: Shape Recognition on Stroke End ═══
+    private bool _shapeRecognitionEnabled = true;
+    private System.Threading.Timer? _shapeRecognitionTimer;
+    private Stroke? _lastCollectedStroke;
+
+    // ═══ v0.4.0: Quick Color History ═══
+    private readonly List<System.Windows.Media.Color> _recentColors = new() { Colors.Black, Color.FromRgb(0, 0, 139), Colors.Red };
 
     // Auto-Updater
     private readonly AutoUpdater _autoUpdater = new();
@@ -66,7 +82,7 @@ public partial class MainWindow : Window
     // KI-Modell-Management
     private readonly ModelManager _modelManager = new();
 
-    // ShapeRecognizer für Auto-Tidy (Issue #34)
+    // ShapeRecognizer für Auto-Tidy (Issue #34) + v0.4.0 auto shape recognition
     private readonly ShapeRecognizer _shapeRecognizer = new();
 
     // Kontext-Aktionsleiste (Issue #35)
@@ -107,6 +123,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         VersionLabel.Text = $"v{App.Version}";
 
+        try { SetupFloatingToolbar(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupFloatingToolbar: {ex}"); }
         try { SetupToolButtons(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupToolButtons: {ex}"); }
         try { SetupCanvas(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupCanvas: {ex}"); }
         try { SetupStickyNotes(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupStickyNotes: {ex}"); }
@@ -114,8 +131,8 @@ public partial class MainWindow : Window
         try { SetupTheme(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTheme: {ex}"); }
         try { SetupTemplateCombo(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTemplateCombo: {ex}"); }
         try { SetupInputMode(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupInputMode: {ex}"); }
+        try { SetupShapeRecognition(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupShapeRecognition: {ex}"); }
         try { LoadModelAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"LoadModelAsync: {ex}"); }
-        try { ApplyLayout(App.Config.ToolbarLayout); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ApplyLayout: {ex}"); }
         try { SetupAutoTidy(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupAutoTidy: {ex}"); }
         try { SetupContextActionBar(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupContextActionBar: {ex}"); }
         try { SetupSearchIndex(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupSearchIndex: {ex}"); }
@@ -123,6 +140,10 @@ public partial class MainWindow : Window
         try { SetupPageManagement(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupPageManagement: {ex}"); }
         try { SetupTabsAndBookmarks(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupTabsAndBookmarks: {ex}"); }
         try { SetupRecentFiles(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SetupRecentFiles: {ex}"); }
+        try { PositionFloatingToolbar(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"PositionFloatingToolbar: {ex}"); }
+        // Right panel hidden by default in v0.4.0 – show via button
+        try { UpdateQuickColorDots(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"UpdateQuickColorDots: {ex}"); }
+        try { UpdateQuickSizeDots(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"UpdateQuickSizeDots: {ex}"); }
 
         // Track strokes for undo
         MainCanvas.StrokeCollected += OnStrokeCollected;

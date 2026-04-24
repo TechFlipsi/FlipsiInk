@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -16,7 +17,8 @@ namespace FlipsiInk;
 
 /// <summary>
 /// Central model management: download, delete, update-check, and path resolution.
-/// Replaces the old ModelDownloader with a richer, config-driven approach.
+/// v0.4.0: Three tiers – Mittel (8GB RAM), Stark (16GB RAM, recommended), Premium (32GB RAM).
+/// Supports remote catalog fetching for automatic model updates.
 /// </summary>
 public class ModelManager
 {
@@ -28,14 +30,13 @@ public class ModelManager
     private readonly string _modelsDir;
     private readonly string _registryPath;
 
-    /// <summary>Currently active model ID (from config or auto-detected).</summary>
     public string? ActiveModelId { get; private set; }
-
-    /// <summary>Fired when the active model changes (download/delete/switch).</summary>
     public event Action? ActiveModelChanged;
 
-    /// <summary>Registry of installed models (persisted as JSON).</summary>
     private Dictionary<string, InstalledModelEntry> _installed = new();
+
+    // Cached remote catalog (fetched once per session)
+    private List<ModelCatalogEntry>? _remoteCatalog;
 
     static ModelManager()
     {
@@ -45,7 +46,6 @@ public class ModelManager
 
     public ModelManager()
     {
-        // Use config path if set, otherwise default
         _modelsDir = !string.IsNullOrWhiteSpace(App.Config.ModelPath)
             ? Path.GetDirectoryName(App.Config.ModelPath) ?? DefaultModelsDir
             : DefaultModelsDir;
@@ -56,10 +56,8 @@ public class ModelManager
         DetectActiveModel();
     }
 
-    /// <summary>Models directory path.</summary>
     public string ModelsDirectory => _modelsDir;
 
-    /// <summary>Get the file path of the currently active ONNX model (or null).</summary>
     public string? GetActiveModelPath()
     {
         if (ActiveModelId != null && _installed.TryGetValue(ActiveModelId, out var entry))
@@ -67,60 +65,198 @@ public class ModelManager
         return null;
     }
 
+    // ── System RAM Detection ────────────────────────────────
+
+    public static long GetTotalRamMb()
+    {
+        try
+        {
+            var mem = GC.GetGCMemoryInfo();
+            return mem.TotalAvailableMemoryBytes / (1024 * 1024);
+        }
+        catch
+        {
+            return 8192;
+        }
+    }
+
+    public static bool HasEnoughRam(int minRamGb)
+    {
+        return GetTotalRamMb() >= minRamGb * 1024;
+    }
+
     // ── Catalog ──────────────────────────────────────────────
 
-    /// <summary>Available model catalog (hardcoded for now; can be fetched from GitHub later).</summary>
-    public List<ModelCatalogEntry> GetCatalog() => new()
+    /// <summary>
+    /// Hardcoded fallback catalog (used when remote fetch fails).
+    /// v0.4.0 tiers: mittel (8GB RAM), stark (16GB RAM, recommended), premium (32GB RAM).
+    /// </summary>
+    public List<ModelCatalogEntry> GetFallbackCatalog() => new()
     {
+        new()
+        {
+            Id = "florence2-base-q8",
+            Name = "Florence-2 Base Q8",
+            Description = "Gute Texterkennung - fuer Nutzer mit 8 GB RAM",
+            DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/florence2-base-q8.onnx",
+            EstimatedSizeBytes = 1_500_000_000,
+            Size = "~1.5 GB",
+            Quantization = "Q8",
+            IsRecommended = false,
+            MinRamGb = 8,
+            Tier = "mittel",
+            Version = "1.0.0"
+        },
         new()
         {
             Id = "qwen2.5-vl-3b-q4",
             Name = "Qwen2.5-VL 3B Q4",
-            Description = "Texterkennung + Mathe – EMPFOHLEN für die meisten Nutzer",
+            Description = "Text + Mathe - EMPFOHLEN fuer die meisten Nutzer (16 GB RAM)",
             DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/qwen2.5-vl-3b-q4.onnx",
-            EstimatedSizeBytes = 1_800_000_000,
-            Size = "~1.8 GB",
+            EstimatedSizeBytes = 3_800_000_000,
+            Size = "~3.8 GB",
             Quantization = "Q4",
             IsRecommended = true,
-            MinRamGb = 8,
+            MinRamGb = 16,
             Tier = "stark",
-            Version = "1.0.0"
+            Version = "1.1.0"
         },
         new()
         {
             Id = "qwen2.5-vl-7b-q4",
             Name = "Qwen2.5-VL 7B Q4",
-            Description = "Beste Erkennungsqualität – benötigt 16 GB RAM, GPU empfohlen",
+            Description = "Beste Erkennungsqualitaet - 32 GB RAM, GPU empfohlen",
             DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/qwen2.5-vl-7b-q4.onnx",
-            EstimatedSizeBytes = 4_500_000_000,
-            Size = "~4.5 GB",
+            EstimatedSizeBytes = 8_000_000_000,
+            Size = "~8 GB",
             Quantization = "Q4",
             IsRecommended = false,
-            MinRamGb = 16,
-            Tier = "bester",
-            Version = "1.0.0"
-        },
-        new()
-        {
-            Id = "trocr-large",
-            Name = "TrOCR large",
-            Description = "Nur Texterkennung – leichtgewichtig, für ältere PCs",
-            DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/trocr-large.onnx",
-            EstimatedSizeBytes = 1_200_000_000,
-            Size = "~1.2 GB",
-            Quantization = "FP32",
-            IsRecommended = false,
-            MinRamGb = 4,
-            Tier = "schwach",
+            MinRamGb = 32,
+            Tier = "premium",
             Version = "1.0.0"
         }
     };
 
+    /// <summary>
+    /// Gets the model catalog, preferring remote if available, falling back to hardcoded.
+    /// </summary>
+    public List<ModelCatalogEntry> GetCatalog()
+    {
+        return _remoteCatalog ?? GetFallbackCatalog();
+    }
+
+    /// <summary>
+    /// Fetches the remote model catalog from the configured URL.
+    /// Returns true if remote catalog was loaded successfully.
+    /// </summary>
+    public async Task<bool> FetchRemoteCatalogAsync()
+    {
+        var url = App.Config.ModelCatalogUrl;
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        try
+        {
+            var response = await _http.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var catalog = JsonSerializer.Deserialize<List<ModelCatalogEntry>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (catalog != null && catalog.Count > 0)
+            {
+                _remoteCatalog = catalog;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Remote catalog fetch failed: {ex.Message}");
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Checks all installed models against the (remote or fallback) catalog
+    /// and returns a list of models that have updates available.
+    /// </summary>
+    public async Task<List<(ModelCatalogEntry Catalog, string Reason)>> CheckForModelUpdatesAsync()
+    {
+        var updates = new List<(ModelCatalogEntry, string)>();
+        var catalog = GetCatalog();
+
+        // Ensure we have the latest catalog
+        if (_remoteCatalog == null)
+            await FetchRemoteCatalogAsync();
+
+        catalog = GetCatalog();
+
+        foreach (var installed in _installed)
+        {
+            var catalogEntry = catalog.FirstOrDefault(c => c.Id == installed.Key);
+            if (catalogEntry == null)
+            {
+                // Check if there's a newer model in the same tier
+                var installedCatalogEntry = GetFallbackCatalog().FirstOrDefault(c => c.Id == installed.Key);
+                if (installedCatalogEntry != null)
+                {
+                    var sameTierNewer = catalog.FirstOrDefault(c =>
+                        c.Tier == installedCatalogEntry.Tier && c.Id != installed.Key);
+                    if (sameTierNewer != null)
+                    {
+                        updates.Add((sameTierNewer, $"Neues Modell in Tier '{GetTierLabel(sameTierNewer.Tier)}' verfuegbar"));
+                    }
+                }
+                continue;
+            }
+
+            // Compare versions
+            if (catalogEntry.Version != installed.Value.Version)
+            {
+                updates.Add((catalogEntry, $"Update von v{installed.Value.Version} auf v{catalogEntry.Version}"));
+            }
+        }
+
+        return updates;
+    }
+
+    /// <summary>
+    /// Gets a human-readable label for a tier.
+    /// </summary>
+    public static string GetTierLabel(string tier) => tier switch
+    {
+        "mittel" => "Mittel",
+        "stark" => "Stark",
+        "premium" => "Premium",
+        _ => tier
+    };
+
+    /// <summary>
+    /// Gets a tier color as hex string for UI badges.
+    /// </summary>
+    public static string GetTierColor(string tier) => tier switch
+    {
+        "mittel" => "#2196F3",
+        "stark" => "#0078D7",
+        "premium" => "#9C27B0",
+        _ => "#666"
+    };
+
     // ── Download ─────────────────────────────────────────────
 
-    /// <summary>Download a model from the catalog. Reports progress 0.0–1.0.</summary>
     public async Task DownloadModelAsync(ModelCatalogEntry catalog, IProgress<double>? progress)
     {
+        // RAM warning check
+        if (!HasEnoughRam(catalog.MinRamGb))
+        {
+            throw new InvalidOperationException(
+                $"Nicht genug RAM fuer {catalog.Name}. Benoetigt: {catalog.MinRamGb} GB, " +
+                $"Verfuegbar: ~{GetTotalRamMb() / 1024} GB.");
+        }
+
         var targetPath = Path.Combine(_modelsDir, $"{catalog.Id}.onnx");
         var tmpPath = targetPath + ".downloading";
 
@@ -146,11 +282,9 @@ public class ModelManager
                     progress?.Report((double)bytesRead / totalBytes);
             }
 
-            // Atomic rename
             if (File.Exists(targetPath)) File.Delete(targetPath);
             File.Move(tmpPath, targetPath);
 
-            // Register
             var entry = new InstalledModelEntry
             {
                 Id = catalog.Id,
@@ -162,13 +296,11 @@ public class ModelManager
             _installed[catalog.Id] = entry;
             SaveRegistry();
 
-            // Auto-activate first installed model if none active
             if (ActiveModelId == null)
                 SetActiveModel(catalog.Id);
         }
         catch
         {
-            // Clean up partial download
             if (File.Exists(tmpPath)) File.Delete(tmpPath);
             throw;
         }
@@ -176,7 +308,6 @@ public class ModelManager
 
     // ── Delete ───────────────────────────────────────────────
 
-    /// <summary>Delete an installed model.</summary>
     public void DeleteModel(string modelId)
     {
         if (!_installed.TryGetValue(modelId, out var entry)) return;
@@ -197,7 +328,6 @@ public class ModelManager
 
     // ── Active model ────────────────────────────────────────
 
-    /// <summary>Set the active model used by OcrEngine.</summary>
     public void SetActiveModel(string modelId)
     {
         if (!_installed.ContainsKey(modelId)) return;
@@ -207,22 +337,17 @@ public class ModelManager
         ActiveModelChanged?.Invoke();
     }
 
-    /// <summary>Get installed model entry (or null).</summary>
     public InstalledModelEntry? GetInstalled(string modelId) =>
         _installed.TryGetValue(modelId, out var e) ? e : null;
 
-    /// <summary>All installed models.</summary>
     public IReadOnlyDictionary<string, InstalledModelEntry> Installed => _installed;
 
     // ── Update check ────────────────────────────────────────
 
-    /// <summary>Check if a newer version of a model is available.</summary>
     public async Task<bool> CheckForUpdateAsync(ModelCatalogEntry catalog)
     {
         if (!_installed.TryGetValue(catalog.Id, out var entry)) return false;
-        // Compare versions
         if (catalog.Version != entry.Version) return true;
-        // Also check if remote file size differs significantly
         try
         {
             var response = await _http.SendAsync(new HttpRequestMessage(HttpMethod.Head, catalog.DownloadUrl));
@@ -241,10 +366,8 @@ public class ModelManager
 
     private void DetectActiveModel()
     {
-        // Priority: config path > first installed model
         if (!string.IsNullOrWhiteSpace(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
         {
-            // Find matching installed entry
             foreach (var (id, entry) in _installed)
             {
                 if (entry.FilePath == App.Config.ModelPath)
@@ -253,7 +376,6 @@ public class ModelManager
                     return;
                 }
             }
-            // Config points to a file we don't have in registry – scan it in
             var extId = Path.GetFileNameWithoutExtension(App.Config.ModelPath);
             _installed[extId] = new InstalledModelEntry
             {
@@ -268,7 +390,6 @@ public class ModelManager
             return;
         }
 
-        // Fall back to first installed
         if (_installed.Count > 0)
         {
             foreach (var (id, _) in _installed)
@@ -290,7 +411,6 @@ public class ModelManager
             _installed = JsonSerializer.Deserialize<Dictionary<string, InstalledModelEntry>>(json)
                          ?? new Dictionary<string, InstalledModelEntry>();
 
-            // Prune entries whose files no longer exist
             var toRemove = new List<string>();
             foreach (var (id, entry) in _installed)
             {
@@ -322,7 +442,6 @@ public class ModelManager
     }
 }
 
-/// <summary>Catalog entry for a model available for download.</summary>
 public class ModelCatalogEntry
 {
     public string Id { get; set; } = "";
@@ -333,12 +452,11 @@ public class ModelCatalogEntry
     public string Size { get; set; } = "";
     public string Quantization { get; set; } = "";
     public bool IsRecommended { get; set; }
-    public int MinRamGb { get; set; } = 8;
+    public int MinRamGb { get; set; } = 16;
     public string Tier { get; set; } = "stark";
     public string Version { get; set; } = "1.0.0";
 }
 
-/// <summary>Persisted info about an installed model.</summary>
 public class InstalledModelEntry
 {
     public string Id { get; set; } = "";

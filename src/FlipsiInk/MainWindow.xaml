@@ -6,7 +6,8 @@
         Width="1200" Height="800"
         MinWidth="800" MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E1E">
+        Background="#1E1E1E"
+        WindowStyle="SingleBorderWindow">
 
     <Window.Resources>
         <!-- Color picker popup items style -->
@@ -34,284 +35,396 @@
         </Style>
     </Window.Resources>
 
-    <DockPanel>
-        <!-- Tab Bar (Issue #21) -->
-        <local:TabBarControl DockPanel.Dock="Top" x:Name="TabBar" Height="32"/>
+    <Grid x:Name="RootGrid">
+        <!-- ═══════════════════════════════════════════════════════
+             LAYER 0: Main Content (Canvas + Panels)
+             ═══════════════════════════════════════════════════════ -->
+        <DockPanel x:Name="MainDock">
 
-        <!-- Top Bar -->
-        <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48" x:Name="TopBar">
-            <Border Background="#444" Height="1" DockPanel.Dock="Bottom"/>
-            <StackPanel Orientation="Horizontal" Margin="8,0">
-                <TextBlock Text="&#x270E; FlipsiInk" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0,16,0" x:Name="AppTitle"/>
-                <TextBlock x:Name="VersionLabel" Text="v0.1.0" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,16,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,0">
-                <!-- Zoom Controls -->
-                <Button x:Name="BtnZoomOut" Content="&#x2212;" Style="{StaticResource ToolButton}" ToolTip="Verkleinern" FontSize="18"/>
-                <TextBlock x:Name="ZoomLabel" Text="100%" Foreground="White" VerticalAlignment="Center" FontSize="12" Margin="4,0" Width="45" TextAlignment="Center"/>
-                <Button x:Name="BtnZoomIn" Content="&#xFF0B;" Style="{StaticResource ToolButton}" ToolTip="Vergrößern" FontSize="16"/>
-                <Button x:Name="BtnZoomReset" Content="&#x22A1;" Style="{StaticResource ToolButton}" ToolTip="Seitengröße"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnUndo" Content="&#x21B6;" Style="{StaticResource ToolButton}" ToolTip="Rückgängig (Ctrl+Z)" FontSize="16"/>
-                <Button x:Name="BtnRedo" Content="&#x21B7;" Style="{StaticResource ToolButton}" ToolTip="Wiederholen (Ctrl+Y)" FontSize="16"/>
-                <Button x:Name="BtnClear" Content="&#x2715;" Style="{StaticResource ToolButton}" ToolTip="Alles löschen" FontSize="13"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnRecognize" Content="Aa" Style="{StaticResource ToolButton}" ToolTip="Text erkennen (Ctrl+Shift+R)" Background="#0078D7" FontWeight="Bold"/>
-                <Button x:Name="BtnCalc" Content="&#x2211;" Style="{StaticResource ToolButton}" ToolTip="Mathe berechnen (Ctrl+Shift+M)" Background="#0078D7" FontSize="16"/>
-                <Button x:Name="BtnAutoTidy" Content="&#x203B;" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnNotebooks" Content="&#x2637;" Style="{StaticResource ToolButton}" ToolTip="Notizbücher"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnSave" Content="&#x25C9;" Style="{StaticResource ToolButton}" ToolTip="Speichern" FontSize="16"/>
-                <Button x:Name="BtnExport" Content="&#x2197;" Style="{StaticResource ToolButton}" ToolTip="Export &amp; Teilen (Ctrl+E)" FontSize="16"/>
-                <Button x:Name="BtnTheme" Content="&#x25D0;" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln" FontSize="16"/>
-                <Button x:Name="BtnLayout" Content="&#x25A3;" Style="{StaticResource ToolButton}" ToolTip="Layout wechseln (Klassisch/Modern)"/>
-                <Button x:Name="BtnModelManager" Content="&#x229E;" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten" FontSize="16"/>
-                <Button x:Name="BtnSettings" Content="&#x2699;" Style="{StaticResource ToolButton}" ToolTip="Einstellungen" FontSize="16"/>
-                <Button x:Name="BtnCheckUpdate" Content="&#x21BB;" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen" FontSize="16"/>
-                <Separator Margin="4,8"/>
-                <ToggleButton x:Name="BtnBookmarks" Content="&#x2606;" Style="{StaticResource ToolButton}" ToolTip="Lesezeichen" FontSize="16"/>
-                <ToggleButton x:Name="BtnBacklinks" Content="&#x21E0;" Style="{StaticResource ToolButton}" ToolTip="Rückverweise" FontSize="16"/>
-                <Button x:Name="BtnRecentFiles" Content="&#x2630;" Style="{StaticResource ToolButton}" ToolTip="Zuletzt geöffnet" FontSize="14"/>
-            </StackPanel>
-        </DockPanel>
+            <!-- Tab Bar (thin, minimal) -->
+            <local:TabBarControl DockPanel.Dock="Top" x:Name="TabBar" Height="32"/>
 
-        <!-- ========== MODERN LAYOUT: Horizontal Toolbar ========== -->
-        <Border DockPanel.Dock="Top" Background="#252525" Padding="8,4" CornerRadius="0,0,8,8" x:Name="ModernToolbar" Visibility="Visible">
-            <Border.Effect>
-                <DropShadowEffect ShadowDepth="2" BlurRadius="6" Opacity="0.3" Color="Black"/>
-            </Border.Effect>
-            <StackPanel Orientation="Horizontal">
-                <!-- Drawing Tools -->
-                <Button x:Name="BtnPen_M" Content="&#x270E;" Style="{StaticResource ToolButton}" ToolTip="Stift" Background="#0078D7" FontSize="16"/>
-                <Button x:Name="BtnHighlighter_M" Content="&#x25A4;" Style="{StaticResource ToolButton}" ToolTip="Textmarker"/>
-                <Button x:Name="BtnEraser_M" Content="&#x2715;" Style="{StaticResource ToolButton}" ToolTip="Radierer" FontSize="13"/>
-                <Button x:Name="BtnSelect_M" Content="&#x261C;" Style="{StaticResource ToolButton}" ToolTip="Auswählen"/>
-                <Separator Margin="4,4"/>
-                <!-- Shapes -->
-                <Button x:Name="BtnLine_M" Content="&#x2500;" Style="{StaticResource ToolButton}" ToolTip="Linie" FontSize="18"/>
-                <Button x:Name="BtnRect_M" Content="&#x25A1;" Style="{StaticResource ToolButton}" ToolTip="Rechteck"/>
-                <Button x:Name="BtnCircle_M" Content="&#x25CB;" Style="{StaticResource ToolButton}" ToolTip="Kreis"/>
-                <Separator Margin="4,4"/>
-                <!-- Color Picker (Modern) -->
-                <Button x:Name="BtnColorPicker_M" Style="{StaticResource ToolButton}" ToolTip="Farbe wählen" Width="38" Height="38">
-                    <Ellipse x:Name="CurrentColorIndicator_M" Width="20" Height="20" Fill="Black" Stroke="#888" StrokeThickness="1"/>
-                </Button>
-                <Popup x:Name="ColorPopup_M" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnColorPicker_M}" StaysOpen="False" AllowsTransparency="True">
-                    <Border Background="#2D2D2D" CornerRadius="8" Padding="10" BorderBrush="#555" BorderThickness="1">
-                        <UniformGrid Columns="5" Rows="2">
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Black" Click="ColorSwatch_Click" Tag="Black"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#00008B" Click="ColorSwatch_Click" Tag="DarkBlue"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Blue" Click="ColorSwatch_Click" Tag="Blue"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Red" Click="ColorSwatch_Click" Tag="Red"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#008000" Click="ColorSwatch_Click" Tag="Green"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#FF8C00" Click="ColorSwatch_Click" Tag="Orange"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#800080" Click="ColorSwatch_Click" Tag="Purple"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#8B4513" Click="ColorSwatch_Click" Tag="Brown"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Gray" Click="ColorSwatch_Click" Tag="Gray"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#008080" Click="ColorSwatch_Click" Tag="Teal"/>
-                        </UniformGrid>
-                    </Border>
-                </Popup>
-                <Separator Margin="4,4"/>
-                <!-- Sizes -->
-                <Button x:Name="BtnThin_M" Content="&#x25AA;" Style="{StaticResource ToolButton}" ToolTip="Dünn" FontSize="8"/>
-                <Button x:Name="BtnMedium_M" Content="&#x25A0;" Style="{StaticResource ToolButton}" ToolTip="Mittel" FontSize="11"/>
-                <Button x:Name="BtnThick_M" Content="&#x2B1B;" Style="{StaticResource ToolButton}" ToolTip="Dick"/>
-                <Separator Margin="4,4"/>
-                <!-- Template &amp; Input Mode -->
-                <ComboBox x:Name="TemplateCombo_M" Width="140" Margin="4,0" ToolTip="Seitenvorlage" Style="{StaticResource DarkComboBox}">
-                    <ComboBoxItem Content="Blanko"/>
-                    <ComboBoxItem Content="Liniert (breit)" IsSelected="True"/>
-                    <ComboBoxItem Content="Liniert (schmal)"/>
-                    <ComboBoxItem Content="Kariert (klein)"/>
-                    <ComboBoxItem Content="Kariert (mittel)"/>
-                    <ComboBoxItem Content="Kariert (groß)"/>
-                    <ComboBoxItem Content="Punktiert (klein)"/>
-                    <ComboBoxItem Content="Punktiert (mittel)"/>
-                    <ComboBoxItem Content="Punktiert (groß)"/>
-                    <ComboBoxItem Content="Cornell Notes"/>
-                    <ComboBoxItem Content="Isometrisch"/>
-                </ComboBox>
-                <Button x:Name="BtnAutoTidy_M" Content="&#x203B;" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen" Background="#0078D7"/>
-                <Separator Margin="4,4"/>
-                <Button x:Name="BtnInputMode_M" Content="&#x270B;" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
-                <Separator Margin="4,4"/>
-                <ToggleButton x:Name="BtnStickyNote_M" Content="&#x25AF;" Style="{StaticResource ToolButton}" ToolTip="Klebezettel-Modus"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ========== CLASSIC LAYOUT: Left Toolbar ========== -->
-        <Border DockPanel.Dock="Left" Background="#252525" Width="56" Padding="4" CornerRadius="0,8,8,0" x:Name="LeftToolbar" Visibility="Collapsed">
-            <Border.Effect>
-                <DropShadowEffect ShadowDepth="2" BlurRadius="4" Opacity="0.2" Color="Black" Direction="90"/>
-            </Border.Effect>
-            <StackPanel>
-                <Button x:Name="BtnPen" Content="&#x270E;" Style="{StaticResource ToolButton}" ToolTip="Stift" Background="#0078D7" FontSize="16"/>
-                <Button x:Name="BtnHighlighter" Content="&#x25A4;" Style="{StaticResource ToolButton}" ToolTip="Textmarker"/>
-                <Button x:Name="BtnEraser" Content="&#x2715;" Style="{StaticResource ToolButton}" ToolTip="Radierer" FontSize="13"/>
-                <Button x:Name="BtnSelect" Content="&#x261C;" Style="{StaticResource ToolButton}" ToolTip="Auswählen"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnLine" Content="&#x2500;" Style="{StaticResource ToolButton}" ToolTip="Linie" FontSize="18"/>
-                <Button x:Name="BtnRect" Content="&#x25A1;" Style="{StaticResource ToolButton}" ToolTip="Rechteck"/>
-                <Button x:Name="BtnCircle" Content="&#x25CB;" Style="{StaticResource ToolButton}" ToolTip="Kreis"/>
-                <Separator Margin="4,8"/>
-                <!-- Color Picker (Classic) -->
-                <Button x:Name="BtnColorPicker" Style="{StaticResource ToolButton}" ToolTip="Farbe wählen" Width="38" Height="38">
-                    <Ellipse x:Name="CurrentColorIndicator" Width="20" Height="20" Fill="Black" Stroke="#888" StrokeThickness="1"/>
-                </Button>
-                <Popup x:Name="ColorPopup" Placement="Right" PlacementTarget="{Binding ElementName=BtnColorPicker}" StaysOpen="False" AllowsTransparency="True">
-                    <Border Background="#2D2D2D" CornerRadius="8" Padding="10" BorderBrush="#555" BorderThickness="1">
-                        <UniformGrid Columns="5" Rows="2">
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Black" Click="ColorSwatch_Click" Tag="Black"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#00008B" Click="ColorSwatch_Click" Tag="DarkBlue"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Blue" Click="ColorSwatch_Click" Tag="Blue"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Red" Click="ColorSwatch_Click" Tag="Red"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#008000" Click="ColorSwatch_Click" Tag="Green"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#FF8C00" Click="ColorSwatch_Click" Tag="Orange"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#800080" Click="ColorSwatch_Click" Tag="Purple"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#8B4513" Click="ColorSwatch_Click" Tag="Brown"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="Gray" Click="ColorSwatch_Click" Tag="Gray"/>
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="#008080" Click="ColorSwatch_Click" Tag="Teal"/>
-                        </UniformGrid>
-                    </Border>
-                </Popup>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnThin" Content="&#x25AA;" Style="{StaticResource ToolButton}" ToolTip="Dünn" FontSize="8"/>
-                <Button x:Name="BtnMedium" Content="&#x25A0;" Style="{StaticResource ToolButton}" ToolTip="Mittel" FontSize="11"/>
-                <Button x:Name="BtnThick" Content="&#x2B1B;" Style="{StaticResource ToolButton}" ToolTip="Dick"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnTemplate" Content="&#x25A3;" Style="{StaticResource ToolButton}" ToolTip="Seitenvorlage"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnAutoTidy_C" Content="&#x203B;" Style="{StaticResource ToolButton}" ToolTip="Auto-Tidy: Layout aufräumen"/>
-                <Separator Margin="4,8"/>
-                <Button x:Name="BtnInputMode" Content="&#x270B;" Style="{StaticResource ToolButton}" ToolTip="Eingabe-Modus: Stift/Touch/Beide"/>
-                <Separator Margin="4,8"/>
-                <ToggleButton x:Name="BtnStickyNote" Content="&#x25AF;" Style="{StaticResource ToolButton}" ToolTip="Klebezettel-Modus"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Left: Page Thumbnail Strip (Issue #15) -->
-        <local:PageThumbnailControl x:Name="PageThumbnails" DockPanel.Dock="Left" Width="100"/>
-
-        <!-- Left: Bookmark Panel (Issue #21) -->
-        <local:BookmarkPanel x:Name="BookmarkSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
-
-        <!-- Left: Backlinks Panel (Issue #33) -->
-        <local:BacklinksPanel x:Name="BacklinksSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
-
-        <!-- Recent Files Popup (Issue #21) -->
-        <Popup x:Name="RecentFilesPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnRecentFiles}" StaysOpen="False" AllowsTransparency="True">
-            <Border Background="#2D2D2D" CornerRadius="8" Padding="8" MinWidth="200" MaxHeight="300">
-                <StackPanel>
-                    <TextBlock Text="Zuletzt geöffnet" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
-                    <ItemsControl x:Name="RecentFilesList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding}" Background="Transparent" Foreground="White" BorderThickness="0" Padding="4,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" Click="RecentFile_Click" FontSize="12" Margin="0,1"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+            <!-- ═══ MINIMAL TOP BAR ═══ -->
+            <DockPanel DockPanel.Dock="Top" Background="#1A1A1A" Height="36" x:Name="TopBar">
+                <Border Background="#333" Height="1" DockPanel.Dock="Bottom" Opacity="0.5"/>
+                <StackPanel Orientation="Horizontal" Margin="8,0" VerticalAlignment="Center">
+                    <TextBlock Text="FlipsiInk" FontSize="14" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" Margin="4,0,12,0" x:Name="AppTitle" Opacity="0.8"/>
+                    <TextBlock x:Name="VersionLabel" Text="v0.4.0" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,0" VerticalAlignment="Center">
+                    <!-- Zoom -->
+                    <Button x:Name="BtnZoomOut" Content="&#x2212;" Style="{StaticResource ToolButton}" ToolTip="Verkleinern" FontSize="16" Width="28" Height="28"/>
+                    <TextBlock x:Name="ZoomLabel" Text="100%" Foreground="#999" VerticalAlignment="Center" FontSize="11" Margin="4,0" Width="40" TextAlignment="Center"/>
+                    <Button x:Name="BtnZoomIn" Content="&#xFF0B;" Style="{StaticResource ToolButton}" ToolTip="Vergr&#xF6;&#xDF;ern" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnZoomReset" Content="&#x22A1;" Style="{StaticResource ToolButton}" ToolTip="Seitengr&#xF6;&#xDF;e" Width="28" Height="28"/>
+                    <Separator Margin="4,4" Background="#333"/>
+                    <!-- Undo/Redo -->
+                    <Button x:Name="BtnUndo" Content="&#x21B6;" Style="{StaticResource ToolButton}" ToolTip="R&#xFC;ckg&#xE4;ngig (Ctrl+Z)" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnRedo" Content="&#x21B7;" Style="{StaticResource ToolButton}" ToolTip="Wiederholen (Ctrl+Y)" FontSize="14" Width="28" Height="28"/>
+                    <Separator Margin="4,4" Background="#333"/>
+                    <!-- Actions -->
+                    <Button x:Name="BtnNotebooks" Content="&#x2637;" Style="{StaticResource ToolButton}" ToolTip="Notizb&#xFC;cher" Width="28" Height="28"/>
+                    <Button x:Name="BtnSave" Content="&#x25C9;" Style="{StaticResource ToolButton}" ToolTip="Speichern" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnExport" Content="&#x2197;" Style="{StaticResource ToolButton}" ToolTip="Export &amp; Teilen (Ctrl+E)" FontSize="14" Width="28" Height="28"/>
+                    <Separator Margin="4,4" Background="#333"/>
+                    <Button x:Name="BtnTheme" Content="&#x25D0;" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnModelManager" Content="&#x229E;" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnSettings" Content="&#x2699;" Style="{StaticResource ToolButton}" ToolTip="Einstellungen" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnCheckUpdate" Content="&#x21BB;" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen" FontSize="14" Width="28" Height="28"/>
+                    <Separator Margin="4,4" Background="#333"/>
+                    <ToggleButton x:Name="BtnBookmarks" Content="&#x2606;" Style="{StaticResource ToolButton}" ToolTip="Lesezeichen" FontSize="14" Width="28" Height="28"/>
+                    <ToggleButton x:Name="BtnBacklinks" Content="&#x21E0;" Style="{StaticResource ToolButton}" ToolTip="R&#xFC;ckverweise" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnRecentFiles" Content="&#x2630;" Style="{StaticResource ToolButton}" ToolTip="Zuletzt ge&#xF6;ffnet" FontSize="12" Width="28" Height="28"/>
+                </StackPanel>
+            </DockPanel>
+
+            <!-- ═══ STATUS BAR (bottom, minimal) ═══ -->
+            <DockPanel DockPanel.Dock="Bottom" Background="#1A1A1A" Height="24" x:Name="BottomBar">
+                <Border Background="#333" Height="1" DockPanel.Dock="Top" Opacity="0.5"/>
+                <TextBlock x:Name="StatusText" Text="Bereit" Foreground="#666" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="PageIndicator" Text="Seite 1/1" Foreground="#0078D7" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <TextBlock x:Name="ModelStatus" Text="" Foreground="#666" FontSize="10" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            </DockPanel>
+
+            <!-- ═══ LEFT: Backlinks Panel (slide-in) ═══ -->
+            <local:BacklinksPanel x:Name="BacklinksSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
+
+            <!-- ═══ RIGHT: Recognition Results Panel (slide-in, toggleable) ═══ -->
+            <Border DockPanel.Dock="Right" Background="#1E1E1E" Width="260" CornerRadius="12,0,0,12" x:Name="RightPanel" Visibility="Collapsed">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="-3" BlurRadius="12" Opacity="0.3" Color="Black" Direction="0"/>
+                </Border.Effect>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <StackPanel>
+                        <!-- Toggle button for right panel -->
+                        <Button x:Name="BtnCloseRightPanel" Content="&#x25B6;" HorizontalAlignment="Right" Style="{StaticResource ToolButton}" ToolTip="Panel schlie&#xDF;en" Width="24" Height="24" FontSize="10"/>
+
+                        <!-- Card: Erkannter Text -->
+                        <Border Background="#2A2A2A" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Erkannter Text" FontWeight="SemiBold" Foreground="White" FontSize="12" Margin="0,0,0,6"/>
+                                <TextBox x:Name="RecognizedText" AcceptsReturn="True" TextWrapping="Wrap"
+                                         Height="100" VerticalScrollBarVisibility="Auto"
+                                         Background="#1E1E1E" Foreground="White" BorderThickness="1" BorderBrush="#3A3A3A"
+                                         FontSize="12" IsReadOnly="True" Padding="6" CornerRadius="6"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card: Mathe-Ergebnis -->
+                        <Border Background="#2A2A2A" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Mathe-Ergebnis" FontWeight="SemiBold" Foreground="White" FontSize="12" Margin="0,0,0,6"/>
+                                <TextBox x:Name="MathResult" AcceptsReturn="True" TextWrapping="Wrap"
+                                         Height="60" VerticalScrollBarVisibility="Auto"
+                                         Background="#1E1E1E" Foreground="#4CAF50" BorderThickness="1" BorderBrush="#3A3A3A"
+                                         FontSize="14" FontWeight="Bold" IsReadOnly="True" Padding="6"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card: Smart-Detection Links -->
+                        <Border x:Name="SmartLinksCard" Background="#2A2A2A" CornerRadius="10" Padding="10" Margin="0,0,0,8" Visibility="Collapsed">
+                            <StackPanel x:Name="SmartLinksPanel">
+                                <TextBlock Text="Erkannte Links" FontWeight="SemiBold" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                                <ItemsControl x:Name="SmartLinksList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Margin="0,2">
+                                                <Hyperlink NavigateUri="{Binding Uri}" RequestNavigate="SmartLink_Navigate" Foreground="#4CAF50">
+                                                    <Run Text="{Binding Label}"/>
+                                                </Hyperlink>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Search -->
+                        <Button x:Name="BtnSearch" Content="&#x2630; Notizen durchsuchen" Style="{StaticResource ToolButton}" ToolTip="Volltextsuche" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
-        </Popup>
 
-        <!-- Right Panel: Recognition Results -->
-        <Border DockPanel.Dock="Right" Background="#252525" Width="280" Padding="12" CornerRadius="8,0,0,8" x:Name="RightPanel">
-            <Border.Effect>
-                <DropShadowEffect ShadowDepth="-2" BlurRadius="6" Opacity="0.2" Color="Black" Direction="0"/>
-            </Border.Effect>
-            <StackPanel>
-                <!-- Card: Erkannter Text -->
-                <Border Background="#1E1E1E" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+            <!-- Recent Files Popup -->
+            <Popup x:Name="RecentFilesPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnRecentFiles}" StaysOpen="False" AllowsTransparency="True">
+                <Border Background="#2A2A2A" CornerRadius="10" Padding="10" MinWidth="200" MaxHeight="300">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.4" Color="Black"/>
+                    </Border.Effect>
                     <StackPanel>
-                        <TextBlock Text="Erkannter Text" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
-                        <TextBox x:Name="RecognizedText" AcceptsReturn="True" TextWrapping="Wrap"
-                                 Height="120" VerticalScrollBarVisibility="Auto"
-                                 Background="#252525" Foreground="White" BorderThickness="1" BorderBrush="#444"
-                                 FontSize="13" IsReadOnly="True" Padding="6"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Card: Mathe-Ergebnis -->
-                <Border Background="#1E1E1E" CornerRadius="8" Padding="10" Margin="0,0,0,8">
-                    <StackPanel>
-                        <TextBlock Text="Mathe-Ergebnis" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
-                        <TextBox x:Name="MathResult" AcceptsReturn="True" TextWrapping="Wrap"
-                                 Height="80" VerticalScrollBarVisibility="Auto"
-                                 Background="#252525" Foreground="#4CAF50" BorderThickness="1" BorderBrush="#444"
-                                 FontSize="15" FontWeight="Bold" IsReadOnly="True" Padding="6"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Card: Status -->
-                <Border Background="#1E1E1E" CornerRadius="8" Padding="10" Margin="0,0,0,8">
-                    <StackPanel>
-                        <TextBlock Text="Status" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
-                        <TextBlock x:Name="StatusText" Text="Bereit" Foreground="Gray" FontSize="12" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="PageIndicator" Text="Seite 1/1" Foreground="#0078D7" FontWeight="Bold" FontSize="12" Margin="0,6,0,0"/>
-                        <TextBlock x:Name="ModelStatus" Text="Modell: nicht geladen" Foreground="#FF6600" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Smart-Detection Links (Issue #30) -->
-                <Border x:Name="SmartLinksCard" Background="#1E1E1E" CornerRadius="8" Padding="10" Margin="0,0,0,8" Visibility="Collapsed">
-                    <StackPanel x:Name="SmartLinksPanel">
-                        <TextBlock Text="Erkannte Links" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,4"/>
-                        <ItemsControl x:Name="SmartLinksList">
+                        <TextBlock Text="Zuletzt ge&#xF6;ffnet" FontWeight="SemiBold" Foreground="White" FontSize="12" Margin="0,0,0,6"/>
+                        <ItemsControl x:Name="RecentFilesList">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Margin="0,2">
-                                        <Hyperlink NavigateUri="{Binding Uri}" RequestNavigate="SmartLink_Navigate" Foreground="#4CAF50">
-                                            <Run Text="{Binding Label}"/>
-                                        </Hyperlink>
-                                    </TextBlock>
+                                    <Button Content="{Binding}" Background="Transparent" Foreground="White" BorderThickness="0" Padding="4,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" Click="RecentFile_Click" FontSize="12" Margin="0,1"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
                 </Border>
+            </Popup>
 
-                <!-- Suche-Button (Issue #30) -->
-                <Button x:Name="BtnSearch" Content="&#x2630; Notizen durchsuchen" Style="{StaticResource ToolButton}" ToolTip="Volltextsuche in gespeicherten Notizen" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
+            <!-- ═══ MAIN CANVAS AREA ═══ -->
+            <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#000000">
+                <Grid x:Name="CanvasGrid">
+                    <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
+                    <!-- Sticky Note overlay -->
+                    <Canvas x:Name="StickyNoteOverlay" Width="1200" Height="1600" Background="{x:Null}" ClipToBounds="True"/>
+                    <!-- Context-sensitive action popup (Nebo-style) -->
+                    <Popup x:Name="ContextActionPopup" Placement="Relative" PlacementTarget="{Binding ElementName=CanvasGrid}" AllowsTransparency="True" StaysOpen="False">
+                        <Border Background="#2A2A2A" CornerRadius="10" Padding="6,4" BorderBrush="#0078D7" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="2" BlurRadius="6" Opacity="0.3" Color="Black"/>
+                            </Border.Effect>
+                            <StackPanel Orientation="Horizontal" x:Name="ContextActionPanel"/>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </ScrollViewer>
+        </DockPanel>
 
-                <!-- Template Preview (Classic only) -->
-                <StackPanel x:Name="ClassicTemplatePanel" Visibility="Collapsed">
-                    <Border Background="#1E1E1E" CornerRadius="8" Padding="10" Margin="0,0,0,8">
-                        <StackPanel>
-                            <TextBlock Text="Vorlage" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
-                            <ComboBox x:Name="TemplateCombo" Margin="0,0,0,4" Style="{StaticResource DarkComboBox}">
-                                <ComboBoxItem Content="Blanko"/>
-                                <ComboBoxItem Content="Liniert (breit)" IsSelected="True"/>
-                                <ComboBoxItem Content="Liniert (schmal)"/>
-                                <ComboBoxItem Content="Kariert (klein)"/>
-                                <ComboBoxItem Content="Kariert (mittel)"/>
-                                <ComboBoxItem Content="Kariert (groß)"/>
-                                <ComboBoxItem Content="Punktiert (klein)"/>
-                                <ComboBoxItem Content="Punktiert (mittel)"/>
-                                <ComboBoxItem Content="Punktiert (groß)"/>
-                                <ComboBoxItem Content="Cornell Notes"/>
-                                <ComboBoxItem Content="Isometrisch"/>
-                            </ComboBox>
-                        </StackPanel>
-                    </Border>
+        <!-- ═══════════════════════════════════════════════════════
+             LAYER 1: Floating Pill Toolbar (OVERLAY on canvas)
+             Draggable, translucent, pill-shaped.
+             ═══════════════════════════════════════════════════════ -->
+        <Border x:Name="FloatingToolbar" 
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Background="#DD252525" 
+                CornerRadius="20"
+                Padding="8,4"
+                Margin="300,0,0,0"
+                MouseLeftButtonDown="FloatingToolbar_MouseLeftButtonDown"
+                MouseLeftButtonUp="FloatingToolbar_MouseLeftButtonUp"
+                MouseMove="FloatingToolbar_MouseMove"
+                Cursor="SizeAll"
+                Visibility="Visible">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="2" BlurRadius="12" Opacity="0.4" Color="Black"/>
+            </Border.Effect>
+            <Border.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Oben andocken" Click="DockToolbarTop"/>
+                    <MenuItem Header="Links andocken" Click="DockToolbarLeft"/>
+                    <MenuItem Header="Rechts andocken" Click="DockToolbarRight"/>
+                    <Separator/>
+                    <MenuItem Header="Toolbar zur&#xFC;cksetzen" Click="ResetToolbarPosition"/>
+                </ContextMenu>
+            </Border.ContextMenu>
+            <StackPanel Orientation="Horizontal" x:Name="FloatingToolbarContent">
+                <!-- Drag Handle indicator -->
+                <TextBlock Text="&#x2807;" FontSize="10" Foreground="#555" VerticalAlignment="Center" Margin="0,0,4,0"/>
+
+                <!-- Drawing Tools -->
+                <Button x:Name="BtnPen_F" Content="&#x270E;" Style="{StaticResource PillToolButtonActive}" ToolTip="Stift" Click="BtnPen_F_Click"/>
+                <Button x:Name="BtnHighlighter_F" Content="&#x25A4;" Style="{StaticResource PillToolButton}" ToolTip="Textmarker" Click="BtnHighlighter_F_Click"/>
+                <Button x:Name="BtnEraser_F" Content="&#x2715;" Style="{StaticResource PillToolButton}" ToolTip="Radierer" Click="BtnEraser_F_Click"/>
+                <Button x:Name="BtnSelect_F" Content="&#x261C;" Style="{StaticResource PillToolButton}" ToolTip="Lasso / Ausw&#xE4;hlen" Click="BtnSelect_F_Click"/>
+                <Button x:Name="BtnText_F" Content="Aa" Style="{StaticResource PillToolButton}" ToolTip="Text-Werkzeug" Click="BtnText_F_Click" FontWeight="Bold" FontSize="12"/>
+
+                <!-- Quick Color Dots (shown when pen is active) -->
+                <Border x:Name="QuickColorPanel" Background="#181818" CornerRadius="10" Padding="6,2" Margin="6,0">
+                    <StackPanel Orientation="Horizontal">
+                        <!-- 3 Recent Color Dots -->
+                        <Ellipse x:Name="QuickColor1" Width="18" Height="18" Fill="Black" Stroke="#555" StrokeThickness="1" Cursor="Hand" MouseLeftButtonUp="QuickColor1_Click" Margin="0,0,3,0" ToolTip="Farbe 1"/>
+                        <Ellipse x:Name="QuickColor2" Width="18" Height="18" Fill="#00008B" Stroke="#555" StrokeThickness="1" Cursor="Hand" MouseLeftButtonUp="QuickColor2_Click" Margin="0,0,3,0" ToolTip="Farbe 2"/>
+                        <Ellipse x:Name="QuickColor3" Width="18" Height="18" Fill="Red" Stroke="#555" StrokeThickness="1" Cursor="Hand" MouseLeftButtonUp="QuickColor3_Click" Margin="0,0,0,0" ToolTip="Farbe 3"/>
+                        <!-- Full color picker button -->
+                        <Button x:Name="BtnColorPicker_F" Style="{StaticResource PillToolButton}" ToolTip="Farbe w&#xE4;hlen" Width="28" Height="28" Margin="3,0,0,0" Click="BtnColorPicker_F_Click">
+                            <Ellipse x:Name="CurrentColorIndicator_F" Width="16" Height="16" Fill="Black" Stroke="#888" StrokeThickness="1"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Quick Size Dots -->
+                <Border x:Name="QuickSizePanel" Background="#181818" CornerRadius="10" Padding="6,2" Margin="0,0,6,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse x:Name="QuickSize1" Width="8" Height="8" Fill="#999" Cursor="Hand" MouseLeftButtonUp="QuickSize1_Click" Margin="0,0,4,0" ToolTip="D&#xFC;nn (1px)"/>
+                        <Ellipse x:Name="QuickSize2" Width="12" Height="12" Fill="#999" Cursor="Hand" MouseLeftButtonUp="QuickSize2_Click" Margin="0,0,4,0" ToolTip="Mittel (2.5px)"/>
+                        <Ellipse x:Name="QuickSize3" Width="18" Height="18" Fill="#999" Cursor="Hand" MouseLeftButtonUp="QuickSize3_Click" ToolTip="Dick (5px)"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Separator -->
+                <Border Width="1" Background="#444" Margin="4,4"/>
+
+                <!-- Shape Recognition Toggle -->
+                <ToggleButton x:Name="BtnShapeRecognition" Content="&#x25B3;" Style="{StaticResource PillToolButton}" ToolTip="Formerkennung ein/aus" IsChecked="True" FontSize="14" Click="BtnShapeRecognition_Click"/>
+
+                <!-- Template combo -->
+                <ComboBox x:Name="TemplateCombo_F" Width="120" Margin="4,0" ToolTip="Seitenvorlage" Style="{StaticResource DarkComboBox}" FontSize="11" SelectionChanged="TemplateCombo_SelectionChanged">
+                    <ComboBoxItem Content="Blanko"/>
+                    <ComboBoxItem Content="Liniert (breit)" IsSelected="True"/>
+                    <ComboBoxItem Content="Liniert (schmal)"/>
+                    <ComboBoxItem Content="Kariert (klein)"/>
+                    <ComboBoxItem Content="Kariert (mittel)"/>
+                    <ComboBoxItem Content="Kariert (gro&#xDF;)"/>
+                    <ComboBoxItem Content="Punktiert (klein)"/>
+                    <ComboBoxItem Content="Punktiert (mittel)"/>
+                    <ComboBoxItem Content="Punktiert (gro&#xDF;)"/>
+                    <ComboBoxItem Content="Cornell Notes"/>
+                    <ComboBoxItem Content="Isometrisch"/>
+                </ComboBox>
+
+                <!-- Input Mode -->
+                <Button x:Name="BtnInputMode_F" Content="&#x270B;" Style="{StaticResource PillToolButton}" ToolTip="Eingabe-Modus" Click="BtnInputMode_F_Click"/>
+                <!-- Sticky Note -->
+                <ToggleButton x:Name="BtnStickyNote_F" Content="&#x25AF;" Style="{StaticResource PillToolButton}" ToolTip="Klebezettel-Modus"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Color Picker Popup (for floating toolbar) -->
+        <Popup x:Name="ColorPopup_F" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnColorPicker_F}" StaysOpen="False" AllowsTransparency="True">
+            <Border Background="#2A2A2A" CornerRadius="10" Padding="10" BorderBrush="#3A3A3A" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.4" Color="Black"/>
+                </Border.Effect>
+                <UniformGrid Columns="5" Rows="2">
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Black" Click="ColorSwatch_Click" Tag="Black"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#00008B" Click="ColorSwatch_Click" Tag="DarkBlue"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Blue" Click="ColorSwatch_Click" Tag="Blue"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Red" Click="ColorSwatch_Click" Tag="Red"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#008000" Click="ColorSwatch_Click" Tag="Green"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#FF8C00" Click="ColorSwatch_Click" Tag="Orange"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#800080" Click="ColorSwatch_Click" Tag="Purple"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#8B4513" Click="ColorSwatch_Click" Tag="Brown"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Gray" Click="ColorSwatch_Click" Tag="Gray"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#008080" Click="ColorSwatch_Click" Tag="Teal"/>
+                </UniformGrid>
+            </Border>
+        </Popup>
+
+        <!-- ═══════════════════════════════════════════════════════
+             LAYER 2: Zen Mode Overlay Button (bottom-left)
+             ═══════════════════════════════════════════════════════ -->
+        <Button x:Name="BtnZenMode" Content="&#x25D1;" 
+                HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                Margin="12,0,0,36"
+                Width="32" Height="32"
+                Style="{StaticResource ToolButton}"
+                ToolTip="Zen-Modus: Alle UI ausblenden"
+                Click="ToggleZenMode" FontSize="16"/>
+
+        <!-- ═══════════════════════════════════════════════════════
+             LAYER 3: Right Panel Toggle (when hidden)
+             ═══════════════════════════════════════════════════════ -->
+        <Button x:Name="BtnShowRightPanel" Content="&#x25C0;" 
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,40,4,0"
+                Width="24" Height="24"
+                Style="{StaticResource ToolButton}"
+                ToolTip="Erkennungsergebnisse anzeigen"
+                Click="ShowRightPanel" FontSize="10" Visibility="Collapsed"/>
+
+        <!-- ═══════════════════════════════════════════════════════
+             LAYER 4: Page Navigation Button (bottom-right)
+             ═══════════════════════════════════════════════════════ -->
+        <Button x:Name="BtnPageNav" Content="&#x2261;" 
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Margin="0,0,12,36"
+                Width="36" Height="36"
+                Style="{StaticResource ToolButton}"
+                ToolTip="Seitennavigation"
+                Click="TogglePageNavPanel" FontSize="18"/>
+
+        <!-- Page Navigation Overlay Panel -->
+        <Border x:Name="PageNavOverlay" 
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Background="#DD1E1E1E" CornerRadius="12"
+                Width="200" Margin="0,0,12,76"
+                Visibility="Collapsed" Padding="12">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="-2" BlurRadius="12" Opacity="0.4" Color="Black"/>
+            </Border.Effect>
+            <StackPanel>
+                <TextBlock Text="Seiten" Foreground="White" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                <local:PageThumbnailControl x:Name="PageThumbnails"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                    <Button x:Name="BtnPrevPage" Content="&#x25C0;" Style="{StaticResource ToolButton}" ToolTip="Vorherige Seite" Width="28" Height="28" Click="BtnPrevPage_Click"/>
+                    <TextBlock x:Name="PageNavIndicator" Text="1/1" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="8,0"/>
+                    <Button x:Name="BtnNextPage" Content="&#x25B6;" Style="{StaticResource ToolButton}" ToolTip="N&#xE4;chste Seite" Width="28" Height="28" Click="BtnNextPage_Click"/>
+                    <Button x:Name="BtnAddPage" Content="&#x2295;" Style="{StaticResource ToolButton}" ToolTip="Neue Seite" Width="28" Height="28" Click="OnAddPageFromNav"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <!-- Main Canvas Area with Zoom -->
-        <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#1A1A1A">
-            <Grid x:Name="CanvasGrid">
-                <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
-                <!-- Sticky Note overlay (floats above ink strokes) -->
-                <Canvas x:Name="StickyNoteOverlay" Width="1200" Height="1600" Background="{x:Null}" ClipToBounds="True"/>
-                <!-- Kontext-sensitive Aktionsleiste (Issue #35) -->
-                <Popup x:Name="ContextActionPopup" Placement="Relative" PlacementTarget="{Binding ElementName=CanvasGrid}" AllowsTransparency="True" StaysOpen="False">
-                    <Border Background="#2D2D2D" CornerRadius="8" Padding="6,3" BorderBrush="#0078D7" BorderThickness="1">
-                        <StackPanel Orientation="Horizontal" x:Name="ContextActionPanel"/>
-                    </Border>
-                </Popup>
-            </Grid>
-        </ScrollViewer>
-    </DockPanel>
+        <!-- ═══════════════════════════════════════════════════════
+             LAYER 5: Smart Context Popup (Nebo-style)
+             Appears near lasso selection with Aa / Sum / Cut
+             ═══════════════════════════════════════════════════════ -->
+        <Popup x:Name="SmartContextPopup" Placement="Relative" PlacementTarget="{Binding ElementName=CanvasGrid}" AllowsTransparency="True" StaysOpen="False">
+            <Border Background="#DD2A2A2A" CornerRadius="12" Padding="6,4">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="1" BlurRadius="6" Opacity="0.3" Color="Black"/>
+                </Border.Effect>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="BtnContextToText" Content="Aa" Style="{StaticResource PillToolButton}" ToolTip="In Text umwandeln" FontSize="11" FontWeight="Bold" Click="ContextToText_Click"/>
+                    <Button x:Name="BtnContextCalc" Content="&#x2211;" Style="{StaticResource PillToolButton}" ToolTip="Berechnen" FontSize="14" Click="ContextCalc_Click"/>
+                    <Button x:Name="BtnContextCut" Content="&#x2702;" Style="{StaticResource PillToolButton}" ToolTip="Ausschneiden" FontSize="12" Click="ContextCut_Click"/>
+                    <Button x:Name="BtnContextCopy" Content="&#x2398;" Style="{StaticResource PillToolButton}" ToolTip="Kopieren" FontSize="12" Click="ContextCopy_Click"/>
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <!-- ═══ Hidden Legacy Elements (kept for code-behind compatibility) ═══ -->
+        <!-- These are hidden but exist so code references don't break -->
+        <Button x:Name="BtnPen" Visibility="Collapsed"/>
+        <Button x:Name="BtnHighlighter" Visibility="Collapsed"/>
+        <Button x:Name="BtnEraser" Visibility="Collapsed"/>
+        <Button x:Name="BtnSelect" Visibility="Collapsed"/>
+        <Button x:Name="BtnLine" Visibility="Collapsed"/>
+        <Button x:Name="BtnRect" Visibility="Collapsed"/>
+        <Button x:Name="BtnCircle" Visibility="Collapsed"/>
+        <Button x:Name="BtnColorPicker" Visibility="Collapsed"/>
+        <Popup x:Name="ColorPopup" AllowsTransparency="True" StaysOpen="False" Placement="Bottom">
+            <Border Background="#2A2A2A" CornerRadius="10" Padding="10" BorderBrush="#3A3A3A" BorderThickness="1">
+                <UniformGrid Columns="5" Rows="2">
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Black" Click="ColorSwatch_Click" Tag="Black"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#00008B" Click="ColorSwatch_Click" Tag="DarkBlue"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Blue" Click="ColorSwatch_Click" Tag="Blue"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Red" Click="ColorSwatch_Click" Tag="Red"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#008000" Click="ColorSwatch_Click" Tag="Green"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#FF8C00" Click="ColorSwatch_Click" Tag="Orange"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#800080" Click="ColorSwatch_Click" Tag="Purple"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#8B4513" Click="ColorSwatch_Click" Tag="Brown"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="Gray" Click="ColorSwatch_Click" Tag="Gray"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="#008080" Click="ColorSwatch_Click" Tag="Teal"/>
+                </UniformGrid>
+            </Border>
+        </Popup>
+        <Ellipse x:Name="CurrentColorIndicator" Width="20" Height="20" Fill="Black" Stroke="#888" StrokeThickness="1" Visibility="Collapsed"/>
+        <Button x:Name="BtnThin" Visibility="Collapsed"/>
+        <Button x:Name="BtnMedium" Visibility="Collapsed"/>
+        <Button x:Name="BtnThick" Visibility="Collapsed"/>
+        <Button x:Name="BtnTemplate" Visibility="Collapsed"/>
+        <Button x:Name="BtnAutoTidy_C" Visibility="Collapsed"/>
+        <Button x:Name="BtnStickyNote" Visibility="Collapsed"/>
+        <ToggleButton x:Name="BtnStickyNote_M" Visibility="Collapsed"/>
+        <ComboBox x:Name="TemplateCombo" Visibility="Collapsed"/>
+        <ComboBox x:Name="TemplateCombo_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnPen_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnHighlighter_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnEraser_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnSelect_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnLine_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnRect_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnCircle_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnColorPicker_M" Visibility="Collapsed"/>
+        <Ellipse x:Name="CurrentColorIndicator_M" Width="20" Height="20" Fill="Black" Stroke="#888" StrokeThickness="1" Visibility="Collapsed"/>
+        <Popup x:Name="ColorPopup_M" AllowsTransparency="True" StaysOpen="False" Placement="Bottom"/>
+        <Button x:Name="BtnThin_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnMedium_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnThick_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnAutoTidy_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnInputMode_M" Visibility="Collapsed"/>
+        <Button x:Name="BtnAutoTidy" Visibility="Collapsed"/>
+        <Button x:Name="BtnClear" Visibility="Collapsed"/>
+        <Button x:Name="BtnRecognize" Visibility="Collapsed"/>
+        <Button x:Name="BtnCalc" Visibility="Collapsed"/>
+        <Button x:Name="BtnAutoTidyBtn" Visibility="Collapsed"/>
+        <Button x:Name="BtnLayout" Visibility="Collapsed"/>
+        <Border x:Name="ModernToolbar" Visibility="Collapsed"/>
+        <Border x:Name="LeftToolbar" Visibility="Collapsed"/>
+        <StackPanel x:Name="ClassicTemplatePanel" Visibility="Collapsed"/>
+        <Button x:Name="BtnInputMode" Visibility="Collapsed"/>
+    </Grid>
 </Window>

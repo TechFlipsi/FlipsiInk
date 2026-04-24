@@ -7,7 +7,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
+using PDFiumSharp;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -15,109 +18,113 @@ using System.Windows.Media.Imaging;
 namespace FlipsiInk;
 
 /// <summary>
-/// Importiert PDF-Dateien und stellt Rendering-Funktionalität bereit.
-/// Annotationen werden als separater Stroke-Layer über dem PDF gerendert,
-/// das PDF selbst bleibt unverändert.
+/// Imports PDF files using PDFiumSharp. Each page becomes a note page background.
+/// v0.4.0: Fully functional with PDFiumSharp NuGet package.
 /// </summary>
 public class PdfImporter : IDisposable
 {
-    private object? _pdfDocument; // TODO: NuGet Package – PdfiumViewer/PdfiumSharp PdfDocument-Typ
+    private PdfDocument? _pdfDocument;
     private bool _disposed;
+    private int _pageCount;
+
+    /// <summary>Default DPI for PDF rendering.</summary>
+    public double DefaultDpi { get; set; } = 150;
+
+    /// <summary>Gets the number of pages in the loaded PDF.</summary>
+    public int PageCount => _pageCount;
 
     /// <summary>
-    /// Lädt eine PDF-Datei und gibt das PdfDocument zurück.
+    /// Loads a PDF file. Returns the page count.
     /// </summary>
-    /// <param name="filePath">Pfad zur PDF-Datei.</param>
-    /// <returns>Das geladene PdfDocument-Objekt.</returns>
-    public object LoadPdf(string filePath)
+    public int LoadPdf(string filePath)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(filePath);
 
         if (!File.Exists(filePath))
-            throw new FileNotFoundException($"PDF-Datei nicht gefunden: {filePath}");
+            throw new FileNotFoundException($"PDF file not found: {filePath}");
 
-        // TODO: NuGet Package – PdfiumViewer/PdfiumSharp laden
-        // _pdfDocument = PdfDocument.Load(filePath);
-        // return _pdfDocument;
-        throw new NotImplementedException("PDF-Import benötigt PdfiumViewer oder PdfiumSharp NuGet-Package.");
+        _pdfDocument = PdfDocument.Load(filePath);
+        _pageCount = _pdfDocument?.Pages.Count ?? 0;
+        return _pageCount;
     }
 
     /// <summary>
-    /// Gibt die Anzahl der Seiten des geladenen PDFs zurück.
+    /// Renders a PDF page as a BitmapSource for WPF display.
     /// </summary>
-    public int GetPageCount()
-    {
-        // TODO: NuGet Package – _pdfDocument.PageCount
-        return 0;
-    }
-
-    /// <summary>
-    /// Rendert eine PDF-Seite als Bitmap.
-    /// </summary>
-    /// <param name="pageNumber">0-basierte Seitennummer.</param>
-    /// <param name="dpi">Auflösung in DPI (Standard: 150).</param>
-    /// <returns>BitmapSource der gerenderten Seite.</returns>
-    public BitmapSource RenderPageToBitmap(int pageNumber, double dpi = 150)
+    /// <param name="pageNumber">0-based page number.</param>
+    /// <param name="dpi">Resolution in DPI.</param>
+    /// <returns>BitmapSource of the rendered page.</returns>
+    public BitmapSource RenderPageToImageSource(int pageNumber, double dpi = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_pdfDocument is null)
-            throw new InvalidOperationException("Kein PDF geladen. Zuerst LoadPdf() aufrufen.");
+        if (_pdfDocument == null)
+            throw new InvalidOperationException("No PDF loaded. Call LoadPdf() first.");
 
-        if (pageNumber < 0 || pageNumber >= GetPageCount())
-            throw new ArgumentOutOfRangeException(nameof(pageNumber), "Seitennummer außerhalb des gültigen Bereichs.");
+        if (pageNumber < 0 || pageNumber >= _pageCount)
+            throw new ArgumentOutOfRangeException(nameof(pageNumber));
 
-        // TODO: NuGet Package – PDF-Seite rendern
-        // var size = GetPageSize(pageNumber);
-        // var width = (int)(size.Width * dpi / 96.0);
-        // var height = (int)(size.Height * dpi / 96.0);
-        // return _pdfDocument.Render(pageNumber, width, height, dpi, dpi, PdfRenderFlags.ForPrinting);
-        throw new NotImplementedException("PDF-Rendering benötigt PdfiumViewer oder PdfiumSharp NuGet-Package.");
+        dpi = dpi > 0 ? dpi : DefaultDpi;
+
+        var page = _pdfDocument.Pages[pageNumber];
+        double width = page.Width * dpi / 72.0;
+        double height = page.Height * dpi / 72.0;
+
+        using var bmp = new Bitmap((int)width, (int)height, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.Clear(System.Drawing.Color.White);
+            page.Render(g, 0, 0, (int)width, (int)height, PageRotate.Normal, RenderFlags.Normal);
+        }
+
+        var hBitmap = bmp.GetHbitmap();
+        try
+        {
+            var source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                hBitmap, IntPtr.Zero, Int32Rect.Empty,
+                BitmapSizeOptions.FromWidthAndHeight((int)width, (int)height));
+            source.Freeze();
+            return source;
+        }
+        finally
+        {
+            DeleteObject(hBitmap);
+        }
     }
 
     /// <summary>
-    /// Rendert eine PDF-Seite als ImageSource für WPF-Image-Elemente.
+    /// Renders all pages as ImageSource list (for batch import).
     /// </summary>
-    /// <param name="pageNumber">0-basierte Seitennummer.</param>
-    /// <param name="dpi">Auflösung in DPI (Standard: 150).</param>
-    /// <returns>ImageSource für die WPF-Anzeige.</returns>
-    public ImageSource RenderPageToImageSource(int pageNumber, double dpi = 150)
+    /// <param name="dpi">Resolution in DPI.</param>
+    /// <returns>List of rendered pages.</returns>
+    public List<BitmapSource> RenderAllPages(double dpi = 0)
     {
-        var bitmap = RenderPageToBitmap(pageNumber, dpi);
-        bitmap.Freeze();
-        return bitmap;
-    }
-
-    /// <summary>
-    /// Gibt die Seitengröße in Punkt (PDF-Einheiten) zurück.
-    /// </summary>
-    /// <param name="pageNumber">0-basierte Seitennummer.</param>
-    /// <returns>Size mit Breite und Höhe der Seite.</returns>
-    public Size GetPageSize(int pageNumber)
-    {
-        if (_pdfDocument is null)
-            throw new InvalidOperationException("Kein PDF geladen. Zuerst LoadPdf() aufrufen.");
-
-        // TODO: NuGet Package – Seitengröße aus PDF auslesen
-        // var size = _pdfDocument.Pages[pageNumber].Size;
-        // return new Size(size.Width, size.Height);
-        return new Size(595, 842); // A4-Fallback in Punkt
-    }
-
-    /// <summary>
-    /// Gibt alle Seiten als ImageSource-Liste zurück (für Multi-Page-Vorschau).
-    /// </summary>
-    /// <param name="dpi">Auflösung in DPI.</param>
-    /// <returns>Liste der gerenderten Seiten.</returns>
-    public List<ImageSource> RenderAllPages(double dpi = 150)
-    {
-        var pages = new List<ImageSource>();
-        for (int i = 0; i < GetPageCount(); i++)
+        var pages = new List<BitmapSource>();
+        for (int i = 0; i < _pageCount; i++)
         {
             pages.Add(RenderPageToImageSource(i, dpi));
         }
         return pages;
     }
+
+    /// <summary>
+    /// Gets the page size in points (PDF units).
+    /// </summary>
+    public Size GetPageSize(int pageNumber)
+    {
+        if (_pdfDocument == null)
+            throw new InvalidOperationException("No PDF loaded. Call LoadPdf() first.");
+
+        if (pageNumber < 0 || pageNumber >= _pageCount)
+            throw new ArgumentOutOfRangeException(nameof(pageNumber));
+
+        var page = _pdfDocument.Pages[pageNumber];
+        return new Size(page.Width, page.Height);
+    }
+
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
 
     public void Dispose()
     {
@@ -128,13 +135,11 @@ public class PdfImporter : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed) return;
-
         if (disposing)
         {
-            // TODO: NuGet Package – _pdfDocument?.Dispose();
+            _pdfDocument?.Dispose();
             _pdfDocument = null;
         }
-
         _disposed = true;
     }
 }
