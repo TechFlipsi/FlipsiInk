@@ -1,4 +1,4 @@
-// FlipsiInk - PDF Import via PDFiumSharp
+// FlipsiInk - AI-powered Handwriting & Math Notes App
 // Copyright (C) 2026 Fabian Kirchweger
 //
 // This program is free software: you can redistribute it and/or modify
@@ -8,7 +8,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -16,117 +15,62 @@ using System.Windows.Media.Imaging;
 namespace FlipsiInk;
 
 /// <summary>
-/// Imports PDF files using PDFiumSharp and renders each page as a background image
-/// for annotation. The PDF content becomes a non-editable background layer;
-/// all user annotations remain as separate ink strokes on top.
+/// Imports PDF files using PDFiumSharp. Each page becomes a note page background.
+/// v0.4.0: Stub - PDFiumSharp integration needs NuGet package at build time.
 /// </summary>
 public class PdfImporter : IDisposable
 {
-    private PDFiumSharp.PdfDocument? _pdfDocument;
     private bool _disposed;
 
+    /// <summary>Default DPI for PDF rendering.</summary>
+    public double DefaultDpi { get; set; } = 150;
+
+    /// <summary>Gets the number of pages in the loaded PDF.</summary>
+    public int PageCount { get; private set; }
+
     /// <summary>
-    /// Loads a PDF file and returns the page count.
+    /// Loads a PDF file. Returns the page count.
+    /// TODO: Implement with PDFiumSharp once NuGet restore is confirmed working.
     /// </summary>
     public int LoadPdf(string filePath)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(filePath);
+
         if (!File.Exists(filePath))
-            throw new FileNotFoundException($"PDF-Datei nicht gefunden: {filePath}");
+            throw new FileNotFoundException($"PDF file not found: {filePath}");
 
-        _pdfDocument = PDFiumSharp.PdfDocument.Load(filePath);
-        return _pdfDocument.PageCount;
+        // TODO: Implement PDFiumSharp loading
+        // _pdfDocument = PdfDocument.Load(filePath);
+        // PageCount = _pdfDocument?.Pages.Count ?? 0;
+        throw new NotImplementedException("PDF import requires PDFiumSharp NuGet package. Coming soon.");
     }
 
     /// <summary>
-    /// Gets the number of pages in the loaded PDF.
+    /// Renders a PDF page as a BitmapSource for WPF display.
     /// </summary>
-    public int GetPageCount()
+    public BitmapSource RenderPage(int pageNumber, double dpi = 0)
     {
-        return _pdfDocument?.PageCount ?? 0;
+        dpi = dpi > 0 ? dpi : DefaultDpi;
+        throw new NotImplementedException("PDF import requires PDFiumSharp NuGet package. Coming soon.");
     }
 
     /// <summary>
-    /// Renders a PDF page to a BitmapSource at the given DPI.
+    /// Renders all pages as BitmapSource list.
     /// </summary>
-    /// <param name="pageNumber">0-based page index.</param>
-    /// <param name="dpi">Render DPI (default 150).</param>
-    /// <returns>BitmapSource of the rendered page.</returns>
-    public BitmapSource RenderPage(int pageNumber, double dpi = 150)
+    public List<BitmapSource> RenderAllPages(double dpi = 0)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_pdfDocument == null)
-            throw new InvalidOperationException("Kein PDF geladen. Zuerst LoadPdf() aufrufen.");
-        if (pageNumber < 0 || pageNumber >= _pdfDocument.PageCount)
-            throw new ArgumentOutOfRangeException(nameof(pageNumber));
-
-        var page = _pdfDocument[pageNumber];
-        double scale = dpi / 72.0;
-        int width = (int)(page.Width * scale);
-        int height = (int)(page.Height * scale);
-
-        using var bitmap = page.Render(width, height, dpi, dpi, PDFiumSharp.PdfRenderFlags.Printing);
-
-        // Convert System.Drawing.Bitmap to WPF BitmapSource
-        var hBitmap = bitmap.GetHbitmap();
-        try
-        {
-            var bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                hBitmap,
-                IntPtr.Zero,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromWidthAndHeight(width, height));
-            bitmapSource.Freeze();
-            return bitmapSource;
-        }
-        finally
-        {
-            // Clean up GDI handle
-            DeleteObject(hBitmap);
-        }
+        dpi = dpi > 0 ? dpi : DefaultDpi;
+        throw new NotImplementedException("PDF import requires PDFiumSharp NuGet package. Coming soon.");
     }
 
     /// <summary>
-    /// Renders all pages and returns them as a list of BitmapSources.
-    /// </summary>
-    public List<BitmapSource> RenderAllPages(double dpi = 150)
-    {
-        var pages = new List<BitmapSource>();
-        int count = GetPageCount();
-        for (int i = 0; i < count; i++)
-        {
-            pages.Add(RenderPage(i, dpi));
-        }
-        return pages;
-    }
-
-    /// <summary>
-    /// Saves a rendered PDF page as a PNG file (for embedding as background in .fink).
-    /// </summary>
-    public void SavePageAsPng(int pageNumber, string outputPath, double dpi = 150)
-    {
-        var bitmap = RenderPage(pageNumber, dpi);
-
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
-        encoder.Save(stream);
-    }
-
-    /// <summary>
-    /// Gets the page size in PDF points (1/72 inch).
+    /// Gets the page size in points (PDF units).
     /// </summary>
     public Size GetPageSize(int pageNumber)
     {
-        if (_pdfDocument == null || pageNumber < 0 || pageNumber >= _pdfDocument.PageCount)
-            return new Size(595, 842); // A4 fallback
-
-        var page = _pdfDocument[pageNumber];
-        return new Size(page.Width, page.Height);
+        throw new NotImplementedException("PDF import requires PDFiumSharp NuGet package. Coming soon.");
     }
-
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
 
     public void Dispose()
     {
@@ -139,8 +83,7 @@ public class PdfImporter : IDisposable
         if (_disposed) return;
         if (disposing)
         {
-            _pdfDocument?.Dispose();
-            _pdfDocument = null;
+            // _pdfDocument?.Dispose();
         }
         _disposed = true;
     }

@@ -149,7 +149,7 @@ public class ShapeRecognizer
 
     #region Recognition Methods
 
-    private RecognizedShape? RecognizeLine(Point[] points)
+    private RecognizedShape? RecognizeLine(System.Windows.Point[] points)
     {
         if (points.Length < 2) return null;
         var start = points[0];
@@ -168,13 +168,13 @@ public class ShapeRecognizer
             return new RecognizedShape
             {
                 Type = ShapeType.Line, Confidence = confidence,
-                Points = new[] { start, end }, BoundingBox = new Rect(start, end)
+                Points = new[] { start, end }, BoundingBox = new System.Windows.Rect(start, end)
             };
         }
         return null;
     }
 
-    private RecognizedShape? RecognizeTriangle(Point[] points)
+    private RecognizedShape? RecognizeTriangle(System.Windows.Point[] points)
     {
         var corners = FindCorners(points, 3);
         if (corners == null || corners.Length != 3) return null;
@@ -197,7 +197,7 @@ public class ShapeRecognizer
         };
     }
 
-    private RecognizedShape? RecognizeRectangle(Point[] points)
+    private RecognizedShape? RecognizeRectangle(System.Windows.Point[] points)
     {
         var corners = FindCorners(points, 4);
         if (corners == null || corners.Length != 4) return null;
@@ -227,7 +227,7 @@ public class ShapeRecognizer
         };
     }
 
-    private RecognizedShape? RecognizeCircle(Point[] points)
+    private RecognizedShape? RecognizeCircle(System.Windows.Point[] points)
     {
         var center = GetCentroid(points);
         var distances = points.Select(p => Distance(p, center)).ToArray();
@@ -246,13 +246,13 @@ public class ShapeRecognizer
             {
                 Type = ShapeType.Circle, Confidence = confidence,
                 Points = new[] { center },
-                BoundingBox = new Rect(center.X - avgRadius, center.Y - avgRadius, avgRadius * 2, avgRadius * 2)
+                BoundingBox = new System.Windows.Rect(center.X - avgRadius, center.Y - avgRadius, avgRadius * 2, avgRadius * 2)
             };
         }
         return null;
     }
 
-    private RecognizedShape? RecognizeEllipse(Point[] points)
+    private RecognizedShape? RecognizeEllipse(System.Windows.Point[] points)
     {
         var bbox = GetBoundingBox(points);
         double closeDistance = Distance(points[0], points[points.Length - 1]);
@@ -284,7 +284,7 @@ public class ShapeRecognizer
             return new RecognizedShape
             {
                 Type = ShapeType.Ellipse, Confidence = confidence,
-                Points = new[] { new Point(cx, cy) }, BoundingBox = bbox
+                Points = new[] { new System.Windows.Point(cx, cy) }, BoundingBox = bbox
             };
         }
         return null;
@@ -294,18 +294,18 @@ public class ShapeRecognizer
 
     #region Geometry Helpers
 
-    private static Point[] GetPointsFromStroke(Stroke stroke)
+    private static System.Windows.Point[] GetPointsFromStroke(Stroke stroke)
     {
-        var points = new Point[stroke.StylusPoints.Count];
+        var points = new System.Windows.Point[stroke.StylusPoints.Count];
         for (int i = 0; i < stroke.StylusPoints.Count; i++)
-            points[i] = new Point(stroke.StylusPoints[i].X, stroke.StylusPoints[i].Y);
+            points[i] = new System.Windows.Point(stroke.StylusPoints[i].X, stroke.StylusPoints[i].Y);
         return points;
     }
 
-    private static double Distance(Point a, Point b) =>
+    private static double Distance(System.Windows.Point a, System.Windows.Point b) =>
         Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 
-    private static double PointToLineDistance(Point pt, Point lineStart, Point lineEnd)
+    private static double PointToLineDistance(System.Windows.Point pt, System.Windows.Point lineStart, System.Windows.Point lineEnd)
     {
         double dx = lineEnd.X - lineStart.X;
         double dy = lineEnd.Y - lineStart.Y;
@@ -315,7 +315,7 @@ public class ShapeRecognizer
         return cross / Math.Sqrt(lengthSquared);
     }
 
-    private static double AngleBetween(Point pointA, Point pointB, Point pointC)
+    private static double AngleBetween(System.Windows.Point pointA, System.Windows.Point pointB, System.Windows.Point pointC)
     {
         double ax = pointA.X - pointB.X, ay = pointA.Y - pointB.Y;
         double cx = pointC.X - pointB.X, cy = pointC.Y - pointB.Y;
@@ -324,7 +324,7 @@ public class ShapeRecognizer
         return Math.Atan2(Math.Abs(cross), dot) * (180.0 / Math.PI);
     }
 
-    private Point[]? FindCorners(Point[] points, int targetCorners)
+    private System.Windows.Point[]? FindCorners(System.Windows.Point[] points, int targetCorners)
     {
         if (points.Length < targetCorners) return null;
 
@@ -348,18 +348,18 @@ public class ShapeRecognizer
         return bestCorners.Length == targetCorners ? bestCorners : null;
     }
 
-    private static Point GetCentroid(Point[] points) =>
+    private static System.Windows.Point GetCentroid(System.Windows.Point[] points) =>
         new(points.Average(p => p.X), points.Average(p => p.Y));
 
-    private static Rect GetBoundingBox(Point[] points) =>
+    private static System.Windows.Rect GetBoundingBox(System.Windows.Point[] points) =>
         new(points.Min(p => p.X), points.Min(p => p.Y),
             points.Max(p => p.X) - points.Min(p => p.X),
             points.Max(p => p.Y) - points.Min(p => p.Y));
 
-    private static Point[] GenerateEllipsePoints(RecognizedShape shape)
+    private static System.Windows.Point[] GenerateEllipsePoints(RecognizedShape shape)
     {
         const int pointCount = 72;
-        var result = new Point[pointCount];
+        var result = new System.Windows.Point[pointCount];
         double cx = shape.BoundingBox.X + shape.BoundingBox.Width / 2;
         double cy = shape.BoundingBox.Y + shape.BoundingBox.Height / 2;
         double rx = shape.BoundingBox.Width / 2;
@@ -367,7 +367,7 @@ public class ShapeRecognizer
         for (int i = 0; i < pointCount; i++)
         {
             double angle = 2 * Math.PI * i / pointCount;
-            result[i] = new Point(cx + rx * Math.Cos(angle), cy + ry * Math.Sin(angle));
+            result[i] = new System.Windows.Point(cx + rx * Math.Cos(angle), cy + ry * Math.Sin(angle));
         }
         return result;
     }
@@ -381,7 +381,7 @@ public class RecognizedShape
 {
     public ShapeType Type { get; set; } = ShapeType.None;
     public double Confidence { get; set; } = 0.0;
-    public Point[] Points { get; set; } = Array.Empty<Point>();
-    public Rect BoundingBox { get; set; } = Rect.Empty;
+    public System.Windows.Point[] Points { get; set; } = Array.Empty<System.Windows.Point>();
+    public System.Windows.Rect BoundingBox { get; set; } = System.Windows.Rect.Empty;
     public Stroke? StraightenedStroke { get; set; }
 }

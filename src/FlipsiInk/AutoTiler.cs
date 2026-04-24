@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Ink;
 
 namespace FlipsiInk;
@@ -55,12 +56,10 @@ public class AutoTiler
         }
 
         // Strategy 2: Detect dates in strokes (common in notes)
-        var dateDetector = new DateDetector();
-        var textForDate = recognizedText ?? string.Empty;
-        var dates = dateDetector.DetectDates(textForDate);
+        var dates = DateDetector.Detect(textForDate);
         if (dates.Count > 0)
         {
-            var dateStr = dates[0].FormattedDate;
+            var dateStr = dates[0].DateTime?.ToString("dd.MM.yyyy") ?? dates[0].RawText;
             return $"Notizen {dateStr}";
         }
 
