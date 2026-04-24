@@ -7,8 +7,9 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
+// System.Drawing types used via fully qualified names to avoid Point/Color ambiguity
+using Point = System.Windows.Point;
+using Color = System.Windows.Media.Color;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -600,7 +601,7 @@ public partial class MainWindow : Window
         if (QuickSize3 != null) QuickSize3.Fill = _currentSize >= 4 ? Brushes.White : Brushes.Gray;
     }
 
-    private void SetColorFromSwatch(Color color)
+    private void SetColorFromSwatch(System.Windows.Media.Color color)
     {
         _currentColor = color;
         MainCanvas.DefaultDrawingAttributes.Color = color;
@@ -757,34 +758,6 @@ public partial class MainWindow : Window
 
     #endregion
 
-    #region Template Combo (v0.4.0)
-
-    private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_initialized || sender is not ComboBox combo) return;
-        var selected = combo.SelectedItem as ComboBoxItem;
-        if (selected == null) return;
-
-        _currentTemplate = selected.Content?.ToString() switch
-        {
-            "Blanko" => PageTemplateType.Blank,
-            "Liniert (schmal)" => PageTemplateType.LinedNarrow,
-            "Liniert (breit)" => PageTemplateType.LinedWide,
-            "Kariert (klein)" => PageTemplateType.GridSmall,
-            "Kariert (mittel)" => PageTemplateType.GridMedium,
-            "Kariert (gro\u00DF)" => PageTemplateType.GridLarge,
-            "Punktiert (klein)" => PageTemplateType.DottedSmall,
-            "Punktiert (mittel)" => PageTemplateType.DottedMedium,
-            "Punktiert (gro\u00DF)" => PageTemplateType.DottedLarge,
-            "Cornell Notes" => PageTemplateType.Cornell,
-            "Isometrisch" => PageTemplateType.Isometric,
-            _ => PageTemplateType.LinedWide
-        };
-
-        DrawPageTemplate();
-    }
-
-    #endregion
 
     #region Shape Recognition on Stroke End (v0.4.0)
 
@@ -839,14 +812,14 @@ public partial class MainWindow : Window
         _shapeRecognitionTimer?.Change(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
     }
 
-    private Stroke? CreateCleanShapeStroke(ShapeRecognizer.RecognizedShape shape, DrawingAttributes attr)
+    private Stroke? CreateCleanShapeStroke(RecognizedShape shape, DrawingAttributes attr)
     {
         var points = new StylusPointCollection();
         var bbox = shape.BoundingBox;
 
         switch (shape.Type)
         {
-            case ShapeRecognizer.ShapeType.Line:
+            case ShapeType.Line:
             {
                 // Use bounding box diagonal as the line
                 points.Add(new StylusPoint(bbox.X, bbox.Y));
@@ -854,7 +827,7 @@ public partial class MainWindow : Window
                 break;
             }
 
-            case ShapeRecognizer.ShapeType.Rectangle:
+            case ShapeType.Rectangle:
             {
                 points.Add(new StylusPoint(bbox.X, bbox.Y));
                 points.Add(new StylusPoint(bbox.X + bbox.Width, bbox.Y));
@@ -864,8 +837,8 @@ public partial class MainWindow : Window
                 break;
             }
 
-            case ShapeRecognizer.ShapeType.Circle:
-            case ShapeRecognizer.ShapeType.Ellipse:
+            case ShapeType.Circle:
+            case ShapeType.Ellipse:
             {
                 var cx = bbox.X + bbox.Width / 2;
                 var cy = bbox.Y + bbox.Height / 2;
@@ -879,7 +852,7 @@ public partial class MainWindow : Window
                 break;
             }
 
-            case ShapeRecognizer.ShapeType.Triangle:
+            case ShapeType.Triangle:
             {
                 // Approximate: use top-center, bottom-left, bottom-right
                 points.Add(new StylusPoint(bbox.X + bbox.Width / 2, bbox.Y));
