@@ -1,0 +1,45 @@
+<UserControl x:Class="FlipsiInk.PageThumbnailControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="100" Background="#1E1E1E">
+    <DockPanel>
+        <!-- Action buttons at the top -->
+        <UniformGrid Columns="2" DockPanel.Dock="Top" Margin="4,4,4,0">
+            <Button x:Name="BtnAddPage" Content="➕" FontSize="14" ToolTip="Neue Seite hinzufügen"
+                    Margin="2" Height="32" Background="#2D2D2D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button x:Name="BtnDeletePage" Content="🗑️" FontSize="14" ToolTip="Seite löschen"
+                    Margin="2" Height="32" Background="#2D2D2D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+        </UniformGrid>
+
+        <!-- Scrollable thumbnail strip -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="ThumbnailList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel x:Name="ThumbnailPanel"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="ThumbBorder" Margin="4,3" CornerRadius="4" BorderThickness="2"
+                                BorderBrush="#444" Background="White" Cursor="Hand"
+                                MouseLeftButtonUp="Thumbnail_Click"
+                                AllowDrop="True" DragOver="Thumbnail_DragOver" Drop="Thumbnail_Drop">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{x:Null}"/>
+                            </Border.InputBindings>
+                            <StackPanel>
+                                <!-- Thumbnail preview of the page -->
+                                <Image x:Name="ThumbImage" Width="80" Height="106"
+                                       Stretch="Uniform" StretchDirection="Both" RenderOptions.BitmapScalingMode="LowQuality"/>
+                                <!-- Page number label -->
+                                <TextBlock x:Name="ThumbLabel" Text="{Binding Label}" 
+                                           FontSize="10" Foreground="#AAA" TextAlignment="Center" Margin="0,2,0,2"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
