@@ -213,7 +213,8 @@
             <Grid x:Name="CanvasGrid">
                 <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
                 <!-- Sticky Note overlay (floats above ink strokes) -->
-                <Canvas x:Name="StickyNoteOverlay" Width="1200" Height="1600" IsHitTestVisible="True" ClipToBounds="True"/>
+                <!-- Sticky Note overlay (floats above ink strokes) -->
+                <Canvas x:Name="StickyNoteOverlay" Width="1200" Height="1600" Background="{x:Null}" ClipToBounds="True"/>
                 <!-- Kontext-sensitive Aktionsleiste (Issue #35) -->
                 <Popup x:Name="ContextActionPopup" Placement="Relative" PlacementTarget="{Binding ElementName=CanvasGrid}" AllowsTransparency="True" StaysOpen="False">
                     <Border Background="#2D2D2D" CornerRadius="6" Padding="4,2" BorderBrush="#0078D7" BorderThickness="1">

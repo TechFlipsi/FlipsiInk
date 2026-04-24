@@ -97,9 +97,13 @@ public class NoteManager
     private readonly string _indexPath;
     private readonly object _lock = new();
     private NotebookMetadata? _loadedMetadata;
+    private List<StickyNoteData>? _loadedStickyNotes;
 
     /// <summary>Metadata from last loaded .flipsiink file, or null.</summary>
     public NotebookMetadata? LastLoadedMetadata => _loadedMetadata;
+
+    /// <summary>Sticky notes from last loaded .flipsiink file (Issue #26).</summary>
+    public List<StickyNoteData>? LastLoadedStickyNotes => _loadedStickyNotes;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -483,7 +487,7 @@ public class NoteManager
     /// <summary>
     /// Speichert ein Notizbuch als einzelne .flipsiink-Datei (JSON mit allen Seiten).
     /// </summary>
-    public string SaveFlipsiInk(Notebook notebook, NotebookMetadata? meta = null)
+    public string SaveFlipsiInk(Notebook notebook, NotebookMetadata? meta = null, List<StickyNoteData>? stickyNotes = null)
     {
         lock (_lock)
         {
@@ -507,7 +511,8 @@ public class NoteManager
                     StrokesBase64 = p.StrokesJson,
                     Zoom = p.Zoom,
                     Theme = p.Theme
-                }).ToList()
+                }).ToList(),
+                StickyNotes = stickyNotes ?? []
             };
 
             var json = JsonSerializer.Serialize(exportData, JsonOptions);
@@ -553,6 +558,7 @@ public class NoteManager
                     Color = flipsiData.Color ?? "#007AFF",
                     Template = Enum.TryParse<CoverTemplate>(flipsiData.CoverTemplate, out var ct) ? ct : CoverTemplate.SolidColor
                 };
+                _loadedStickyNotes = flipsiData.StickyNotes;
                 notebook.PageCount = notebook.Pages.Count;
                 return notebook;
             }
@@ -608,6 +614,8 @@ internal class FlipsiInkFile
     public string? Color { get; set; }
     public string? CoverTemplate { get; set; }
     public List<FlipsiInkPage> Pages { get; set; } = [];
+    /// <summary>Sticky notes per notebook (Issue #26).</summary>
+    public List<StickyNoteData> StickyNotes { get; set; } = [];
 }
 
 /// <summary>
@@ -621,6 +629,7 @@ internal class FlipsiInkPage
     public string? StrokesBase64 { get; set; }
     public double Zoom { get; set; } = 1.0;
     public string Theme { get; set; } = "system";
+    public List<StickyNoteData>? StickyNotes { get; set; }
 }
 
 /// <summary>

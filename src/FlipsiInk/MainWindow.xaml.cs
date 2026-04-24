@@ -237,23 +237,24 @@ public partial class MainWindow : Window
             StatusText.Text = "Bereit";
         };
 
-        // Click on overlay canvas to place a sticky note
-        StickyNoteOverlay.MouseLeftButtonDown += StickyNoteOverlay_Click;
+        // Click on canvas grid to place a sticky note
+        CanvasGrid.MouseLeftButtonDown += CanvasGrid_MouseLeftButtonDown;
     }
 
-    private void StickyNoteOverlay_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void CanvasGrid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (!_stickyNoteMode) return;
+        if (!_stickyNoteMode || _stickyNoteManager == null) return;
 
         var pos = e.GetPosition(StickyNoteOverlay);
-        _stickyNoteManager!.AddNote(pos.X, pos.Y, _nextStickyColor);
+        _stickyNoteManager.AddNote(pos.X, pos.Y, _nextStickyColor);
 
         // Cycle through colors
         var colors = Enum.GetValues<StickyNoteColor>();
         var idx = Array.IndexOf(colors, _nextStickyColor);
         _nextStickyColor = colors[(idx + 1) % colors.Length];
 
-        StatusText.Text = $"📝 Klebezettel hinzugefügt ({_nextStickyColor})";
+        StatusText.Text = $"📝 Klebezettel hinzugefügt";
+        e.Handled = true;
     }
 
     /// <summary>Restores the ink canvas editing mode (called when a sticky note loses focus).</summary>
@@ -818,7 +819,7 @@ public partial class MainWindow : Window
             _currentNotebook.Name = filename;
             _currentNotebook.ModifiedAt = DateTime.UtcNow;
             var noteMgr = new NoteManager(saveDir);
-            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook, _metaManager.GetMetadata(_currentNotebook.Id));
+            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook, _metaManager.GetMetadata(_currentNotebook.Id), _stickyNoteManager?.GetAllData());
 
             // Track as recent file (Issue #21)
             _recentNotebooks.AddRecent(_currentNotebook.Id);
@@ -1782,6 +1783,10 @@ public partial class MainWindow : Window
 
         // Apply accent color from cover
         ApplyNotebookAccentColor(_currentNotebook.Color);
+
+        // Load sticky notes (Issue #26)
+        if (noteMgr.LastLoadedStickyNotes != null && _stickyNoteManager != null)
+            _stickyNoteManager.LoadFromData(noteMgr.LastLoadedStickyNotes);
 
         // Load first page
         if (_currentNotebook.Pages.Count > 0)

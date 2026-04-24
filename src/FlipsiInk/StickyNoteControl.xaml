@@ -1,0 +1,90 @@
+<UserControl x:Class="FlipsiInk.StickyNoteControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="120" MinHeight="30"
+             Focusable="True">
+
+    <UserControl.Resources>
+        <!-- Drop shadow for sticky note -->
+        <DropShadowEffect x:Key="StickyShadow" ShadowDepth="3" BlurRadius="6" Opacity="0.3" Direction="315"/>
+    </UserControl.Resources>
+
+    <Border x:Name="NoteBorder"
+            BorderBrush="#888" BorderThickness="1"
+            CornerRadius="4"
+            Effect="{StaticResource StickyShadow}"
+            MouseLeftButtonDown="NoteBorder_MouseLeftButtonDown">
+        <Grid x:Name="NoteGrid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header bar -->
+            <Grid x:Name="HeaderBar" Grid.Row="0" Height="24" Background="#00000020"
+                  MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown"
+                  MouseMove="HeaderBar_MouseMove"
+                  MouseLeftButtonUp="HeaderBar_MouseLeftButtonUp">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="HeaderTitle" Grid.Column="0"
+                           Text="📝 Klebezettel" FontSize="11" FontWeight="Bold"
+                           Foreground="#333" VerticalAlignment="Center" Margin="6,0,0,0"
+                           IsHitTestVisible="False"/>
+
+                <!-- Minimize button -->
+                <Button x:Name="BtnMinimize" Grid.Column="1"
+                        Content="−" Width="20" Height="20"
+                        FontSize="14" FontWeight="Bold"
+                        Background="Transparent" Foreground="#555"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="BtnMinimize_Click" ToolTip="Minimieren"/>
+
+                <!-- Delete button -->
+                <Button x:Name="BtnDelete" Grid.Column="2"
+                        Content="×" Width="20" Height="20"
+                        FontSize="14" FontWeight="Bold"
+                        Background="Transparent" Foreground="#C00"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="BtnDelete_Click" ToolTip="Löschen"/>
+            </Grid>
+
+            <!-- Content area (collapsible) -->
+            <Grid x:Name="ContentArea" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Editable text -->
+                <TextBox x:Name="NoteText" Grid.Row="0"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Background="Transparent" Foreground="#222"
+                         BorderThickness="0" FontSize="13"
+                         Padding="8,4" MinHeight="40"
+                         VerticalScrollBarVisibility="Auto"
+                         GotFocus="NoteText_GotFocus"
+                         LostFocus="NoteText_LostFocus"/>
+
+                <!-- Resize handle -->
+                <Thumb x:Name="ResizeHandle" Grid.Row="1"
+                       Width="16" Height="16" HorizontalAlignment="Right"
+                       Cursor="SizeNWSE" Background="Transparent"
+                       DragDelta="ResizeHandle_DragDelta"
+                       ToolTip="Größe ändern">
+                    <Thumb.Template>
+                        <ControlTemplate>
+                            <Path Data="M0,12 L12,0 M0,16 L16,0 M4,16 L16,4"
+                                  Stroke="#888" StrokeThickness="1.5"
+                                  HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                        </ControlTemplate>
+                    </Thumb.Template>
+                </Thumb>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
