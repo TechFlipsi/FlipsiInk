@@ -1493,6 +1493,23 @@ public partial class MainWindow : Window
 
     #region Settings
 
+    private void OpenModelManager()
+    {
+        var win = new ModelManagerWindow(_modelManager);
+        win.ShowDialog();
+        // Reload model if active model changed
+        _modelLoaded = false;
+        _ocrEngine?.Dispose();
+        _ocrEngine = null;
+        if (_modelManager.GetActiveModelPath() != null)
+            LoadModelAsync();
+        else
+        {
+            ModelStatus.Text = "Modell: nicht geladen";
+            ModelStatus.Foreground = System.Windows.Media.Brushes.Orange;
+        }
+    }
+
     private void OpenSettings()
     {
         // TODO: Issue #6 – Full settings window

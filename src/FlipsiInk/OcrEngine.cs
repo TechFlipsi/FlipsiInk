@@ -31,8 +31,12 @@ public class OcrEngine : IDisposable
     /// </summary>
     public void LoadModel()
     {
-        var modelDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Models");
-        Directory.CreateDirectory(modelDir);
+        // Priority: explicit config path > ModelManager default dir > app dir Models
+        var modelDirs = new List<string>
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlipsiInk", "Models"),
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Models")
+        };
 
         // Also check config path
         if (!string.IsNullOrEmpty(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
@@ -41,27 +45,31 @@ public class OcrEngine : IDisposable
             return;
         }
 
-        // Look for model files in Models directory
+        // Search all model directories
         string? foundModel = null;
-        if (File.Exists(Path.Combine(modelDir, "model.onnx")))
-            foundModel = Path.Combine(modelDir, "model.onnx");
-        else if (File.Exists(Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx")))
-            foundModel = Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx");
-        else if (File.Exists(Path.Combine(modelDir, "trocr_large.onnx")))
-            foundModel = Path.Combine(modelDir, "trocr_large.onnx");
-        else
+        foreach (var modelDir in modelDirs)
         {
-            var onnxFiles = Directory.GetFiles(modelDir, "*.onnx");
-            if (onnxFiles.Length > 0)
-                foundModel = onnxFiles[0];
+            Directory.CreateDirectory(modelDir);
+            if (File.Exists(Path.Combine(modelDir, "model.onnx")))
+                foundModel = Path.Combine(modelDir, "model.onnx");
+            else if (File.Exists(Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx")))
+                foundModel = Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx");
+            else if (File.Exists(Path.Combine(modelDir, "trocr-large.onnx")))
+                foundModel = Path.Combine(modelDir, "trocr-large.onnx");
+            else
+            {
+                var onnxFiles = Directory.GetFiles(modelDir, "*.onnx");
+                if (onnxFiles.Length > 0)
+                    foundModel = onnxFiles[0];
+            }
+            if (foundModel != null) break;
         }
 
         if (foundModel == null)
         {
             ModelName = "kein Modell gefunden";
             throw new FileNotFoundException(
-                "Kein ONNX-Modell im Models-Ordner gefunden. " +
-                "Bitte ein Modell (z.B. TrOCR large als .onnx) in den Ordner legen: " + modelDir);
+                "Kein ONNX-Modell gefunden. Bitte ein Modell über 📦 KI-Modelle herunterladen.");
         }
 
         LoadModelFile(foundModel);
