@@ -98,12 +98,16 @@ public class NoteManager
     private readonly object _lock = new();
     private NotebookMetadata? _loadedMetadata;
     private List<StickyNoteData>? _loadedStickyNotes;
+    private List<LinkEntryData>? _loadedLinks;
 
     /// <summary>Metadata from last loaded .flipsiink file, or null.</summary>
     public NotebookMetadata? LastLoadedMetadata => _loadedMetadata;
 
     /// <summary>Sticky notes from last loaded .flipsiink file (Issue #26).</summary>
     public List<StickyNoteData>? LastLoadedStickyNotes => _loadedStickyNotes;
+
+    /// <summary>Links from last loaded .flipsiink file (Issue #33).</summary>
+    public List<LinkEntryData>? LastLoadedLinks => _loadedLinks;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -487,7 +491,7 @@ public class NoteManager
     /// <summary>
     /// Speichert ein Notizbuch als einzelne .flipsiink-Datei (JSON mit allen Seiten).
     /// </summary>
-    public string SaveFlipsiInk(Notebook notebook, NotebookMetadata? meta = null, List<StickyNoteData>? stickyNotes = null)
+    public string SaveFlipsiInk(Notebook notebook, NotebookMetadata? meta = null, List<StickyNoteData>? stickyNotes = null, List<LinkEntryData>? links = null)
     {
         lock (_lock)
         {
@@ -512,7 +516,8 @@ public class NoteManager
                     Zoom = p.Zoom,
                     Theme = p.Theme
                 }).ToList(),
-                StickyNotes = stickyNotes ?? []
+                StickyNotes = stickyNotes ?? [],
+                Links = links ?? []
             };
 
             var json = JsonSerializer.Serialize(exportData, JsonOptions);
@@ -559,6 +564,7 @@ public class NoteManager
                     Template = Enum.TryParse<CoverTemplate>(flipsiData.CoverTemplate, out var ct) ? ct : CoverTemplate.SolidColor
                 };
                 _loadedStickyNotes = flipsiData.StickyNotes;
+                _loadedLinks = flipsiData.Links;
                 notebook.PageCount = notebook.Pages.Count;
                 return notebook;
             }
@@ -616,6 +622,8 @@ internal class FlipsiInkFile
     public List<FlipsiInkPage> Pages { get; set; } = [];
     /// <summary>Sticky notes per notebook (Issue #26).</summary>
     public List<StickyNoteData> StickyNotes { get; set; } = [];
+    /// <summary>Bi-directional links between notebooks (Issue #33).</summary>
+    public List<LinkEntryData> Links { get; set; } = [];
 }
 
 /// <summary>

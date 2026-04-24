@@ -72,10 +72,17 @@ public partial class MainWindow : Window
     // Kontext-Aktionsleiste (Issue #35)
     private ContextActionBar? _contextActionBar;
 
+    // Smart Snapshot cache (Issue #36)
+    private List<TableDetector.DetectedTable>? _lastDetectedTables;
+    private List<DateDetector.DetectedDate>? _lastDetectedDates;
+
     // Sticky Notes (Issue #26)
     private StickyNoteManager? _stickyNoteManager;
     private StickyNoteColor _nextStickyColor = StickyNoteColor.Gelb;
     private bool _stickyNoteMode = false;
+
+    // Bi-directional links (Issue #33)
+    private LinkManager _linkManager = new();
 
     // Handschrift-Index (Issue #30)
     private NoteSearchIndex _searchIndex = new();
@@ -208,6 +215,13 @@ public partial class MainWindow : Window
     private void SetupStickyNotes()
     {
         _stickyNoteManager = new StickyNoteManager(StickyNoteOverlay);
+
+        // Wire up LinkManager to sticky notes
+        _linkManager.SetNoteManager(new NoteManager(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk")));
+        BacklinksSidebar.SetLinkManager(_linkManager);
+        _linkManager.LinkNavigationRequested += OnLinkNavigationRequested;
+        BacklinksSidebar.LinkNavigationRequested += OnLinkNavigationRequested;
 
         // Modern toolbar button
         BtnStickyNote_M.Checked += (s, e) =>
@@ -819,7 +833,7 @@ public partial class MainWindow : Window
             _currentNotebook.Name = filename;
             _currentNotebook.ModifiedAt = DateTime.UtcNow;
             var noteMgr = new NoteManager(saveDir);
-            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook, _metaManager.GetMetadata(_currentNotebook.Id), _stickyNoteManager?.GetAllData());
+            var flipsiPath = noteMgr.SaveFlipsiInk(_currentNotebook, _metaManager.GetMetadata(_currentNotebook.Id), _stickyNoteManager?.GetAllData(), _linkManager.GetAllLinkData());
 
             // Track as recent file (Issue #21)
             _recentNotebooks.AddRecent(_currentNotebook.Id);
@@ -886,6 +900,15 @@ public partial class MainWindow : Window
                 ? Visibility.Collapsed : Visibility.Visible;
             if (BookmarkSidebar.Visibility == Visibility.Visible)
                 _bookmarkPanel.SetNotebook(_currentNotebook.Id, _pageManager.CurrentPageNumber);
+        };
+
+        // Backlinks toggle button (Issue #33)
+        BtnBacklinks.Click += (s, e) =>
+        {
+            BacklinksSidebar.Visibility = BacklinksSidebar.Visibility == Visibility.Visible
+                ? Visibility.Collapsed : Visibility.Visible;
+            if (BacklinksSidebar.Visibility == Visibility.Visible)
+                RefreshBacklinks();
         };
 
         // Recent files button
@@ -1329,6 +1352,13 @@ public partial class MainWindow : Window
         _contextActionBar.AddAction("math", "📈 Graph zeichnen", () => DrawGraph());
         _contextActionBar.AddAction("math", "💱 Währung umrechnen", () => ConvertCurrency());
 
+        // Smart Snapshot Aktionen (Issue #36)
+        _contextActionBar.AddAction("table", "📋 Als Tabelle kopieren", () => CopyAsTable());
+        _contextActionBar.AddAction("table", "📄 Als CSV kopieren", () => CopyAsCsv());
+        _contextActionBar.AddAction("table", "📝 Als Markdown", () => CopyAsMarkdownTable());
+        _contextActionBar.AddAction("date", "📅 Als Termin übernehmen", () => ExportDateAsIcs());
+        _contextActionBar.AddAction("date", "📋 Datum kopieren", () => CopyDate());
+
         // Selektionsänderungen überwachen
         MainCanvas.SelectionChanged += OnSelectionChanged;
         MainCanvas.SelectionMoving += OnSelectionMoving;
@@ -1410,28 +1440,36 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Erkennt den Kontext der Selektion: "text" oder "math".
+    /// Erkennt den Kontext der Selektion: "text", "math", "table" oder "date".
+    /// Issue #36: Zusätzlich Tabellen- und Termin-Erkennung.
     /// </summary>
     private string DetectSelectionContext(StrokeCollection selected)
     {
-        // Einfache Heuristik: Wenn OCR Text mit Zahlen/Operatoren enthält → "math"
-        // Sonst → "text"
-        // Da wir nicht live OCR machen, nutzen wir eine Form-basierte Heuristik:
-        // Viele kleine Strokes in einer Zeile → eher Text
-        // Enthält der Stroke schmale vertikale Elemente (Ziffern) → eher Rechnung
-
-        // Für jetzt: Beide Kontexte anbieten, je nach Erkennung
-        // Prüfe ob Strokes wie eine Rechnung aussehen (zahlenlastig)
         if (_modelLoaded && _ocrEngine != null && selected.Count > 0)
         {
             try
             {
-                // Quick-OCR der Selektion
                 var bitmap = RenderSelectedStrokesToBitmap(selected);
                 if (bitmap != null)
                 {
                     var text = _ocrEngine.Recognize(bitmap);
-                    // Prüfe auf Zahlen/Operatoren
+                    
+                    // Issue #36: Check for tables first
+                    var tables = TableDetector.Detect(text);
+                    if (tables.Count > 0)
+                    {
+                        _lastDetectedTables = tables;
+                        return "table";
+                    }
+                    
+                    // Issue #36: Check for dates
+                    var dates = DateDetector.Detect(text);
+                    if (dates.Count > 0)
+                    {
+                        _lastDetectedDates = dates;
+                        return "date";
+                    }
+                    
                     if (System.Text.RegularExpressions.Regex.IsMatch(text, @"[\d+\-*/=]"))
                         return "math";
                 }
@@ -1555,6 +1593,90 @@ public partial class MainWindow : Window
             .Distinct()
             .Take(5);
         return string.Join(". ", sentences) + ".";
+    }
+
+    // Smart Snapshot Aktionen (Issue #36)
+
+    private void CopyAsTable()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (_lastDetectedTables != null && _lastDetectedTables.Count > 0)
+        {
+            Clipboard.SetText(TableDetector.FormatAsTsv(_lastDetectedTables[0]));
+            StatusText.Text = "✓ Tabelle kopiert (Tabulator-getrennt)";
+        }
+        else
+        {
+            StatusText.Text = "⚠️ Keine Tabelle erkannt";
+        }
+    }
+
+    private void CopyAsCsv()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (_lastDetectedTables != null && _lastDetectedTables.Count > 0)
+        {
+            Clipboard.SetText(TableDetector.FormatAsCsv(_lastDetectedTables[0]));
+            StatusText.Text = "✓ Tabelle als CSV kopiert";
+        }
+        else
+        {
+            StatusText.Text = "⚠️ Keine Tabelle erkannt";
+        }
+    }
+
+    private void CopyAsMarkdownTable()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (_lastDetectedTables != null && _lastDetectedTables.Count > 0)
+        {
+            Clipboard.SetText(TableDetector.FormatAsMarkdown(_lastDetectedTables[0]));
+            StatusText.Text = "✓ Tabelle als Markdown kopiert";
+        }
+        else
+        {
+            StatusText.Text = "⚠️ Keine Tabelle erkannt";
+        }
+    }
+
+    private void ExportDateAsIcs()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (_lastDetectedDates != null && _lastDetectedDates.Count > 0)
+        {
+            try
+            {
+                var dateEvent = _lastDetectedDates[0];
+                string ics = DateDetector.GenerateIcs(dateEvent, "Termin aus FlipsiInk", dateEvent.RawText);
+                string tempPath = Path.Combine(Path.GetTempPath(), $"flipsi_termin_{DateTime.Now:yyyyMMdd_HHmmss}.ics");
+                File.WriteAllText(tempPath, ics);
+                Process.Start(new ProcessStartInfo { FileName = tempPath, UseShellExecute = true });
+                StatusText.Text = "✓ Termin als .ics exportiert";
+            }
+            catch (Exception ex) { StatusText.Text = $"✗ Fehler: {ex.Message}"; }
+        }
+        else
+        {
+            StatusText.Text = "⚠️ Kein Termin erkannt";
+        }
+    }
+
+    private void CopyDate()
+    {
+        ContextActionPopup.IsOpen = false;
+        if (_lastDetectedDates != null && _lastDetectedDates.Count > 0)
+        {
+            var dateEvent = _lastDetectedDates[0];
+            string label = dateEvent.DateTime?.ToString("dd.MM.yyyy") ?? dateEvent.RawText;
+            if (dateEvent.HasTime && dateEvent.Time != null)
+                label += $" um {dateEvent.Time.Value:hh\:mm}";
+            Clipboard.SetText(label);
+            StatusText.Text = "✓ Datum kopiert";
+        }
+        else
+        {
+            StatusText.Text = "⚠️ Kein Termin erkannt";
+        }
     }
 
     #endregion
@@ -1788,6 +1910,10 @@ public partial class MainWindow : Window
         if (noteMgr.LastLoadedStickyNotes != null && _stickyNoteManager != null)
             _stickyNoteManager.LoadFromData(noteMgr.LastLoadedStickyNotes);
 
+        // Load links (Issue #33)
+        if (noteMgr.LastLoadedLinks != null)
+            _linkManager.LoadFromData(noteMgr.LastLoadedLinks);
+
         // Load first page
         if (_currentNotebook.Pages.Count > 0)
         {
@@ -1994,6 +2120,54 @@ public partial class MainWindow : Window
             CopyPageToClipboard();
             e.Handled = true;
         }
+    }
+
+    // ─── Bi-directional Links (Issue #33) ────────────────────────────
+
+    /// <summary>
+    /// Refreshes the backlinks panel for the current notebook.
+    /// </summary>
+    private void RefreshBacklinks()
+    {
+        BacklinksSidebar.SetCurrentNotebook(_currentNotebook.Id, _currentNotebook.Name);
+    }
+
+    /// <summary>
+    /// Handles link navigation requests – opens the target notebook.
+    /// </summary>
+    private void OnLinkNavigationRequested(object? sender, LinkNavigationEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.TargetName)) return;
+
+        var saveDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FlipsiInk");
+        var noteMgr = new NoteManager(saveDir);
+        var results = noteMgr.SearchNotebooks(e.TargetName);
+        if (results.Count > 0)
+        {
+            var nb = results[0];
+            var full = noteMgr.LoadNotebook(nb.Id);
+            OpenNotebookInTab(full);
+        }
+        else
+        {
+            System.Windows.MessageBox.Show(
+                $"Notizbuch „{e.TargetName}" nicht gefunden.",
+                "Verknüpfung",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+    }
+
+    /// <summary>
+    /// Updates link index when sticky note text changes.
+    /// </summary>
+    private void UpdateLinksFromStickyNote(StickyNoteControl note)
+    {
+        _linkManager.UpdateLinksFromContent(_currentNotebook.Id, _pageManager.CurrentPageNumber, note.NoteTextContent);
+
+        // Also update backlinks panel if visible
+        if (BacklinksSidebar.Visibility == Visibility.Visible)
+            RefreshBacklinks();
     }
 
     #endregion

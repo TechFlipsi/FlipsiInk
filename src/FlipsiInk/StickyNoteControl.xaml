@@ -60,7 +60,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Editable text -->
+                <!-- Editable text with link detection -->
                 <TextBox x:Name="NoteText" Grid.Row="0"
                          AcceptsReturn="True" TextWrapping="Wrap"
                          Background="Transparent" Foreground="#222"
@@ -69,6 +69,10 @@
                          VerticalScrollBarVisibility="Auto"
                          GotFocus="NoteText_GotFocus"
                          LostFocus="NoteText_LostFocus"/>
+
+                <!-- Link overlay (clickable [[links]] rendered on top of TextBox) -->
+                <Canvas x:Name="LinkOverlay" Grid.Row="0" IsHitTestVisible="True"
+                        Background="Transparent" Visibility="Collapsed"/>
 
                 <!-- Resize handle -->
                 <Thumb x:Name="ResizeHandle" Grid.Row="1"

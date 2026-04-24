@@ -1,0 +1,31 @@
+<UserControl x:Class="FlipsiInk.SmartSnapshotPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F8F9FA"
+             BorderBrush="#DEE2E6"
+             BorderThickness="1"
+             Padding="8">
+    <StackPanel>
+        <TextBlock Text="📋 Smart Snapshot"
+                   FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                   Foreground="#212529"/>
+
+        <!-- Detected Tables Section -->
+        <Expander Header="📊 Tabellen" IsExpanded="True" Margin="0,0,0,4"
+                  x:Name="TableExpander" Visibility="Collapsed">
+            <StackPanel x:Name="TableContentPanel"/>
+        </Expander>
+
+        <!-- Detected Dates Section -->
+        <Expander Header="📅 Termine" IsExpanded="True" Margin="0,0,0,4"
+                  x:Name="DateExpander" Visibility="Collapsed">
+            <StackPanel x:Name="DateContentPanel"/>
+        </Expander>
+
+        <!-- No content message -->
+        <TextBlock x:Name="NoContentMessage"
+                   Text="Keine strukturierten Inhalte erkannt."
+                   Foreground="#6C757D" FontStyle="Italic"
+                   Margin="0,8,0,0"/>
+    </StackPanel>
+</Control>

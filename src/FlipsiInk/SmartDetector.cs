@@ -40,11 +40,13 @@ public static class SmartDetector
     {
         Email,
         Phone,
-        Url
+        Url,
+        Table,
+        Date
     }
 
     /// <summary>
-    /// Durchsucht den Text nach E-Mails, Telefonnummern und URLs.
+    /// Durchsucht den Text nach E-Mails, Telefonnummern, URLs, Tabellen und Terminen.
     /// </summary>
     public static List<SmartMatch> Detect(string text)
     {
@@ -59,7 +61,6 @@ public static class SmartDetector
         // E-Mails
         foreach (Match m in EmailPattern.Matches(text))
         {
-            // Nur hinzufügen wenn nicht bereits Teil einer URL
             if (!matches.Any(x => m.Index >= x.Start && m.Index < x.Start + x.Length))
                 matches.Add(new SmartMatch(SmartMatchType.Email, m.Value, m.Index, m.Length));
         }
@@ -71,7 +72,42 @@ public static class SmartDetector
                 matches.Add(new SmartMatch(SmartMatchType.Phone, m.Value, m.Index, m.Length));
         }
 
+        // Tabellen (Issue #36): detect grid-like row/column patterns
+        var tables = TableDetector.Detect(text);
+        foreach (var table in tables)
+        {
+            string tablePreview = string.Join(" | ", table.Cells[0]) + " ...";
+            matches.Add(new SmartMatch(SmartMatchType.Table, tablePreview, table.StartLine, 0));
+        }
+
+        // Termine (Issue #36): detect German/English date patterns
+        var dates = DateDetector.Detect(text);
+        foreach (var date in dates)
+        {
+            matches.Add(new SmartMatch(SmartMatchType.Date, date.RawText, date.StartIndex, date.Length));
+        }
+
         return matches.OrderBy(m => m.Start).ToList();
+    }
+
+    /// <summary>
+    /// Returns the full detection context including tables and dates.
+    /// Used by SmartSnapshotPanel to populate the UI.
+    /// </summary>
+    public record SmartDetectionResult(
+        List<SmartMatch> Matches,
+        List<TableDetector.DetectedTable> Tables,
+        List<DateDetector.DetectedDate> Dates);
+
+    /// <summary>
+    /// Full detection with structured results for Smart Snapshot panel.
+    /// </summary>
+    public static SmartDetectionResult DetectFull(string text)
+    {
+        var matches = Detect(text);
+        var tables = TableDetector.Detect(text);
+        var dates = DateDetector.Detect(text);
+        return new SmartDetectionResult(matches, tables, dates);
     }
 
     /// <summary>
@@ -98,6 +134,8 @@ public static class SmartDetector
             SmartMatchType.Email => "📧",
             SmartMatchType.Phone => "📞",
             SmartMatchType.Url => "🔗",
+            SmartMatchType.Table => "📊",
+            SmartMatchType.Date => "📅",
             _ => "🔍"
         };
     }

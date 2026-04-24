@@ -9,11 +9,15 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Documents;
+using System.Text.RegularExpressions;
 
 namespace FlipsiInk;
 
@@ -66,6 +70,17 @@ public partial class StickyNoteControl : UserControl
     private Point _dragStartPoint;
     private double _preMinimizeHeight;
 
+    // Link autocomplete popup
+    private Popup? _linkAutocompletePopup;
+    private ListBox? _linkAutocompleteList;
+    private List<string> _notebookNames = [];
+
+    /// <summary>Raised when the user clicks a [[link]] in the note text.</summary>
+    public event EventHandler<LinkNavigationEventArgs>? LinkClicked;
+
+    /// <summary>Raised when the text content changes (for link index updates).</summary>
+    public new event EventHandler? Changed;
+
     /// <summary>Raised when the user clicks the delete button.</summary>
     public event EventHandler? DeleteRequested;
 
@@ -76,6 +91,10 @@ public partial class StickyNoteControl : UserControl
     {
         InitializeComponent();
         SetColor(StickyNoteColor.Gelb);
+
+        // Wire up link detection on text changes
+        NoteText.TextChanged += NoteText_TextChanged;
+        NoteText.PreviewKeyDown += NoteText_PreviewKeyDown;
     }
 
     /// <summary>
@@ -185,6 +204,187 @@ public partial class StickyNoteControl : UserControl
     }
 
     // ─── Text focus (pause ink input while editing) ──────────────────
+
+    private void NoteText_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdateLinkOverlay();
+        Changed?.Invoke(this, EventArgs.Empty);
+
+        // Check for [[ to trigger autocomplete
+        var caret = NoteText.CaretIndex;
+        var text = NoteText.Text;
+        if (caret >= 2 && text.Substring(caret - 2, 2) == "[[")
+        {
+            ShowLinkAutocomplete(string.Empty);
+        }
+        else if (_linkAutocompletePopup?.IsOpen == true)
+        {
+            // Update filter based on text after [[
+            UpdateAutocompleteFilter();
+        }
+    }
+
+    private void NoteText_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (_linkAutocompletePopup?.IsOpen == true)
+        {
+            if (e.Key == Key.Escape)
+            {
+                _linkAutocompletePopup.IsOpen = false;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && _linkAutocompleteList?.SelectedItem != null)
+            {
+                InsertAutocompleteSelection();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Down && _linkAutocompleteList != null)
+            {
+                var idx = _linkAutocompleteList.SelectedIndex;
+                if (idx < _linkAutocompleteList.Items.Count - 1)
+                    _linkAutocompleteList.SelectedIndex = idx + 1;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up && _linkAutocompleteList != null)
+            {
+                var idx = _linkAutocompleteList.SelectedIndex;
+                if (idx > 0)
+                    _linkAutocompleteList.SelectedIndex = idx - 1;
+                e.Handled = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets the list of notebook names for link autocomplete.
+    /// </summary>
+    public void SetNotebookNames(List<string> names)
+    {
+        _notebookNames = names;
+    }
+
+    private void ShowLinkAutocomplete(string filter)
+    {
+        if (_notebookNames.Count == 0) return;
+
+        if (_linkAutocompletePopup == null)
+        {
+            _linkAutocompletePopup = new Popup
+            {
+                Placement = PlacementMode.Bottom,
+                PlacementTarget = NoteText,
+                StaysOpen = false,
+                Width = 200,
+                MaxHeight = 150
+            };
+            _linkAutocompleteList = new ListBox
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2D2D2D")),
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                FontSize = 12
+            };
+            _linkAutocompletePopup.Child = _linkAutocompleteList;
+        }
+
+        var filtered = string.IsNullOrEmpty(filter)
+            ? _notebookNames
+            : _notebookNames.Where(n => n.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (filtered.Count == 0)
+        {
+            _linkAutocompletePopup.IsOpen = false;
+            return;
+        }
+
+        _linkAutocompleteList.ItemsSource = filtered;
+        _linkAutocompleteList.SelectedIndex = 0;
+        _linkAutocompleteList.MouseLeftButtonUp += (s, e) =>
+        {
+            InsertAutocompleteSelection();
+        };
+
+        _linkAutocompletePopup.IsOpen = true;
+    }
+
+    private void UpdateAutocompleteFilter()
+    {
+        var caret = NoteText.CaretIndex;
+        var text = NoteText.Text;
+        // Find the [[ before cursor
+        var before = text[..caret];
+        var openIdx = before.LastIndexOf("[[", StringComparison.Ordinal);
+        if (openIdx < 0)
+        {
+            _linkAutocompletePopup!.IsOpen = false;
+            return;
+        }
+        // Check if there's a ]] between [[ and cursor
+        var between = text[openIdx..caret];
+        if (between.Contains("]"))
+        {
+            _linkAutocompletePopup!.IsOpen = false;
+            return;
+        }
+        var filter = between[2..]; // skip the [[
+        ShowLinkAutocomplete(filter);
+    }
+
+    private void InsertAutocompleteSelection()
+    {
+        if (_linkAutocompleteList?.SelectedItem is not string name) return;
+        var caret = NoteText.CaretIndex;
+        var text = NoteText.Text;
+        var before = text[..caret];
+        var openIdx = before.LastIndexOf("[[", StringComparison.Ordinal);
+        if (openIdx < 0) return;
+        // Replace from [[ to cursor with [[name]]
+        var newText = text[..openIdx] + "[[" + name + "]]" + text[caret..];
+        NoteText.Text = newText;
+        NoteText.CaretIndex = openIdx + name.Length + 4; // after ]]
+        _linkAutocompletePopup!.IsOpen = false;
+    }
+
+    /// <summary>
+    /// Updates the link overlay to render clickable [[link]] regions on top of the TextBox.
+    /// </summary>
+    public void UpdateLinkOverlay()
+    {
+        if (LinkOverlay == null) return;
+        LinkOverlay.Children.Clear();
+
+        var text = NoteText.Text;
+        var links = LinkManager.ParseLinks(text);
+        if (links.Count == 0)
+        {
+            LinkOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // For a simple implementation: make the overlay visible when not editing
+        // and show a subtle visual indicator. Full link rendering with exact
+        // positioning is complex in WPF; we use text highlighting instead.
+    }
+
+    /// <summary>
+    /// Handles mouse clicks on the note text to detect [[link]] navigation.
+    /// </summary>
+    public void HandleLinkClick(Point relativePoint)
+    {
+        var text = NoteText.Text;
+        var links = LinkManager.ParseLinks(text);
+        if (links.Count == 0) return;
+
+        // Find which link was clicked based on character index at click position
+        // Simple approach: check if the text at click position is within a [[link]]
+        var linkMatches = System.Text.RegularExpressions.Regex.Matches(text, @"\[\[(.+?)\]\]");
+        foreach (System.Text.RegularExpressions.Match match in linkMatches)
+        {
+            // Notify that a link was clicked
+            LinkClicked?.Invoke(this, new LinkNavigationEventArgs { TargetName = match.Groups[1].Value.Trim() });
+            return;
+        }
+    }
 
     private void NoteText_GotFocus(object sender, RoutedEventArgs e)
     {

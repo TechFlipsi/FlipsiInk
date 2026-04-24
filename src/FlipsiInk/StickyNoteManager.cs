@@ -29,6 +29,16 @@ public class StickyNoteManager
     /// <summary>Fired when a note is added or removed (for save triggers).</summary>
     public event EventHandler? NotesChanged;
 
+    /// <summary>Fired when a [[link]] in a note is clicked.</summary>
+    public event EventHandler<LinkNavigationEventArgs>? LinkClicked;
+
+    /// <summary>Sets notebook names for link autocomplete on all notes.</summary>
+    public void SetNotebookNames(List<string> names)
+    {
+        foreach (var note in _notes)
+            note.SetNotebookNames(names);
+    }
+
     public StickyNoteManager(Canvas overlay)
     {
         _overlay = overlay;
@@ -61,6 +71,7 @@ public class StickyNoteManager
         // Wire events
         note.DeleteRequested += (s, e) => RemoveNote(note);
         note.Changed += (s, e) => NotesChanged?.Invoke(this, EventArgs.Empty);
+        note.LinkClicked += (s, e) => LinkClicked?.Invoke(this, e);
 
         _overlay.Children.Add(note);
         _notes.Add(note);

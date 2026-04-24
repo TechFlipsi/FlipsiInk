@@ -44,6 +44,7 @@
                 <Button x:Name="BtnCheckUpdate" Content="🔄" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen"/>
                 <Separator Margin="4,8"/>
                 <ToggleButton x:Name="BtnBookmarks" Content="🔖" Style="{StaticResource ToolButton}" ToolTip="Lesezeichen"/>
+                <ToggleButton x:Name="BtnBacklinks" Content="🔗" Style="{StaticResource ToolButton}" ToolTip="Rückverweise"/>
                 <Button x:Name="BtnRecentFiles" Content="📁" Style="{StaticResource ToolButton}" ToolTip="Zuletzt geöffnet"/>
             </StackPanel>
         </DockPanel>
@@ -131,6 +132,9 @@
 
         <!-- Left: Bookmark Panel (Issue #21) -->
         <local:BookmarkPanel x:Name="BookmarkSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
+
+        <!-- Left: Backlinks Panel (Issue #33) -->
+        <local:BacklinksPanel x:Name="BacklinksSidebar" DockPanel.Dock="Left" Visibility="Collapsed"/>
 
         <!-- Recent Files Popup (Issue #21) -->
         <Popup x:Name="RecentFilesPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnRecentFiles}" StaysOpen="False" AllowsTransparency="True">
