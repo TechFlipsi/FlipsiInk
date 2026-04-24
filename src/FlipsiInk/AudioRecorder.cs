@@ -58,7 +58,9 @@ public class AudioRecorder
     public event EventHandler<PlaybackPositionEventArgs>? PlaybackPositionChanged;
 
     /// <summary>Wird ausgelöst wenn Playback endet.</summary>
+#pragma warning disable CS0067
     public event EventHandler? PlaybackFinished;
+#pragma warning restore CS0067
 
     /// <summary>
     /// Startet Audio-Aufnahme und speichert als WAV-Datei.

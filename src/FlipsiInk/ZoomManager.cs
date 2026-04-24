@@ -93,7 +93,7 @@ public class ZoomManager
         element.PreviewMouseWheel -= OnMouseWheel;
     }
 
-    private void OnMouseWheel(object sender, MouseWheelEventArgs e)
+    private void OnMouseWheel(object? sender, MouseWheelEventArgs e)
     {
         if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) return;
         e.Handled = true;
@@ -118,13 +118,13 @@ public class ZoomManager
         element.ManipulationDelta -= OnManipulationDelta;
     }
 
-    private void OnManipulationStarting(object sender, ManipulationStartingEventArgs e)
+    private void OnManipulationStarting(object? sender, ManipulationStartingEventArgs e)
     {
         e.ManipulationContainer = (FrameworkElement)sender;
         e.Handled = true;
     }
 
-    private void OnManipulationDelta(object sender, ManipulationDeltaEventArgs e)
+    private void OnManipulationDelta(object? sender, ManipulationDeltaEventArgs e)
     {
         if (e.DeltaManipulation.Scale.Length > 0)
         {

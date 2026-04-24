@@ -158,7 +158,7 @@ public class InputModeManager
         }
     }
 
-    private void OnStylusDown(object sender, StylusDownEventArgs e)
+    private void OnStylusDown(object? sender, StylusDownEventArgs e)
     {
         // Stift erkannt – StiftAvailable aktualisieren
         if (!StylusAvailable)
@@ -168,12 +168,12 @@ public class InputModeManager
         }
     }
 
-    private void OnStylusUp(object sender, StylusEventArgs e)
+    private void OnStylusUp(object? sender, StylusEventArgs e)
     {
         // Stift abgehoben
     }
 
-    private void OnPreviewTouchDown(object sender, TouchEventArgs e)
+    private void OnPreviewTouchDown(object? sender, TouchEventArgs e)
     {
         if (_currentMode == InputMode.Pen)
         {
@@ -184,7 +184,7 @@ public class InputModeManager
         }
     }
 
-    private void OnTouchDown(object sender, TouchEventArgs e)
+    private void OnTouchDown(object? sender, TouchEventArgs e)
     {
         if (_currentMode == InputMode.Pen)
         {
@@ -193,7 +193,7 @@ public class InputModeManager
         }
     }
 
-    private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private void OnPreviewMouseDown(object? sender, MouseButtonEventArgs e)
     {
         // Prüfe ob die Eingabe vom Stift oder Touch/Maus kommt
         if (_currentMode == InputMode.Pen && e.StylusDevice?.TabletDevice.Type == TabletDeviceType.Touch)
