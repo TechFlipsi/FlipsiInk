@@ -40,9 +40,7 @@
 
         <!-- Top Bar -->
         <DockPanel DockPanel.Dock="Top" Background="#2D2D2D" Height="48" x:Name="TopBar">
-            <DockPanel.DockPanel.Dock="Bottom">
-                <Border Background="#444" Height="1"/>
-            </DockPanel.DockPanel.Dock>
+            <Border Background="#444" Height="1" DockPanel.Dock="Bottom"/>
             <StackPanel Orientation="Horizontal" Margin="8,0">
                 <TextBlock Text="&#x270E; FlipsiInk" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0,16,0" x:Name="AppTitle"/>
                 <TextBlock x:Name="VersionLabel" Text="v0.1.0" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,16,0"/>
