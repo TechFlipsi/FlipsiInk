@@ -20,7 +20,7 @@ namespace FlipsiInk;
 /// </summary>
 public partial class TabBarControl : UserControl
 {
-    private readonly TabManager _tabManager;
+    private TabManager _tabManager = null!;
     private readonly Dictionary<string, Border> _tabElements = new();
     private Func<Guid, string>? _nameResolver;
 
