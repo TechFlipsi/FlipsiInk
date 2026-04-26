@@ -11,6 +11,8 @@
 📖 **[Betriebsanleitung / Manual](MANUAL.md)** – Installation, Features, Mathe-System, Tastenkürzel & mehr
 
 > ⚠️ **EARLY ALPHA – Noch keine voll funktionsfähige Version!** Die App befindet sich in aktiver Entwicklung. Features können unvollständig oder fehlerhaft sein. Für Tests und Feedback willkommen!
+>
+> 🐛 **Bekannte Fehler?** → [Bug Tracker ansehen](https://github.com/TechFlipsi/FlipsiInk/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
 
 ## Features
 - ✏️ Stift-Eingabe mit Druckempfindlichkeit (Surface Pen, HP, Dell, Wacom etc.)
