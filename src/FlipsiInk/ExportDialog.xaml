@@ -28,6 +28,7 @@
         <TextBlock Grid.Row="1" Text="Format" FontWeight="Bold" Foreground="White" FontSize="13" Margin="0,0,0,4"/>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
             <RadioButton x:Name="RbPng" Content="PNG" Foreground="White" FontSize="13" Margin="0,0,16,0" IsChecked="True" GroupName="Format"/>
+            <RadioButton x:Name="RbJpg" Content="JPG" Foreground="White" FontSize="13" Margin="0,0,16,0" GroupName="Format"/>
             <RadioButton x:Name="RbPdf" Content="PDF" Foreground="White" FontSize="13" Margin="0,0,16,0" GroupName="Format"/>
             <RadioButton x:Name="RbSvg" Content="SVG" Foreground="White" FontSize="13" GroupName="Format"/>
         </StackPanel>

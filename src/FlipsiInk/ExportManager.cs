@@ -27,6 +27,7 @@ namespace FlipsiInk;
 public enum ExportFormat
 {
     Png,
+    Jpg,
     Pdf,
     Svg
 }
@@ -190,6 +191,19 @@ public class ExportManager
     {
         using var bitmap = RenderPageToBitmap(strokes, background, width, height, dpi);
         bitmap.Save(filePath, ImageFormat.Png);
+    }
+
+    /// <summary>
+    /// Exports a single page as JPG to the specified file path.
+    /// </summary>
+    public static void ExportJpg(StrokeCollection strokes, System.Windows.Media.Brush background, int width, int height, string filePath, int dpi, int quality = 90)
+    {
+        using var bitmap = RenderPageToBitmap(strokes, background, width, height, dpi);
+        var encoderParams = new EncoderParameters(1);
+        encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
+        var jpegEncoder = System.Drawing.Imaging.ImageCodecInfo.GetImageDecoders()
+            .First(c => c.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
+        bitmap.Save(filePath, jpegEncoder, encoderParams);
     }
 
     /// <summary>

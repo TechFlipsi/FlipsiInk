@@ -41,26 +41,46 @@ public class OcrEngine : IDisposable
         // Also check config path
         if (!string.IsNullOrEmpty(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
         {
-            LoadModelFile(App.Config.ModelPath);
-            return;
+            try
+            {
+                LoadModelFile(App.Config.ModelPath);
+                return;
+            }
+            catch (Exception ex)
+            {
+                ModelName = $"Fehler: {ex.Message}";
+                return;
+            }
         }
 
         // Search all model directories
         string? foundModel = null;
         foreach (var modelDir in modelDirs)
         {
-            Directory.CreateDirectory(modelDir);
-            if (File.Exists(Path.Combine(modelDir, "model.onnx")))
-                foundModel = Path.Combine(modelDir, "model.onnx");
-            else if (File.Exists(Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx")))
-                foundModel = Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx");
-            else if (File.Exists(Path.Combine(modelDir, "trocr-large.onnx")))
-                foundModel = Path.Combine(modelDir, "trocr-large.onnx");
-            else
+            try
             {
-                var onnxFiles = Directory.GetFiles(modelDir, "*.onnx");
-                if (onnxFiles.Length > 0)
-                    foundModel = onnxFiles[0];
+                Directory.CreateDirectory(modelDir);
+                if (File.Exists(Path.Combine(modelDir, "model.onnx")))
+                    foundModel = Path.Combine(modelDir, "model.onnx");
+                else if (File.Exists(Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx")))
+                    foundModel = Path.Combine(modelDir, "qwen2.5-vl-3b-q4.onnx");
+                else if (File.Exists(Path.Combine(modelDir, "trocr-large.onnx")))
+                    foundModel = Path.Combine(modelDir, "trocr-large.onnx");
+                else
+                {
+                    var onnxFiles = Directory.GetFiles(modelDir, "*.onnx");
+                    if (onnxFiles.Length > 0)
+                        foundModel = onnxFiles[0];
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Skip directories we can't access – don't crash
+                continue;
+            }
+            catch (Exception)
+            {
+                continue;
             }
             if (foundModel != null) break;
         }
@@ -68,11 +88,18 @@ public class OcrEngine : IDisposable
         if (foundModel == null)
         {
             ModelName = "kein Modell gefunden";
-            throw new FileNotFoundException(
-                "Kein ONNX-Modell gefunden. Bitte ein Modell über 📦 KI-Modelle herunterladen.");
+            // Don't throw – just return gracefully
+            return;
         }
 
-        LoadModelFile(foundModel);
+        try
+        {
+            LoadModelFile(foundModel);
+        }
+        catch (Exception ex)
+        {
+            ModelName = $"Fehler: {ex.Message}";
+        }
     }
 
     private void LoadModelFile(string path)

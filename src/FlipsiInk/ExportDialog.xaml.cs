@@ -67,6 +67,7 @@ public partial class ExportDialog : Window
     private void ApplySettingsToUi(ExportSettings settings)
     {
         RbPng.IsChecked = settings.Format == ExportFormat.Png;
+        RbJpg.IsChecked = settings.Format == ExportFormat.Jpg;
         RbPdf.IsChecked = settings.Format == ExportFormat.Pdf;
         RbSvg.IsChecked = settings.Format == ExportFormat.Svg;
 
@@ -90,6 +91,7 @@ public partial class ExportDialog : Window
     private ExportSettings ReadSettingsFromUi()
     {
         var format = RbPng.IsChecked == true ? ExportFormat.Png
+                   : RbJpg.IsChecked == true ? ExportFormat.Jpg
                    : RbPdf.IsChecked == true ? ExportFormat.Pdf
                    : ExportFormat.Svg;
 
@@ -156,6 +158,7 @@ public partial class ExportDialog : Window
         return format switch
         {
             ExportFormat.Png => (".png", "PNG-Bilder|*.png"),
+            ExportFormat.Jpg => (".jpg", "JPEG-Bilder|*.jpg"),
             ExportFormat.Pdf => (".pdf", "PDF-Dokumente|*.pdf"),
             ExportFormat.Svg => (".svg", "SVG-Dateien|*.svg"),
             _ => (".png", "PNG-Bilder|*.png")
@@ -191,6 +194,9 @@ public partial class ExportDialog : Window
             {
                 case ExportFormat.Png:
                     ExportAsPng(pageNumbers, filePath);
+                    break;
+                case ExportFormat.Jpg:
+                    ExportAsJpg(pageNumbers, filePath);
                     break;
                 case ExportFormat.Pdf:
                     ExportAsPdf(pageNumbers, filePath);
@@ -237,6 +243,36 @@ public partial class ExportDialog : Window
                 var strokes = _pageManager.LoadPage(pageNumbers[i]);
                 var pageFile = Path.Combine(subDir, $"{baseName}_Seite_{pageNumbers[i]}.png");
                 ExportManager.ExportPng(strokes, _canvas.Background, canvasW, canvasH, pageFile, _settings.Dpi);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Export pages as JPG. For single page, save directly. For multiple, save to a folder.
+    /// </summary>
+    private void ExportAsJpg(List<int> pageNumbers, string filePath)
+    {
+        int canvasW = (int)_canvas.ActualWidth;
+        int canvasH = (int)_canvas.ActualHeight;
+        if (canvasW <= 0 || canvasH <= 0) { canvasW = 1200; canvasH = 1600; }
+
+        if (pageNumbers.Count == 1)
+        {
+            var strokes = _pageManager.LoadPage(pageNumbers[0]);
+            ExportManager.ExportJpg(strokes, _canvas.Background, canvasW, canvasH, filePath, _settings.Dpi, _settings.JpegQuality);
+        }
+        else
+        {
+            var dir = Path.GetDirectoryName(filePath)!;
+            var baseName = Path.GetFileNameWithoutExtension(filePath);
+            var subDir = Path.Combine(dir, baseName + "_pages");
+            Directory.CreateDirectory(subDir);
+
+            for (int i = 0; i < pageNumbers.Count; i++)
+            {
+                var strokes = _pageManager.LoadPage(pageNumbers[i]);
+                var pageFile = Path.Combine(subDir, $"{baseName}_Seite_{pageNumbers[i]}.jpg");
+                ExportManager.ExportJpg(strokes, _canvas.Background, canvasW, canvasH, pageFile, _settings.Dpi, _settings.JpegQuality);
             }
         }
     }

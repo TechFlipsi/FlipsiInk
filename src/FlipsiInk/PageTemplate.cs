@@ -66,22 +66,34 @@ namespace FlipsiInk
         /// <param name="lineWidth">Linienstärke (Standard: 1).</param>
         /// <param name="lineColor">Linienfarbe als Hex-String (Standard: #E0E0E0 für Gitter, #C0D8F0 für liniert).</param>
         /// <returns>Ein kachelbarer <see cref="DrawingBrush"/> oder <c>null</c> für Blanko.</returns>
-        public static Brush GetBackgroundBrush(PageTemplateType type, double lineWidth = 1, string lineColor = "#E0E0E0")
+        public static Brush? GetBackgroundBrush(PageTemplateType type, double lineWidth = 1, string? lineColor = null)
         {
+            // Auto-detect theme for line colors
+            bool isDarkTheme = false;
+            try
+            {
+                var colors = ThemeManager.GetCurrentColors(Theme.System);
+                isDarkTheme = colors.Foreground == System.Windows.Media.Colors.White;
+            }
+            catch { }
+
+            var gridColor = lineColor ?? (isDarkTheme ? "#3A3A3A" : "#E0E0E0");
+            var linedColor = lineColor ?? (isDarkTheme ? "#3A5070" : "#C0D8F0");
+
             return type switch
             {
-                PageTemplateType.Blank => Brushes.White,
-                PageTemplateType.LinedWide => CreateLinedBrush(28, lineWidth, lineColor is "#E0E0E0" ? DefaultLinedColor : lineColor),
-                PageTemplateType.LinedNarrow => CreateLinedBrush(18, lineWidth, lineColor is "#E0E0E0" ? DefaultLinedColor : lineColor),
-                PageTemplateType.GridSmall => CreateGridBrush(20, lineWidth, lineColor),
-                PageTemplateType.GridMedium => CreateGridBrush(25, lineWidth, lineColor),
-                PageTemplateType.GridLarge => CreateGridBrush(30, lineWidth, lineColor),
-                PageTemplateType.DotGridSmall => CreateDotGridBrush(20, lineColor),
-                PageTemplateType.DotGridMedium => CreateDotGridBrush(25, lineColor),
-                PageTemplateType.DotGridLarge => CreateDotGridBrush(30, lineColor),
-                PageTemplateType.CornellNotes => CreateCornellBrush(lineWidth, lineColor is "#E0E0E0" ? DefaultLinedColor : lineColor),
-                PageTemplateType.Isometric => CreateIsometricBrush(lineWidth, lineColor),
-                _ => Brushes.White
+                PageTemplateType.Blank => null,
+                PageTemplateType.LinedWide => CreateLinedBrush(28, lineWidth, linedColor),
+                PageTemplateType.LinedNarrow => CreateLinedBrush(18, lineWidth, linedColor),
+                PageTemplateType.GridSmall => CreateGridBrush(20, lineWidth, gridColor),
+                PageTemplateType.GridMedium => CreateGridBrush(25, lineWidth, gridColor),
+                PageTemplateType.GridLarge => CreateGridBrush(30, lineWidth, gridColor),
+                PageTemplateType.DotGridSmall => CreateDotGridBrush(20, gridColor),
+                PageTemplateType.DotGridMedium => CreateDotGridBrush(25, gridColor),
+                PageTemplateType.DotGridLarge => CreateDotGridBrush(30, gridColor),
+                PageTemplateType.CornellNotes => CreateCornellBrush(lineWidth, linedColor),
+                PageTemplateType.Isometric => CreateIsometricBrush(lineWidth, gridColor),
+                _ => null
             };
         }
 

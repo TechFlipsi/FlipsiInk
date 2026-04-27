@@ -49,11 +49,29 @@ public class ModelManager
         _modelsDir = !string.IsNullOrWhiteSpace(App.Config.ModelPath)
             ? Path.GetDirectoryName(App.Config.ModelPath) ?? DefaultModelsDir
             : DefaultModelsDir;
-        Directory.CreateDirectory(_modelsDir);
+
+        try
+        {
+            if (!Directory.Exists(_modelsDir))
+                Directory.CreateDirectory(_modelsDir);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Fallback to user-local path if default is inaccessible
+            _modelsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "FlipsiInk", "Models");
+            try { Directory.CreateDirectory(_modelsDir); } catch { /* best effort */ }
+        }
+        catch (IOException)
+        {
+            // Path might be on a drive that doesn't exist or is unavailable
+        }
+        catch { /* unknown error – continue without models directory */ }
 
         _registryPath = Path.Combine(_modelsDir, "installed.json");
-        LoadRegistry();
-        DetectActiveModel();
+        try { LoadRegistry(); } catch { _installed = new(); }
+        try { DetectActiveModel(); } catch { /* no active model, that's fine */ }
     }
 
     public string ModelsDirectory => _modelsDir;
@@ -366,40 +384,61 @@ public class ModelManager
 
     private void DetectActiveModel()
     {
-        if (!string.IsNullOrWhiteSpace(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
+        try
         {
-            foreach (var (id, entry) in _installed)
+            if (!string.IsNullOrWhiteSpace(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
             {
-                if (entry.FilePath == App.Config.ModelPath)
+                foreach (var (id, entry) in _installed)
+                {
+                    if (entry.FilePath == App.Config.ModelPath)
+                    {
+                        ActiveModelId = id;
+                        return;
+                    }
+                }
+                var extId = Path.GetFileNameWithoutExtension(App.Config.ModelPath);
+                _installed[extId] = new InstalledModelEntry
+                {
+                    Id = extId,
+                    FilePath = App.Config.ModelPath,
+                    Version = "unknown",
+                    InstalledAt = DateTime.MinValue,
+                    SizeBytes = TryGetFileSize(App.Config.ModelPath)
+                };
+                ActiveModelId = extId;
+                SaveRegistry();
+                return;
+            }
+
+            // Config ModelPath doesn't exist – clear it to prevent future crashes
+            if (!string.IsNullOrWhiteSpace(App.Config.ModelPath))
+            {
+                App.Config.ModelPath = "";
+                App.Config.Save();
+            }
+
+            if (_installed.Count > 0)
+            {
+                foreach (var (id, _) in _installed)
                 {
                     ActiveModelId = id;
+                    App.Config.ModelPath = _installed[id].FilePath;
+                    App.Config.Save();
                     return;
                 }
             }
-            var extId = Path.GetFileNameWithoutExtension(App.Config.ModelPath);
-            _installed[extId] = new InstalledModelEntry
-            {
-                Id = extId,
-                FilePath = App.Config.ModelPath,
-                Version = "unknown",
-                InstalledAt = DateTime.MinValue,
-                SizeBytes = new FileInfo(App.Config.ModelPath).Length
-            };
-            ActiveModelId = extId;
-            SaveRegistry();
-            return;
         }
-
-        if (_installed.Count > 0)
+        catch (Exception)
         {
-            foreach (var (id, _) in _installed)
-            {
-                ActiveModelId = id;
-                App.Config.ModelPath = _installed[id].FilePath;
-                App.Config.Save();
-                return;
-            }
+            // Graceful fallback – no active model available
+            ActiveModelId = null;
         }
+    }
+
+    private static long TryGetFileSize(string path)
+    {
+        try { return new FileInfo(path).Length; }
+        catch { return 0; }
     }
 
     private void LoadRegistry()

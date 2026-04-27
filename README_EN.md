@@ -1,4 +1,4 @@
-# FlipsiInk v0.2.0
+# FlipsiInk v0.5.0
 
 [![Build](https://img.shields.io/github/actions/workflow/status/TechFlipsi/FlipsiInk/build.yml?branch=main&label=Build)](https://github.com/TechFlipsi/FlipsiInk/actions)
 [![Version](https://img.shields.io/github/v/release/TechFlipsi/FlipsiInk?label=Version)](https://github.com/TechFlipsi/FlipsiInk/releases/latest)

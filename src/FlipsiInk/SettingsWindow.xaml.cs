@@ -6,6 +6,7 @@
 // the Free Software Foundation.
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -38,7 +39,67 @@ public partial class SettingsWindow : Window
         if (Application.Current.MainWindow != null && Application.Current.MainWindow != this)
             Owner = Application.Current.MainWindow;
 
+        Loaded += (s, e) => ApplyThemeToWindow();
+
         LoadSettings();
+    }
+
+    private void ApplyThemeToWindow()
+    {
+        try
+        {
+            var theme = App.Config.Theme switch
+            {
+                "light" => Theme.Light,
+                "dark" => Theme.Dark,
+                _ => ThemeManager.GetSystemTheme()
+            };
+            var colors = ThemeManager.GetCurrentColors(theme);
+            bool isDark = colors.Foreground == System.Windows.Media.Colors.White;
+
+            if (!isDark)
+            {
+                // Light theme overrides for the settings window
+                Background = new SolidColorBrush(colors.Background);
+                foreach (var expander in FindVisualChildren<Expander>(this))
+                {
+                    expander.Background = new SolidColorBrush(colors.PanelBg);
+                    expander.Foreground = new SolidColorBrush(colors.Foreground);
+                }
+                foreach (var tb in FindVisualChildren<TextBlock>(this))
+                    tb.Foreground = new SolidColorBrush(colors.Foreground);
+                foreach (var cb in FindVisualChildren<CheckBox>(this))
+                    cb.Foreground = new SolidColorBrush(colors.Foreground);
+                foreach (var rb in FindVisualChildren<RadioButton>(this))
+                    rb.Foreground = new SolidColorBrush(colors.Foreground);
+                foreach (var combo in FindVisualChildren<ComboBox>(this))
+                {
+                    combo.Background = new SolidColorBrush(colors.PanelBg);
+                    combo.Foreground = new SolidColorBrush(colors.Foreground);
+                }
+                foreach (var tb in FindVisualChildren<TextBox>(this))
+                {
+                    tb.Background = new SolidColorBrush(colors.PanelBg);
+                    tb.Foreground = new SolidColorBrush(colors.Foreground);
+                    tb.BorderBrush = new SolidColorBrush(colors.Border);
+                }
+                foreach (var slider in FindVisualChildren<Slider>(this))
+                    slider.Foreground = new SolidColorBrush(colors.Foreground);
+            }
+        }
+        catch { /* dark theme is default, fine */ }
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+    {
+        if (parent == null) yield break;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T typed) yield return typed;
+            foreach (var grandChild in FindVisualChildren<T>(child))
+                yield return grandChild;
+        }
     }
 
     private void LoadSettings()

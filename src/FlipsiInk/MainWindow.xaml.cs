@@ -547,20 +547,43 @@ public partial class MainWindow : Window
 
     private void QuickSize1_Click(object sender, MouseButtonEventArgs e)
     {
-        SetSize(1, null);
+        _currentSize = 1;
+        MainCanvas.DefaultDrawingAttributes.Width = 1;
+        MainCanvas.DefaultDrawingAttributes.Height = 1;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         UpdateQuickSizeDots();
     }
 
     private void QuickSize2_Click(object sender, MouseButtonEventArgs e)
     {
-        SetSize(2.5, null);
+        _currentSize = 2.5;
+        MainCanvas.DefaultDrawingAttributes.Width = 2.5;
+        MainCanvas.DefaultDrawingAttributes.Height = 2.5;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         UpdateQuickSizeDots();
     }
 
     private void QuickSize3_Click(object sender, MouseButtonEventArgs e)
     {
-        SetSize(5, null);
+        _currentSize = 5;
+        MainCanvas.DefaultDrawingAttributes.Width = 5;
+        MainCanvas.DefaultDrawingAttributes.Height = 5;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         UpdateQuickSizeDots();
+    }
+
+    private void BtnCustomColor_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new System.Windows.Forms.ColorDialog();
+        dialog.FullOpen = true;
+        dialog.Color = System.Drawing.Color.FromArgb(_currentColor.A, _currentColor.R, _currentColor.G, _currentColor.B);
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            var wpfColor = System.Windows.Media.Color.FromArgb(dialog.Color.A, dialog.Color.R, dialog.Color.G, dialog.Color.B);
+            SetColorFromSwatch(wpfColor);
+            ColorPopup_F.IsOpen = false;
+            StatusText.Text = $"Farbe: #{wpfColor.R:X2}{wpfColor.G:X2}{wpfColor.B:X2}";
+        }
     }
 
     private void BtnShapeRecognition_Click(object sender, RoutedEventArgs e)
@@ -595,10 +618,12 @@ public partial class MainWindow : Window
 
     private void UpdateQuickSizeDots()
     {
-        // Visual feedback for selected size
-        if (QuickSize1 != null) QuickSize1.Fill = _currentSize <= 1.5 ? Brushes.White : Brushes.Gray;
-        if (QuickSize2 != null) QuickSize2.Fill = _currentSize > 1.5 && _currentSize < 4 ? Brushes.White : Brushes.Gray;
-        if (QuickSize3 != null) QuickSize3.Fill = _currentSize >= 4 ? Brushes.White : Brushes.Gray;
+        // Visual feedback for selected size – use bright accent for active
+        var activeBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+        var inactiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x99, 0x99, 0x99));
+        if (QuickSize1 != null) QuickSize1.Fill = _currentSize <= 1.5 ? activeBrush : inactiveBrush;
+        if (QuickSize2 != null) QuickSize2.Fill = _currentSize > 1.5 && _currentSize < 4 ? activeBrush : inactiveBrush;
+        if (QuickSize3 != null) QuickSize3.Fill = _currentSize >= 4 ? activeBrush : inactiveBrush;
     }
 
     private void SetColorFromSwatch(System.Windows.Media.Color color)
@@ -1062,8 +1087,9 @@ public partial class MainWindow : Window
         AppTitle.Foreground = new SolidColorBrush(colors.Foreground);
         ZoomLabel.Foreground = new SolidColorBrush(colors.Foreground);
 
-        // Canvas stays white always (better for writing)
-        MainCanvas.Background = System.Windows.Media.Brushes.White;
+        // Canvas background: for Blank template, use theme-aware color; for templates, use template brush
+        var templateBrush = PageTemplate.GetBackgroundBrush(_currentTemplate);
+        MainCanvas.Background = templateBrush ?? new SolidColorBrush(colors.CanvasBg);
 
         // Update all ToolButtons
         foreach (var btn in FindVisualChildren<Button>(this))
@@ -1110,6 +1136,12 @@ public partial class MainWindow : Window
 
     #region Page Templates (Issue #17)
 
+    private void ApplyCanvasBackground(PageTemplateType template)
+    {
+        var brush = PageTemplate.GetBackgroundBrush(template);
+        MainCanvas.Background = brush ?? new SolidColorBrush(ThemeManager.GetCurrentColors(_currentTheme).CanvasBg);
+    }
+
     private void SetupTemplateCombo()
     {
         TemplateCombo.SelectedIndex = 1; // Liniert (breit)
@@ -1118,7 +1150,7 @@ public partial class MainWindow : Window
         TemplateCombo_M.SelectionChanged += TemplateCombo_SelectionChanged;
         // Apply default template on startup
         _currentTemplate = PageTemplateType.LinedWide;
-        MainCanvas.Background = PageTemplate.GetBackgroundBrush(_currentTemplate);
+        ApplyCanvasBackground(_currentTemplate);
     }
 
     private void TemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1135,7 +1167,7 @@ public partial class MainWindow : Window
         else if (combo == TemplateCombo_M && TemplateCombo.SelectedIndex != combo.SelectedIndex)
             TemplateCombo.SelectedIndex = combo.SelectedIndex;
         var brush = PageTemplate.GetBackgroundBrush(_currentTemplate);
-        MainCanvas.Background = brush;
+        MainCanvas.Background = brush ?? new SolidColorBrush(ThemeManager.GetCurrentColors(_currentTheme).CanvasBg);
 
         StatusText.Text = _currentTemplate switch
         {
@@ -1263,14 +1295,8 @@ public partial class MainWindow : Window
     {
         if (sender is not Button btn || btn.Tag is not string colorName) return;
         var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorName);
-        _currentColor = color;
-        MainCanvas.DefaultDrawingAttributes.Color = color;
-        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        MainCanvas.DefaultDrawingAttributes.Width = _currentSize;
-        MainCanvas.DefaultDrawingAttributes.Height = _currentSize;
-        // Update color indicators
-        CurrentColorIndicator.Fill = new SolidColorBrush(color);
-        CurrentColorIndicator_M.Fill = new SolidColorBrush(color);
+        SetColorFromSwatch(color);
+        ColorPopup_F.IsOpen = false;
         ColorPopup.IsOpen = false;
         ColorPopup_M.IsOpen = false;
         StatusText.Text = $"Farbe: {colorName}";
@@ -2760,7 +2786,7 @@ public partial class MainWindow : Window
 
         // Apply current template to new page
         MainCanvas.Strokes.Clear();
-        MainCanvas.Background = PageTemplate.GetBackgroundBrush(_currentTemplate);
+        ApplyCanvasBackground(_currentTemplate);
 
         // Clear undo/redo for the new page
         _undoStack.Clear();
@@ -2858,7 +2884,7 @@ public partial class MainWindow : Window
         var page = _pageManager.GetPage(_pageManager.CurrentPageNumber);
         if (page != null)
         {
-            MainCanvas.Background = PageTemplate.GetBackgroundBrush(page.Template);
+            ApplyCanvasBackground(page.Template);
         }
 
         // Clear undo/redo for the loaded page
