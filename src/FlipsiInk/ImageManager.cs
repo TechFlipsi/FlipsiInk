@@ -201,7 +201,7 @@ namespace FlipsiInk
                 (int)cropRect.X, (int)cropRect.Y,
                 (int)cropRect.Width, (int)cropRect.Height);
 
-            var cropped = original.Clone(cropArea, original.DPixelFormat);
+            var cropped = original.Clone(cropArea, original.PixelFormat);
             return cropped;
         }
 
@@ -315,12 +315,12 @@ namespace FlipsiInk
         private static BitmapSource BitmapToBitmapSource(DBitmap bitmap)
         {
             var rect = new DRectangle(0, 0, bitmap.Width, bitmap.Height);
-            var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.DPixelFormat);
+            var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
 
-            var format = bitmap.DPixelFormat switch
+            var format = bitmap.PixelFormat switch
             {
-                DPixelFormat.Format32bppArgb => PixelFormats.Bgra32,
-                DPixelFormat.Format24bppRgb => PixelFormats.Bgr24,
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb => PixelFormats.Bgra32,
+                System.Drawing.Imaging.PixelFormat.Format24bppRgb => PixelFormats.Bgr24,
                 _ => PixelFormats.Bgr24
             };
 
