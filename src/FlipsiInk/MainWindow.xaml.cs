@@ -574,15 +574,40 @@ public partial class MainWindow : Window
 
     private void BtnCustomColor_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new System.Windows.Forms.ColorDialog();
-        dialog.FullOpen = true;
-        dialog.Color = System.Drawing.Color.FromArgb(_currentColor.A, _currentColor.R, _currentColor.G, _currentColor.B);
-        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        // Simple WPF color input dialog
+        var dlg = new Window
         {
-            var wpfColor = System.Windows.Media.Color.FromArgb(dialog.Color.A, dialog.Color.R, dialog.Color.G, dialog.Color.B);
-            SetColorFromSwatch(wpfColor);
-            ColorPopup_F.IsOpen = false;
-            StatusText.Text = $"Farbe: #{wpfColor.R:X2}{wpfColor.G:X2}{wpfColor.B:X2}";
+            Title = "Benutzerdefinierte Farbe",
+            Width = 300,
+            Height = 150,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize
+        };
+        var stack = new StackPanel { Margin = new Thickness(15) };
+        var label = new TextBlock { Text = "Farbe als Hex (z.B. #FF5500):" };
+        var tb = new TextBox { Text = $"#{_currentColor.R:X2}{_currentColor.G:X2}{_currentColor.B:X2}", Margin = new Thickness(0, 5, 0, 10) };
+        var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var okBtn = new Button { Content = "OK", Width = 60, Margin = new Thickness(0, 0, 5, 0), IsDefault = true };
+        var cancelBtn = new Button { Content = "Abbrechen", Width = 60, IsCancel = true };
+        btnPanel.Children.Add(okBtn);
+        btnPanel.Children.Add(cancelBtn);
+        stack.Children.Add(label);
+        stack.Children.Add(tb);
+        stack.Children.Add(btnPanel);
+        dlg.Content = stack;
+        okBtn.Click += (s, args) => dlg.DialogResult = true;
+        cancelBtn.Click += (s, args) => dlg.DialogResult = false;
+        if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(tb.Text))
+        {
+            try
+            {
+                var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(tb.Text);
+                SetColorFromSwatch(color);
+                ColorPopup_F.IsOpen = false;
+                StatusText.Text = $"Farbe: {tb.Text}";
+            }
+            catch { /* invalid color string, ignore */ }
         }
     }
 
