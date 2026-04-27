@@ -56,8 +56,8 @@ public class ThemeManager
             if (child is Control control)
             {
                 control.Foreground = new SolidColorBrush(colors.Foreground);
-                // Don't override InkCanvas background – it must stay white (paper)
-                if (control is not InkCanvas && control is not TextBox)
+                // Don't override InkCanvas background – it must follow template/theme
+                if (control is not TextBox)
                 {
                     control.Background = new SolidColorBrush(colors.PanelBg);
                 }
@@ -131,7 +131,7 @@ public class ThemeColors
         Foreground  = (Color)ColorConverter.ConvertFromString("#FFFFFF"),
         Border      = (Color)ColorConverter.ConvertFromString("#444444"),
         Accent      = (Color)ColorConverter.ConvertFromString("#0078D7"),
-        CanvasBg    = (Color)ColorConverter.ConvertFromString("#2D2D2D"),
+        CanvasBg    = (Color)ColorConverter.ConvertFromString("#FFFFFF"),
     };
 
     public static ThemeColors Light => new()
