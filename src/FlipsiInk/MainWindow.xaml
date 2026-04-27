@@ -53,29 +53,29 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,0" VerticalAlignment="Center">
                     <!-- Zoom -->
-                    <Button x:Name="BtnZoomOut" Content="&#x2212;" Style="{StaticResource ToolButton}" ToolTip="Verkleinern" FontSize="16" Width="28" Height="28"/>
+                    <Button x:Name="BtnZoomOut" Content="&#x2212;" Style="{StaticResource ToolButton}" ToolTip="Verkleinern" FontSize="16" Width="36" Height="36"/>
                     <TextBlock x:Name="ZoomLabel" Text="100%" Foreground="#999" VerticalAlignment="Center" FontSize="11" Margin="4,0" Width="40" TextAlignment="Center"/>
-                    <Button x:Name="BtnZoomIn" Content="&#xFF0B;" Style="{StaticResource ToolButton}" ToolTip="Vergr&#xF6;&#xDF;ern" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnZoomReset" Content="&#x22A1;" Style="{StaticResource ToolButton}" ToolTip="Seitengr&#xF6;&#xDF;e" Width="28" Height="28"/>
+                    <Button x:Name="BtnZoomIn" Content="&#xFF0B;" Style="{StaticResource ToolButton}" ToolTip="Vergr&#xF6;&#xDF;ern" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnZoomReset" Content="&#x22A1;" Style="{StaticResource ToolButton}" ToolTip="Seitengr&#xF6;&#xDF;e" Width="36" Height="36"/>
                     <Separator Margin="4,4" Background="#333"/>
                     <!-- Undo/Redo -->
-                    <Button x:Name="BtnUndo" Content="&#x21B6;" Style="{StaticResource ToolButton}" ToolTip="R&#xFC;ckg&#xE4;ngig (Ctrl+Z)" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnRedo" Content="&#x21B7;" Style="{StaticResource ToolButton}" ToolTip="Wiederholen (Ctrl+Y)" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnUndo" Content="&#x21B6;" Style="{StaticResource ToolButton}" ToolTip="R&#xFC;ckg&#xE4;ngig (Ctrl+Z)" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnRedo" Content="&#x21B7;" Style="{StaticResource ToolButton}" ToolTip="Wiederholen (Ctrl+Y)" FontSize="14" Width="36" Height="36"/>
                     <Separator Margin="4,4" Background="#333"/>
                     <!-- Actions -->
-                    <Button x:Name="BtnNotebooks" Content="&#x2637;" Style="{StaticResource ToolButton}" ToolTip="Notizb&#xFC;cher" Width="28" Height="28"/>
-                    <Button x:Name="BtnSave" Content="&#x25C9;" Style="{StaticResource ToolButton}" ToolTip="Speichern" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnImportPdf" Content="PDF" Style="{StaticResource ToolButton}" ToolTip="PDF importieren" FontSize="10" FontWeight="Bold" Width="28" Height="28" Click="ImportPdf"/>
-                    <Button x:Name="BtnExport" Content="&#x2197;" Style="{StaticResource ToolButton}" ToolTip="Export &amp; Teilen (Ctrl+E)" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnNotebooks" Content="&#x2637;" Style="{StaticResource ToolButton}" ToolTip="Notizb&#xFC;cher" Width="36" Height="36"/>
+                    <Button x:Name="BtnSave" Content="&#x25C9;" Style="{StaticResource ToolButton}" ToolTip="Speichern" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnImportPdf" Content="PDF" Style="{StaticResource ToolButton}" ToolTip="PDF importieren" FontSize="10" FontWeight="Bold" Width="36" Height="36" Click="ImportPdf"/>
+                    <Button x:Name="BtnExport" Content="&#x2197;" Style="{StaticResource ToolButton}" ToolTip="Export &amp; Teilen (Ctrl+E)" FontSize="14" Width="36" Height="36"/>
                     <Separator Margin="4,4" Background="#333"/>
-                    <Button x:Name="BtnTheme" Content="&#x25D0;" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnModelManager" Content="&#x229E;" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnSettings" Content="&#x2699;" Style="{StaticResource ToolButton}" ToolTip="Einstellungen" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnCheckUpdate" Content="&#x21BB;" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen" FontSize="14" Width="28" Height="28"/>
+                    <Button x:Name="BtnTheme" Content="&#x25D0;" Style="{StaticResource ToolButton}" ToolTip="Theme wechseln" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnModelManager" Content="&#x229E;" Style="{StaticResource ToolButton}" ToolTip="KI-Modelle verwalten" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnSettings" Content="&#x2699;" Style="{StaticResource ToolButton}" ToolTip="Einstellungen" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnCheckUpdate" Content="&#x21BB;" Style="{StaticResource ToolButton}" ToolTip="Nach Update suchen" FontSize="14" Width="36" Height="36"/>
                     <Separator Margin="4,4" Background="#333"/>
-                    <ToggleButton x:Name="BtnBookmarks" Content="&#x2606;" Style="{StaticResource ToolButton}" ToolTip="Lesezeichen" FontSize="14" Width="28" Height="28"/>
-                    <ToggleButton x:Name="BtnBacklinks" Content="&#x21E0;" Style="{StaticResource ToolButton}" ToolTip="R&#xFC;ckverweise" FontSize="14" Width="28" Height="28"/>
-                    <Button x:Name="BtnRecentFiles" Content="&#x2630;" Style="{StaticResource ToolButton}" ToolTip="Zuletzt ge&#xF6;ffnet" FontSize="12" Width="28" Height="28"/>
+                    <ToggleButton x:Name="BtnBookmarks" Content="&#x2606;" Style="{StaticResource ToolButton}" ToolTip="Lesezeichen" FontSize="14" Width="36" Height="36"/>
+                    <ToggleButton x:Name="BtnBacklinks" Content="&#x21E0;" Style="{StaticResource ToolButton}" ToolTip="R&#xFC;ckverweise" FontSize="14" Width="36" Height="36"/>
+                    <Button x:Name="BtnRecentFiles" Content="&#x2630;" Style="{StaticResource ToolButton}" ToolTip="Zuletzt ge&#xF6;ffnet" FontSize="12" Width="36" Height="36"/>
                 </StackPanel>
             </DockPanel>
 
@@ -360,10 +360,10 @@
                 <TextBlock Text="Seiten" Foreground="White" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                 <local:PageThumbnailControl x:Name="PageThumbnails"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                    <Button x:Name="BtnPrevPage" Content="&#x25C0;" Style="{StaticResource ToolButton}" ToolTip="Vorherige Seite" Width="28" Height="28" Click="PrevPage_Click"/>
+                    <Button x:Name="BtnPrevPage" Content="&#x25C0;" Style="{StaticResource ToolButton}" ToolTip="Vorherige Seite" Width="36" Height="36" Click="PrevPage_Click"/>
                     <TextBlock x:Name="PageNavIndicator" Text="1/1" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="8,0"/>
-                    <Button x:Name="BtnNextPage" Content="&#x25B6;" Style="{StaticResource ToolButton}" ToolTip="N&#xE4;chste Seite" Width="28" Height="28" Click="NextPage_Click"/>
-                    <Button x:Name="BtnAddPage" Content="&#x2295;" Style="{StaticResource ToolButton}" ToolTip="Neue Seite" Width="28" Height="28" Click="AddPageFromNav_Click"/>
+                    <Button x:Name="BtnNextPage" Content="&#x25B6;" Style="{StaticResource ToolButton}" ToolTip="N&#xE4;chste Seite" Width="36" Height="36" Click="NextPage_Click"/>
+                    <Button x:Name="BtnAddPage" Content="&#x2295;" Style="{StaticResource ToolButton}" ToolTip="Neue Seite" Width="36" Height="36" Click="AddPageFromNav_Click"/>
                 </StackPanel>
             </StackPanel>
         </Border>

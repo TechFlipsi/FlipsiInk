@@ -57,34 +57,50 @@ public partial class SettingsWindow : Window
             var colors = ThemeManager.GetCurrentColors(theme);
             bool isDark = colors.Foreground == System.Windows.Media.Colors.White;
 
-            if (!isDark)
+            // Always apply theme – both dark and light need proper overrides
+            Background = new SolidColorBrush(colors.Background);
+            foreach (var expander in FindVisualChildren<Expander>(this))
             {
-                // Light theme overrides for the settings window
-                Background = new SolidColorBrush(colors.Background);
-                foreach (var expander in FindVisualChildren<Expander>(this))
-                {
-                    expander.Background = new SolidColorBrush(colors.PanelBg);
-                    expander.Foreground = new SolidColorBrush(colors.Foreground);
-                }
-                foreach (var tb in FindVisualChildren<TextBlock>(this))
-                    tb.Foreground = new SolidColorBrush(colors.Foreground);
-                foreach (var cb in FindVisualChildren<CheckBox>(this))
-                    cb.Foreground = new SolidColorBrush(colors.Foreground);
-                foreach (var rb in FindVisualChildren<RadioButton>(this))
-                    rb.Foreground = new SolidColorBrush(colors.Foreground);
-                foreach (var combo in FindVisualChildren<ComboBox>(this))
-                {
-                    combo.Background = new SolidColorBrush(colors.PanelBg);
-                    combo.Foreground = new SolidColorBrush(colors.Foreground);
-                }
-                foreach (var tb in FindVisualChildren<TextBox>(this))
-                {
-                    tb.Background = new SolidColorBrush(colors.PanelBg);
-                    tb.Foreground = new SolidColorBrush(colors.Foreground);
-                    tb.BorderBrush = new SolidColorBrush(colors.Border);
-                }
-                foreach (var slider in FindVisualChildren<Slider>(this))
-                    slider.Foreground = new SolidColorBrush(colors.Foreground);
+                expander.Background = new SolidColorBrush(colors.PanelBg);
+                expander.Foreground = new SolidColorBrush(colors.Foreground);
+            }
+            foreach (var tb in FindVisualChildren<TextBlock>(this))
+                tb.Foreground = new SolidColorBrush(colors.Foreground);
+            foreach (var cb in FindVisualChildren<CheckBox>(this))
+                cb.Foreground = new SolidColorBrush(colors.Foreground);
+            foreach (var rb in FindVisualChildren<RadioButton>(this))
+                rb.Foreground = new SolidColorBrush(colors.Foreground);
+            foreach (var combo in FindVisualChildren<ComboBox>(this))
+            {
+                combo.Background = new SolidColorBrush(colors.PanelBg);
+                combo.Foreground = new SolidColorBrush(colors.Foreground);
+            }
+            foreach (var lbi in FindVisualChildren<System.Windows.Controls.ListBoxItem>(this))
+            {
+                lbi.Foreground = new SolidColorBrush(colors.Foreground);
+                lbi.Background = new SolidColorBrush(colors.PanelBg);
+            }
+            foreach (var cbi in FindVisualChildren<System.Windows.Controls.ComboBoxItem>(this))
+            {
+                cbi.Foreground = new SolidColorBrush(colors.Foreground);
+                cbi.Background = new SolidColorBrush(colors.PanelBg);
+            }
+            foreach (var tb in FindVisualChildren<TextBox>(this))
+            {
+                tb.Background = new SolidColorBrush(colors.PanelBg);
+                tb.Foreground = new SolidColorBrush(colors.Foreground);
+                tb.BorderBrush = new SolidColorBrush(colors.Border);
+            }
+            foreach (var slider in FindVisualChildren<Slider>(this))
+                slider.Foreground = new SolidColorBrush(colors.Foreground);
+            foreach (var btn in FindVisualChildren<Button>(this))
+            {
+                btn.Foreground = new SolidColorBrush(colors.Foreground);
+            }
+            foreach (var border in FindVisualChildren<Border>(this))
+            {
+                if (border.Background is SolidColorBrush scb && scb.Color == System.Windows.Media.Colors.White)
+                    border.Background = new SolidColorBrush(colors.PanelBg);
             }
         }
         catch { /* dark theme is default, fine */ }
