@@ -57,7 +57,7 @@ public class ThemeManager
             {
                 control.Foreground = new SolidColorBrush(colors.Foreground);
                 // Don't override InkCanvas background – it must follow template/theme
-                if (control is not InkCanvas && control is not TextBox)
+                if (control is not TextBox)
                 {
                     control.Background = new SolidColorBrush(colors.PanelBg);
                 }
