@@ -13,11 +13,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Point = System.Windows.Point;
-using DBitmap = System.Drawing.Bitmap;
-using DRectangle = System.Drawing.Rectangle;
-using DPixelFormat = System.Drawing.Imaging.PixelFormat;
-using DImageFormat = System.Drawing.Imaging.ImageFormat;
-using DGraphics = System.Drawing.Graphics;
 
 namespace FlipsiInk
 {
@@ -72,7 +67,7 @@ namespace FlipsiInk
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Bilddatei nicht gefunden", filePath);
 
-            using var bitmap = new System.Drawing.Bitmap(filePath);
+            using var bitmap = new DBitmap(filePath);
             InsertImage(bitmap, position, canvas);
 
             // FilePath nachträglich setzen
@@ -93,14 +88,14 @@ namespace FlipsiInk
             if (clipboardImage == null)
                 throw new InvalidOperationException("Bild aus Zwischenablage konnte nicht gelesen werden");
 
-            // Wpf BitmapSource → System.Drawing.DBitmap konvertieren
+            // Wpf BitmapSource → DBitmap konvertieren
             var bitmap = BitmapSourceToDrawingBitmap(clipboardImage);
             var position = new System.Windows.Point(50, 50); // Standardposition
             InsertImage(bitmap, position, canvas);
         }
 
-        /// <summary>System.Drawing.DBitmap an Position einfügen</summary>
-        public void InsertImage(System.Drawing.DBitmap bitmap, System.Windows.Point position, InkCanvas canvas)
+        /// <summary>DBitmap an Position einfügen</summary>
+        public void InsertImage(DBitmap bitmap, System.Windows.Point position, InkCanvas canvas)
         {
             var canvasImage = new CanvasImage
             {
@@ -166,7 +161,7 @@ namespace FlipsiInk
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Bilddatei nicht gefunden", filePath);
 
-            using var bitmap = new System.Drawing.Bitmap(filePath);
+            using var bitmap = new DBitmap(filePath);
             var canvasImage = new CanvasImage
             {
                 FilePath = filePath,
@@ -192,7 +187,7 @@ namespace FlipsiInk
         }
 
         /// <summary>Bild zuschneiden</summary>
-        public System.Drawing.DBitmap CropImage(string imageId, Rect cropRect)
+        public DBitmap CropImage(string imageId, Rect cropRect)
         {
             if (!Images.TryGetValue(imageId, out var img))
                 throw new ArgumentException("Bild nicht gefunden", nameof(imageId));
@@ -201,8 +196,8 @@ namespace FlipsiInk
             if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
                 throw new InvalidOperationException("Quelldatei für Zuschneiden nicht verfügbar");
 
-            using var original = new System.Drawing.Bitmap(sourcePath);
-            var cropArea = new System.Drawing.DRectangle(
+            using var original = new DBitmap(sourcePath);
+            var cropArea = new DRectangle(
                 (int)cropRect.X, (int)cropRect.Y,
                 (int)cropRect.Width, (int)cropRect.Height);
 
@@ -316,16 +311,16 @@ namespace FlipsiInk
 
         #region Private Hilfsmethoden
 
-        /// <summary>System.Drawing.DBitmap → BitmapSource für WPF</summary>
-        private static BitmapSource BitmapToBitmapSource(System.Drawing.DBitmap bitmap)
+        /// <summary>DBitmap → BitmapSource für WPF</summary>
+        private static BitmapSource BitmapToBitmapSource(DBitmap bitmap)
         {
-            var rect = new System.Drawing.DRectangle(0, 0, bitmap.Width, bitmap.Height);
+            var rect = new DRectangle(0, 0, bitmap.Width, bitmap.Height);
             var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.DPixelFormat);
 
             var format = bitmap.DPixelFormat switch
             {
-                System.Drawing.Imaging.DPixelFormat.Format32bppArgb => PixelFormats.Bgra32,
-                System.Drawing.Imaging.DPixelFormat.Format24bppRgb => PixelFormats.Bgr24,
+                DPixelFormat.Format32bppArgb => PixelFormats.Bgra32,
+                DPixelFormat.Format24bppRgb => PixelFormats.Bgr24,
                 _ => PixelFormats.Bgr24
             };
 
@@ -340,8 +335,8 @@ namespace FlipsiInk
             return bitmapSource;
         }
 
-        /// <summary>BitmapSource → System.Drawing.DBitmap konvertieren</summary>
-        private static System.Drawing.DBitmap BitmapSourceToDrawingBitmap(BitmapSource bitmapSource)
+        /// <summary>BitmapSource → DBitmap konvertieren</summary>
+        private static DBitmap BitmapSourceToDrawingBitmap(BitmapSource bitmapSource)
         {
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
@@ -352,7 +347,7 @@ namespace FlipsiInk
         }
 
         /// <summary>WPF-Image-Element aus DBitmap erstellen</summary>
-        private static System.Windows.Controls.Image CreateWpfImage(System.Drawing.DBitmap bitmap, CanvasImage canvasImage)
+        private static System.Windows.Controls.Image CreateWpfImage(DBitmap bitmap, CanvasImage canvasImage)
         {
             var bitmapSource = BitmapToBitmapSource(bitmap);
             var image = new System.Windows.Controls.Image

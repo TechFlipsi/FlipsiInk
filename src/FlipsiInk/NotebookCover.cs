@@ -14,8 +14,6 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using DBitmap = System.Drawing.Bitmap;
-using DImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FlipsiInk;
 

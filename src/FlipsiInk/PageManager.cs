@@ -17,7 +17,6 @@
 #nullable enable
 
 using System.Collections.ObjectModel;
-using DBitmap = System.Drawing.Bitmap;
 using System.IO;
 using System.Windows.Ink;
 

@@ -11,3 +11,4 @@ global using DGraphics = System.Drawing.Graphics;
 global using DRectangle = System.Drawing.Rectangle;
 global using DPixelFormat = System.Drawing.Imaging.PixelFormat;
 global using DImageFormat = System.Drawing.Imaging.ImageFormat;
+global using DSize = System.Drawing.Size;

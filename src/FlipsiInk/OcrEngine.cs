@@ -7,10 +7,6 @@
 #nullable enable
 using System;
 using System.Drawing.Imaging;
-using DBitmap = System.Drawing.Bitmap;
-using DGraphics = System.Drawing.Graphics;
-using DImageFormat = System.Drawing.Imaging.ImageFormat;
-using DPixelFormat = System.Drawing.Imaging.PixelFormat;
 using System.IO;
 using System.Linq;
 using Microsoft.ML.OnnxRuntime;

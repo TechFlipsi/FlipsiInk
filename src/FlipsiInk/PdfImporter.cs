@@ -9,8 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
-using DBitmap = System.Drawing.Bitmap;
-using DSize = System.Drawing.Size;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
