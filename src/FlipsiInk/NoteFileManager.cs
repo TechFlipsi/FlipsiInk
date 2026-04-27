@@ -130,11 +130,7 @@ public class NoteFileManager : IDisposable
     };
 
     private readonly object _lock = new();
-<<<<<<< Updated upstream
     private System.Threading.Timer? _autoSaveTimer;
-=======
-    private System.Timers.Timer? _autoSaveTimer;
->>>>>>> Stashed changes
     private Notebook? _autoSaveTarget;
     private bool _disposed;
 
@@ -221,11 +217,7 @@ public class NoteFileManager : IDisposable
         {
             _autoSaveTarget = notebook;
             _autoSaveTimer?.Dispose();
-<<<<<<< Updated upstream
             _autoSaveTimer = new System.Threading.Timer(_ =>
-=======
-            _autoSaveTimer = new System.Timers.Timer(_ =>
->>>>>>> Stashed changes
             {
                 if (_autoSaveTarget is not null)
                 {

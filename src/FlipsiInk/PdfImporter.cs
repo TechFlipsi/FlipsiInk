@@ -69,51 +69,9 @@ public class PdfImporter : IDisposable
     /// <summary>
     /// Gets the page size in points (PDF units).
     /// </summary>
-<<<<<<< Updated upstream
     public Size GetPageSize(int pageNumber)
     {
         throw new NotImplementedException("PDF import requires PDFiumSharp NuGet package. Coming soon.");
-=======
-    /// <param name="pageNumber">0-basierte Seitennummer.</param>
-    /// <param name="dpi">Auflösung in DPI (Standard: 150).</param>
-    /// <returns>ImageSource für die WPF-Anzeige.</returns>
-    public ImageSource RenderPageToImageSource(int pageNumber, double dpi = 150)
-    {
-        var bitmap = RenderPageToBitmap(pageNumber, dpi);
-        bitmap.Freeze();
-        return bitmap;
-    }
-
-    /// <summary>
-    /// Gibt die Seitengröße in Punkt (PDF-Einheiten) zurück.
-    /// </summary>
-    /// <param name="pageNumber">0-basierte Seitennummer.</param>
-    /// <returns>DSize mit Breite und Höhe der Seite.</returns>
-    public DSize GetPageSize(int pageNumber)
-    {
-        if (_pdfDocument is null)
-            throw new InvalidOperationException("Kein PDF geladen. Zuerst LoadPdf() aufrufen.");
-
-        // TODO: NuGet Package – Seitengröße aus PDF auslesen
-        // var size = _pdfDocument.Pages[pageNumber].DSize;
-        // return new DSize(size.Width, size.Height);
-        return new DSize(595, 842); // A4-Fallback in Punkt
-    }
-
-    /// <summary>
-    /// Gibt alle Seiten als ImageSource-Liste zurück (für Multi-Page-Vorschau).
-    /// </summary>
-    /// <param name="dpi">Auflösung in DPI.</param>
-    /// <returns>Liste der gerenderten Seiten.</returns>
-    public List<ImageSource> RenderAllPages(double dpi = 150)
-    {
-        var pages = new List<ImageSource>();
-        for (int i = 0; i < GetPageCount(); i++)
-        {
-            pages.Add(RenderPageToImageSource(i, dpi));
-        }
-        return pages;
->>>>>>> Stashed changes
     }
 
     public void Dispose()

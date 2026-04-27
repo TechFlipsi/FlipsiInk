@@ -7,16 +7,9 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-<<<<<<< Updated upstream
 // System.Drawing types used via fully qualified names to avoid Point/Color ambiguity
 using Point = System.Windows.Point;
 using Color = System.Windows.Media.Color;
-=======
-using System.Drawing.Imaging;
-using DBitmap = System.Drawing.Bitmap;
-using DImageFormat = System.Drawing.Imaging.ImageFormat;
-using DColor = System.Drawing.Color;
->>>>>>> Stashed changes
 using System.IO;
 using System.Linq;
 using System.Text.Json;
