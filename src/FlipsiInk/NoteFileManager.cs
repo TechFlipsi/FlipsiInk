@@ -18,8 +18,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Timers;
 using System.Drawing.Imaging;
+using DBitmap = System.Drawing.Bitmap;
+using DImageFormat = System.Drawing.Imaging.ImageFormat;
+using DSize = System.Drawing.Size;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -127,7 +130,11 @@ public class NoteFileManager : IDisposable
     };
 
     private readonly object _lock = new();
+<<<<<<< Updated upstream
     private System.Threading.Timer? _autoSaveTimer;
+=======
+    private System.Timers.Timer? _autoSaveTimer;
+>>>>>>> Stashed changes
     private Notebook? _autoSaveTarget;
     private bool _disposed;
 
@@ -143,7 +150,7 @@ public class NoteFileManager : IDisposable
     /// <summary>
     /// Speichert eine Seite als PNG-Thumbnail.
     /// </summary>
-    public void SaveNoteAsPng(Guid notebookId, int pageNumber, Bitmap bitmap)
+    public void SaveNoteAsPng(Guid notebookId, int pageNumber, DBitmap bitmap)
     {
         lock (_lock)
         {
@@ -214,7 +221,11 @@ public class NoteFileManager : IDisposable
         {
             _autoSaveTarget = notebook;
             _autoSaveTimer?.Dispose();
+<<<<<<< Updated upstream
             _autoSaveTimer = new System.Threading.Timer(_ =>
+=======
+            _autoSaveTimer = new System.Timers.Timer(_ =>
+>>>>>>> Stashed changes
             {
                 if (_autoSaveTarget is not null)
                 {
@@ -266,13 +277,13 @@ public class NoteFileManager : IDisposable
     /// <summary>
     /// Lädt ein PNG-Thumbnail.
     /// </summary>
-    public Bitmap LoadThumbnail(string pngPath)
+    public DBitmap LoadThumbnail(string pngPath)
     {
         lock (_lock)
         {
             try
             {
-                return new Bitmap(pngPath);
+                return new DBitmap(pngPath);
             }
             catch (Exception ex)
             {
@@ -332,7 +343,7 @@ public class NoteFileManager : IDisposable
 
     /// <summary>
     /// Exportiert ein Notizbuch als PDF (einfache Bitmap-zu-PDF Konvertierung).
-    /// Nutzt System.Drawing.Bitmap und einen minimalen PDF-Writer ohne externe Abhängigkeiten.
+    /// Nutzt DBitmap und einen minimalen PDF-Writer ohne externe Abhängigkeiten.
     /// </summary>
     public void ExportAsPdf(Guid notebookId, string outputPath)
     {
@@ -409,7 +420,7 @@ public class NoteFileManager : IDisposable
         for (int i = 0; i < pngFiles.Length; i++)
         {
             var pngFile = pngFiles[i];
-            using var bitmap = new Bitmap(pngFile);
+            using var bitmap = new DBitmap(pngFile);
             var w = bitmap.Width;
             var h = bitmap.Height;
 
@@ -457,7 +468,7 @@ public class NoteFileManager : IDisposable
 
         // Trailer
         writer.Write(System.Text.Encoding.ASCII.GetBytes(
-            $"trailer\n<< /Size {offsets.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefPos}\n%%EOF\n"));
+            $"trailer\n<< /DSize {offsets.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefPos}\n%%EOF\n"));
 
         File.WriteAllBytes(outputPath, ms.ToArray());
     }

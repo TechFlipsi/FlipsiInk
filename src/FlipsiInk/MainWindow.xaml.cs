@@ -7,9 +7,16 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+<<<<<<< Updated upstream
 // System.Drawing types used via fully qualified names to avoid Point/Color ambiguity
 using Point = System.Windows.Point;
 using Color = System.Windows.Media.Color;
+=======
+using System.Drawing.Imaging;
+using DBitmap = System.Drawing.Bitmap;
+using DImageFormat = System.Drawing.Imaging.ImageFormat;
+using DColor = System.Drawing.Color;
+>>>>>>> Stashed changes
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -1558,7 +1565,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private System.Drawing.Bitmap RenderStrokesToBitmap()
+    private DBitmap RenderStrokesToBitmap()
     {
         var width = (int)MainCanvas.ActualWidth;
         var height = (int)MainCanvas.ActualHeight;
@@ -1571,7 +1578,7 @@ public partial class MainWindow : Window
         using var stream = new MemoryStream();
         encoder.Save(stream);
         stream.Position = 0;
-        return new System.Drawing.Bitmap(stream);
+        return new DBitmap(stream);
     }
 
     #endregion

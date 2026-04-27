@@ -17,7 +17,7 @@
 #nullable enable
 
 using System.Collections.ObjectModel;
-using System.Drawing;
+using DBitmap = System.Drawing.Bitmap;
 using System.IO;
 using System.Windows.Ink;
 
@@ -294,7 +294,7 @@ public class PageManager
     /// </summary>
     /// <param name="pageNumber">Die Seitennummer.</param>
     /// <param name="thumbnail">Das neue Thumbnail-Bild.</param>
-    public void UpdateThumbnail(int pageNumber, Bitmap thumbnail)
+    public void UpdateThumbnail(int pageNumber, DBitmap thumbnail)
     {
         var page = GetPage(pageNumber);
         if (page != null)

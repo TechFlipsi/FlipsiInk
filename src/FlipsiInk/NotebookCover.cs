@@ -14,6 +14,8 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DBitmap = System.Drawing.Bitmap;
+using DImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FlipsiInk;
 
@@ -310,10 +312,10 @@ public class NotebookMetadataManager
     /// <summary>
     /// Speichert ein Thumbnail-Bild für ein Notizbuch als PNG.
     /// </summary>
-    public void SaveThumbnail(Guid notebookId, System.Drawing.Bitmap thumbnail)
+    public void SaveThumbnail(Guid notebookId, DBitmap thumbnail)
     {
         var thumbPath = Path.Combine(_thumbnailDir, $"{notebookId}.png");
-        thumbnail.Save(thumbPath, System.Drawing.Imaging.ImageFormat.Png);
+        thumbnail.Save(thumbPath, DImageFormat.Png);
 
         // Metadaten aktualisieren
         UpdateMetadata(notebookId, m =>

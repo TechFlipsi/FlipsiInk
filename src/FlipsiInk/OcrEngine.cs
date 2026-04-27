@@ -6,8 +6,11 @@
 // the Free Software Foundation.
 #nullable enable
 using System;
-using System.Drawing;
 using System.Drawing.Imaging;
+using DBitmap = System.Drawing.Bitmap;
+using DGraphics = System.Drawing.Graphics;
+using DImageFormat = System.Drawing.Imaging.ImageFormat;
+using DPixelFormat = System.Drawing.Imaging.PixelFormat;
 using System.IO;
 using System.Linq;
 using Microsoft.ML.OnnxRuntime;
@@ -116,7 +119,7 @@ public class OcrEngine : IDisposable
     /// <summary>
     /// Recognize text from a bitmap image.
     /// </summary>
-    public string Recognize(Bitmap bitmap)
+    public string Recognize(DBitmap bitmap)
     {
         if (_session == null)
             throw new InvalidOperationException("Modell nicht geladen");
@@ -136,12 +139,12 @@ public class OcrEngine : IDisposable
     /// <summary>
     /// Preprocess bitmap: resize to 384x384, normalize with ImageNet stats.
     /// </summary>
-    private DenseTensor<float> PreprocessImage(Bitmap bitmap)
+    private DenseTensor<float> PreprocessImage(DBitmap bitmap)
     {
         const int targetSize = 384;
 
-        using var resized = new Bitmap(targetSize, targetSize);
-        using (var g = Graphics.FromImage(resized))
+        using var resized = new DBitmap(targetSize, targetSize);
+        using (var g = DGraphics.FromImage(resized))
         {
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
             g.DrawImage(bitmap, 0, 0, targetSize, targetSize);
