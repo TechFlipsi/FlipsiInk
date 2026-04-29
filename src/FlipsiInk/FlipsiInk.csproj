@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Version>0.5.0</Version>
+    <Version>0.5.1</Version>
     <AssemblyName>FlipsiInk</AssemblyName>
     <RootNamespace>FlipsiInk</RootNamespace>
     <Nullable>enable</Nullable>
@@ -24,6 +24,7 @@
     <PackageReference Include="NCalc" Version="1.3.8" />
     <PackageReference Include="PDFiumSharp" Version="1.4660.0-alpha1" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Lang\*.json">

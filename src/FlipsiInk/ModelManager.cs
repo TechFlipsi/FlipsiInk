@@ -89,6 +89,15 @@ public class ModelManager
     {
         try
         {
+            // Use WMI to get actual installed physical RAM
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                "SELECT TotalVisibleMemorySize FROM Win32_OperatingSystem");
+            foreach (var obj in searcher.Get())
+            {
+                var kb = Convert.ToInt64(obj["TotalVisibleMemorySize"]);
+                return kb / 1024; // KB to MB
+            }
+            // Fallback to GC memory
             var mem = GC.GetGCMemoryInfo();
             return mem.TotalAvailableMemoryBytes / (1024 * 1024);
         }
@@ -107,7 +116,8 @@ public class ModelManager
 
     /// <summary>
     /// Hardcoded fallback catalog (used when remote fetch fails).
-    /// v0.4.0 tiers: mittel (8GB RAM), stark (16GB RAM, recommended), premium (32GB RAM).
+    /// v0.4.1 tiers: mittel (7GB RAM), stark (15GB RAM, recommended), premium (31GB RAM).
+    /// 1GB Puffer-Regel: immer 1GB weniger als beworben wegen RAM-Anzeigedifferenzen.
     /// </summary>
     public List<ModelCatalogEntry> GetFallbackCatalog() => new()
     {
@@ -121,7 +131,7 @@ public class ModelManager
             Size = "~1.5 GB",
             Quantization = "Q8",
             IsRecommended = false,
-            MinRamGb = 8,
+            MinRamGb = 7,
             Tier = "mittel",
             Version = "1.0.0"
         },
@@ -129,13 +139,13 @@ public class ModelManager
         {
             Id = "qwen2.5-vl-3b-q4",
             Name = "Qwen2.5-VL 3B Q4",
-            Description = "Text + Mathe - EMPFOHLEN fuer die meisten Nutzer (16 GB RAM)",
+            Description = "Text + Mathe - EMPFOHLEN fuer die meisten Nutzer (15 GB RAM)",
             DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/qwen2.5-vl-3b-q4.onnx",
             EstimatedSizeBytes = 3_800_000_000,
             Size = "~3.8 GB",
             Quantization = "Q4",
             IsRecommended = true,
-            MinRamGb = 16,
+            MinRamGb = 15,
             Tier = "stark",
             Version = "1.1.0"
         },
@@ -143,13 +153,13 @@ public class ModelManager
         {
             Id = "qwen2.5-vl-7b-q4",
             Name = "Qwen2.5-VL 7B Q4",
-            Description = "Beste Erkennungsqualitaet - 32 GB RAM, GPU empfohlen",
+            Description = "Beste Erkennungsqualitaet - 31 GB RAM, GPU empfohlen",
             DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/qwen2.5-vl-7b-q4.onnx",
             EstimatedSizeBytes = 8_000_000_000,
             Size = "~8 GB",
             Quantization = "Q4",
             IsRecommended = false,
-            MinRamGb = 32,
+            MinRamGb = 31,
             Tier = "premium",
             Version = "1.0.0"
         }
@@ -272,7 +282,7 @@ public class ModelManager
         {
             throw new InvalidOperationException(
                 $"Nicht genug RAM fuer {catalog.Name}. Benoetigt: {catalog.MinRamGb} GB, " +
-                $"Verfuegbar: ~{GetTotalRamMb() / 1024} GB.");
+                $"Verfuegbar: ~{GetTotalRamMb() / 1024} GB (1 GB Puffer bereits beruecksichtigt).");
         }
 
         var targetPath = Path.Combine(_modelsDir, $"{catalog.Id}.onnx");
