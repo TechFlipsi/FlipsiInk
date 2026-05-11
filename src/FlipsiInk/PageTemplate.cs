@@ -102,10 +102,17 @@ namespace FlipsiInk
         /// </summary>
         private static DrawingBrush CreateLinedBrush(double spacing, double lineWidth, string color)
         {
+            var bgColor = (Color)ColorConverter.ConvertFromString(GetPaperColor());
+            var bgBrush = new SolidColorBrush(bgColor);
             var pen = new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)), lineWidth);
-            var geometry = new LineGeometry(new Point(0, spacing), new Point(spacing * 2, spacing));
-            var drawing = new GeometryDrawing(null, pen, geometry);
-            var brush = new DrawingBrush(drawing)
+            var group = new DrawingGroup();
+            // White/theme background first
+            group.Children.Add(new GeometryDrawing(bgBrush, null,
+                new RectangleGeometry(new Rect(0, 0, spacing * 2, spacing))));
+            // Horizontal line
+            group.Children.Add(new GeometryDrawing(null, pen,
+                new LineGeometry(new Point(0, spacing), new Point(spacing * 2, spacing))));
+            var brush = new DrawingBrush(group)
             {
                 Viewport = new Rect(0, 0, spacing * 2, spacing),
                 Viewbox = new Rect(0, 0, spacing * 2, spacing),
@@ -120,8 +127,13 @@ namespace FlipsiInk
         /// </summary>
         private static DrawingBrush CreateGridBrush(double spacing, double lineWidth, string color)
         {
+            var bgColor = (Color)ColorConverter.ConvertFromString(GetPaperColor());
+            var bgBrush = new SolidColorBrush(bgColor);
             var pen = new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)), lineWidth);
             var group = new DrawingGroup();
+            // White/theme background first
+            group.Children.Add(new GeometryDrawing(bgBrush, null,
+                new RectangleGeometry(new Rect(0, 0, spacing, spacing))));
             // Horizontale Linie
             group.Children.Add(new GeometryDrawing(null, pen,
                 new LineGeometry(new Point(0, spacing), new Point(spacing, spacing))));
@@ -143,11 +155,17 @@ namespace FlipsiInk
         /// </summary>
         private static DrawingBrush CreateDotGridBrush(double spacing, string color)
         {
+            var bgColor = (Color)ColorConverter.ConvertFromString(GetPaperColor());
+            var bgBrush = new SolidColorBrush(bgColor);
             var dotBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
+            var group = new DrawingGroup();
+            // White/theme background first
+            group.Children.Add(new GeometryDrawing(bgBrush, null,
+                new RectangleGeometry(new Rect(0, 0, spacing, spacing))));
             // Kleiner Kreis als Punkt
             var dotGeometry = new EllipseGeometry(new Point(spacing / 2, spacing / 2), 1.5, 1.5);
-            var drawing = new GeometryDrawing(dotBrush, null, dotGeometry);
-            var brush = new DrawingBrush(drawing)
+            group.Children.Add(new GeometryDrawing(dotBrush, null, dotGeometry));
+            var brush = new DrawingBrush(group)
             {
                 Viewport = new Rect(0, 0, spacing, spacing),
                 Viewbox = new Rect(0, 0, spacing, spacing),
@@ -170,9 +188,15 @@ namespace FlipsiInk
             const double verticalX = 250; // ~1/3
             const double horizontalY = 700; // ~2/3
 
+            var bgColor = (Color)ColorConverter.ConvertFromString(GetPaperColor());
+            var bgBrush = new SolidColorBrush(bgColor);
             var pen = new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)), lineWidth);
             var redPen = new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)), lineWidth * 1.5);
             var group = new DrawingGroup();
+
+            // White/theme background first
+            group.Children.Add(new GeometryDrawing(bgBrush, null,
+                new RectangleGeometry(new Rect(0, 0, tileW, tileH))));
 
             // Horizontale Linien
             for (double y = lineSpacing; y < tileH; y += lineSpacing)
@@ -207,8 +231,14 @@ namespace FlipsiInk
             const double size = 30; // Seitenlänge der Rauten
             double h = size * Math.Sqrt(3) / 2; // Höhe der Raute
 
+            var bgColor = (Color)ColorConverter.ConvertFromString(GetPaperColor());
+            var bgBrush = new SolidColorBrush(bgColor);
             var pen = new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)), lineWidth);
             var group = new DrawingGroup();
+
+            // White/theme background first
+            group.Children.Add(new GeometryDrawing(bgBrush, null,
+                new RectangleGeometry(new Rect(0, 0, size * 2, h * 2))));
 
             // Horizontale Linie (0°)
             group.Children.Add(new GeometryDrawing(null, pen,
@@ -238,6 +268,22 @@ namespace FlipsiInk
                 Stretch = Stretch.None
             };
             return brush;
+        }
+        /// <summary>
+        /// Gibt die Papierfarbe als Hex-String zurück, abhängig vom aktuellen Theme.
+        /// </summary>
+        private static string GetPaperColor()
+        {
+            try
+            {
+                var colors = ThemeManager.GetCurrentColors(Theme.System);
+                bool isDark = colors.Foreground == System.Windows.Media.Colors.White;
+                return isDark ? "#1E1E1E" : "#FFFFFF";
+            }
+            catch
+            {
+                return "#FFFFFF";
+            }
         }
     }
 }

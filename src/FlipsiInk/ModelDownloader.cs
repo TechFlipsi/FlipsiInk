@@ -16,6 +16,7 @@ namespace FlipsiInk;
 /// KI-Modell-Download & Management.
 /// Verwaltet das Herunterladen, Prüfen und Löschen von ONNX-Modellen.
 /// </summary>
+[Obsolete("Use ModelManager instead. This class will be removed in a future version.")]
 public class ModelDownloader
 {
     private static readonly HttpClient _http = new();
@@ -26,7 +27,7 @@ public class ModelDownloader
     static ModelDownloader()
     {
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("FlipsiInk-ModelDownloader");
-        Directory.CreateDirectory(ModelsDir);
+        try { Directory.CreateDirectory(ModelsDir); } catch { /* best effort */ }
     }
 
     /// <summary>
@@ -149,6 +150,7 @@ public class ModelDownloader
 /// <summary>
 /// Informationen über ein verfügbares KI-Modell.
 /// </summary>
+[Obsolete("Use ModelCatalogEntry in ModelManager instead. This class will be removed in a future version.")]
 public class ModelInfo
 {
     public string Id { get; set; } = "";

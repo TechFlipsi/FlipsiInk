@@ -79,7 +79,13 @@ public class ModelManager
     public string? GetActiveModelPath()
     {
         if (ActiveModelId != null && _installed.TryGetValue(ActiveModelId, out var entry))
+        {
+            // For directory-based models (Florence-2), return the directory path
+            // For legacy single-file models, return the file path
+            if (entry.Files != null && entry.Files.Count > 0)
+                return Path.GetDirectoryName(entry.FilePath) ?? entry.FilePath;
             return entry.FilePath;
+        }
         return null;
     }
 
@@ -89,15 +95,33 @@ public class ModelManager
     {
         try
         {
-            // Use WMI to get actual installed physical RAM
+            // Use Win32_ComputerSystem.TotalPhysicalMemory to get ACTUAL installed RAM.
+            // Unlike Win32_OperatingSystem.TotalVisibleMemorySize (which reports AVAILABLE
+            // RAM minus hardware-reserved memory), TotalPhysicalMemory reports the real
+            // physical RAM sticks installed. This fixes the "Mittel" vs "Stark" tier
+            // detection: on a 16GB system ~0.5-1GB is reserved by GPU/BIOS, so
+            // TotalVisibleMemorySize would report ~15.5GB, causing HasEnoughRam(15) to fail
+            // and the app to recommend the wrong tier.
             using var searcher = new System.Management.ManagementObjectSearcher(
-                "SELECT TotalVisibleMemorySize FROM Win32_OperatingSystem");
+                "SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
             foreach (var obj in searcher.Get())
             {
-                var kb = Convert.ToInt64(obj["TotalVisibleMemorySize"]);
-                return kb / 1024; // KB to MB
+                var bytes = Convert.ToInt64(obj["TotalPhysicalMemory"]);
+                return bytes / (1024 * 1024); // Bytes to MB
             }
-            // Fallback to GC memory
+
+            // Fallback: try Win32_PhysicalMemory (sum of individual sticks)
+            using var searcher2 = new System.Management.ManagementObjectSearcher(
+                "SELECT Capacity FROM Win32_PhysicalMemory");
+            long totalCap = 0;
+            foreach (var obj in searcher2.Get())
+            {
+                totalCap += Convert.ToInt64(obj["Capacity"]);
+            }
+            if (totalCap > 0)
+                return totalCap / (1024 * 1024);
+
+            // Final fallback to GC memory info
             var mem = GC.GetGCMemoryInfo();
             return mem.TotalAvailableMemoryBytes / (1024 * 1024);
         }
@@ -116,20 +140,26 @@ public class ModelManager
 
     /// <summary>
     /// Hardcoded fallback catalog (used when remote fetch fails).
-    /// v0.4.1 tiers: mittel (7GB RAM), stark (15GB RAM, recommended), premium (31GB RAM).
+    /// Florence-2 tiers: mittel (7GB RAM), stark (15GB RAM, recommended), premium (31GB RAM).
     /// 1GB Puffer-Regel: immer 1GB weniger als beworben wegen RAM-Anzeigedifferenzen.
     /// </summary>
     public List<ModelCatalogEntry> GetFallbackCatalog() => new()
     {
         new()
         {
-            Id = "florence2-base-q8",
-            Name = "Florence-2 Base Q8",
-            Description = "Gute Texterkennung - fuer Nutzer mit 8 GB RAM",
-            DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/florence2-base-q8.onnx",
-            EstimatedSizeBytes = 1_500_000_000,
-            Size = "~1.5 GB",
-            Quantization = "Q8",
+            Id = "florence2-base-ft-int8",
+            Name = "Florence-2 Base INT8",
+            Description = "Gute Texterkennung – für Nutzer mit 8 GB RAM",
+            BaseUrl = "https://huggingface.co/onnx-community/Florence-2-base-ft/resolve/main/onnx/",
+            Files = new List<string>
+            {
+                "encoder_model_int8.onnx",
+                "decoder_model_merged_int8.onnx",
+                "vision_encoder_int8.onnx"
+            },
+            EstimatedSizeBytes = 235_929_600,
+            Size = "~225 MB",
+            Quantization = "INT8",
             IsRecommended = false,
             MinRamGb = 7,
             Tier = "mittel",
@@ -137,27 +167,41 @@ public class ModelManager
         },
         new()
         {
-            Id = "qwen2.5-vl-3b-q4",
-            Name = "Qwen2.5-VL 3B Q4",
-            Description = "Text + Mathe - EMPFOHLEN fuer die meisten Nutzer (15 GB RAM)",
-            DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/qwen2.5-vl-3b-q4.onnx",
-            EstimatedSizeBytes = 3_800_000_000,
-            Size = "~3.8 GB",
-            Quantization = "Q4",
+            Id = "florence2-large-ft-int8",
+            Name = "Florence-2 Large INT8",
+            Description = "Text + Mathe – EMPFOHLEN für die meisten Nutzer (16 GB RAM)",
+            BaseUrl = "https://huggingface.co/onnx-community/Florence-2-large-ft/resolve/main/onnx/",
+            Files = new List<string>
+            {
+                "encoder_model_int8.onnx",
+                "decoder_model_merged_int8.onnx",
+                "embed_tokens_int8.onnx",
+                "vision_encoder_int8.onnx"
+            },
+            EstimatedSizeBytes = 829_440_000,
+            Size = "~791 MB",
+            Quantization = "INT8",
             IsRecommended = true,
             MinRamGb = 15,
             Tier = "stark",
-            Version = "1.1.0"
+            Version = "1.0.0"
         },
         new()
         {
-            Id = "qwen2.5-vl-7b-q4",
-            Name = "Qwen2.5-VL 7B Q4",
-            Description = "Beste Erkennungsqualitaet - 31 GB RAM, GPU empfohlen",
-            DownloadUrl = "https://github.com/TechFlipsi/FlipsiInk/releases/download/models/qwen2.5-vl-7b-q4.onnx",
-            EstimatedSizeBytes = 8_000_000_000,
-            Size = "~8 GB",
-            Quantization = "Q4",
+            Id = "florence2-large-ft-fp16",
+            Name = "Florence-2 Large FP16",
+            Description = "Beste Erkennungsqualität – 32 GB RAM, GPU empfohlen",
+            BaseUrl = "https://huggingface.co/onnx-community/Florence-2-large-ft/resolve/main/onnx/",
+            Files = new List<string>
+            {
+                "encoder_model_fp16.onnx",
+                "decoder_model_merged_fp16.onnx",
+                "embed_tokens_fp16.onnx",
+                "vision_encoder_fp16.onnx"
+            },
+            EstimatedSizeBytes = 1_652_500_000,
+            Size = "~1.6 GB",
+            Quantization = "FP16",
             IsRecommended = false,
             MinRamGb = 31,
             Tier = "premium",
@@ -281,57 +325,122 @@ public class ModelManager
         if (!HasEnoughRam(catalog.MinRamGb))
         {
             throw new InvalidOperationException(
-                $"Nicht genug RAM fuer {catalog.Name}. Benoetigt: {catalog.MinRamGb} GB, " +
-                $"Verfuegbar: ~{GetTotalRamMb() / 1024} GB (1 GB Puffer bereits beruecksichtigt).");
+                $"Nicht genug RAM für {catalog.Name}. Benötigt: {catalog.MinRamGb + 1} GB, " +
+                $"Verfügbar: ca. {GetTotalRamMb() / 1024} GB (1 GB Puffer bereits berücksichtigt).");
         }
 
-        var targetPath = Path.Combine(_modelsDir, $"{catalog.Id}.onnx");
-        var tmpPath = targetPath + ".downloading";
+        // Create a subdirectory for this model tier
+        var modelDir = Path.Combine(_modelsDir, catalog.Id);
+        try { Directory.CreateDirectory(modelDir); } catch { /* best effort */ }
 
+        var totalFiles = catalog.Files.Count;
+        if (totalFiles == 0)
+        {
+            // Legacy single-file fallback (shouldn't happen with new catalog)
+            totalFiles = 1;
+        }
+
+        long totalBytesDownloaded = 0;
+        var completedFiles = 0;
+
+        foreach (var fileName in catalog.Files)
+        {
+            var targetPath = Path.Combine(modelDir, fileName);
+            var tmpPath = targetPath + ".downloading";
+            var url = catalog.BaseUrl.TrimEnd('/') + "/" + fileName;
+
+            try
+            {
+                // Skip already-downloaded files
+                if (File.Exists(targetPath) && new FileInfo(targetPath).Length > 0)
+                {
+                    completedFiles++;
+                    totalBytesDownloaded += new FileInfo(targetPath).Length;
+                    continue;
+                }
+
+                using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+
+                var totalBytes = response.Content.Headers.ContentLength ?? 0;
+
+                await using var contentStream = await response.Content.ReadAsStreamAsync();
+                await using var fileStream = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+                var buffer = new byte[81920];
+                long bytesRead = 0;
+                int read;
+
+                while ((read = await contentStream.ReadAsync(buffer)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer.AsMemory(0, read));
+                    bytesRead += read;
+                    totalBytesDownloaded += read;
+
+                    if (catalog.EstimatedSizeBytes > 0)
+                    {
+                        // Overall progress: completed files + current file progress
+                        var overallProgress = (completedFiles + (double)bytesRead / Math.Max(totalBytes, 1)) / totalFiles;
+                        progress?.Report(Math.Min(overallProgress, 0.99));
+                    }
+                }
+
+                if (File.Exists(targetPath)) File.Delete(targetPath);
+                File.Move(tmpPath, targetPath);
+
+                completedFiles++;
+            }
+            catch
+            {
+                if (File.Exists(tmpPath))
+                    try { File.Delete(tmpPath); } catch { /* best effort */ }
+                throw;
+            }
+        }
+
+        // Write manifest file
+        var manifest = new ModelManifest
+        {
+            Id = catalog.Id,
+            Name = catalog.Name,
+            Version = catalog.Version,
+            Tier = catalog.Tier,
+            Quantization = catalog.Quantization,
+            Files = catalog.Files,
+            InstalledAt = DateTime.UtcNow
+        };
         try
         {
-            using var response = await _http.GetAsync(catalog.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
-
-            var totalBytes = response.Content.Headers.ContentLength ?? catalog.EstimatedSizeBytes;
-
-            await using var contentStream = await response.Content.ReadAsStreamAsync();
-            await using var fileStream = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None);
-
-            var buffer = new byte[81920];
-            long bytesRead = 0;
-            int read;
-
-            while ((read = await contentStream.ReadAsync(buffer)) > 0)
-            {
-                await fileStream.WriteAsync(buffer.AsMemory(0, read));
-                bytesRead += read;
-                if (totalBytes > 0)
-                    progress?.Report((double)bytesRead / totalBytes);
-            }
-
-            if (File.Exists(targetPath)) File.Delete(targetPath);
-            File.Move(tmpPath, targetPath);
-
-            var entry = new InstalledModelEntry
-            {
-                Id = catalog.Id,
-                FilePath = targetPath,
-                Version = catalog.Version,
-                InstalledAt = DateTime.UtcNow,
-                SizeBytes = new FileInfo(targetPath).Length
-            };
-            _installed[catalog.Id] = entry;
-            SaveRegistry();
-
-            if (ActiveModelId == null)
-                SetActiveModel(catalog.Id);
+            var manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(modelDir, "model.json"), manifestJson);
         }
-        catch
+        catch { /* best effort */ }
+
+        // Calculate total size of all downloaded files
+        long totalSize = 0;
+        foreach (var fileName in catalog.Files)
         {
-            if (File.Exists(tmpPath)) File.Delete(tmpPath);
-            throw;
+            var filePath = Path.Combine(modelDir, fileName);
+            if (File.Exists(filePath))
+                totalSize += new FileInfo(filePath).Length;
         }
+
+        var entry = new InstalledModelEntry
+        {
+            Id = catalog.Id,
+            FilePath = modelDir,  // Directory path for multi-file models
+            Version = catalog.Version,
+            InstalledAt = DateTime.UtcNow,
+            SizeBytes = totalSize,
+            Files = new List<string>(catalog.Files)
+        };
+        _installed[catalog.Id] = entry;
+        SaveRegistry();
+
+        progress?.Report(1.0);
+
+        if (ActiveModelId == null)
+            SetActiveModel(catalog.Id);
     }
 
     // ── Delete ───────────────────────────────────────────────
@@ -340,8 +449,21 @@ public class ModelManager
     {
         if (!_installed.TryGetValue(modelId, out var entry)) return;
 
-        if (File.Exists(entry.FilePath))
-            File.Delete(entry.FilePath);
+        // For directory-based models, delete the entire directory
+        if (entry.Files != null && entry.Files.Count > 0)
+        {
+            var modelDir = entry.FilePath;
+            if (Directory.Exists(modelDir))
+            {
+                try { Directory.Delete(modelDir, recursive: true); } catch { /* best effort */ }
+            }
+        }
+        else
+        {
+            // Legacy single-file model
+            if (File.Exists(entry.FilePath))
+                File.Delete(entry.FilePath);
+        }
 
         _installed.Remove(modelId);
         SaveRegistry();
@@ -378,12 +500,28 @@ public class ModelManager
         if (catalog.Version != entry.Version) return true;
         try
         {
-            var response = await _http.SendAsync(new HttpRequestMessage(HttpMethod.Head, catalog.DownloadUrl));
-            if (response.IsSuccessStatusCode)
+            // For multi-file models, check the first file's size
+            if (catalog.Files != null && catalog.Files.Count > 0 && !string.IsNullOrEmpty(catalog.BaseUrl))
             {
-                var remoteSize = response.Content.Headers.ContentLength ?? 0;
-                if (remoteSize > 0 && Math.Abs(remoteSize - entry.SizeBytes) > 1_000_000)
-                    return true;
+                var firstFileUrl = catalog.BaseUrl.TrimEnd('/') + "/" + catalog.Files[0];
+                var response = await _http.SendAsync(new HttpRequestMessage(HttpMethod.Head, firstFileUrl));
+                if (response.IsSuccessStatusCode)
+                {
+                    var remoteSize = response.Content.Headers.ContentLength ?? 0;
+                    if (remoteSize > 0 && Math.Abs(remoteSize - entry.SizeBytes) > 10_000_000)
+                        return true;
+                }
+            }
+            else if (!string.IsNullOrEmpty(catalog.DownloadUrl))
+            {
+                // Legacy single-file check
+                var response = await _http.SendAsync(new HttpRequestMessage(HttpMethod.Head, catalog.DownloadUrl));
+                if (response.IsSuccessStatusCode)
+                {
+                    var remoteSize = response.Content.Headers.ContentLength ?? 0;
+                    if (remoteSize > 0 && Math.Abs(remoteSize - entry.SizeBytes) > 1_000_000)
+                        return true;
+                }
             }
         }
         catch { /* ignore */ }
@@ -396,33 +534,57 @@ public class ModelManager
     {
         try
         {
-            if (!string.IsNullOrWhiteSpace(App.Config.ModelPath) && File.Exists(App.Config.ModelPath))
-            {
-                foreach (var (id, entry) in _installed)
-                {
-                    if (entry.FilePath == App.Config.ModelPath)
-                    {
-                        ActiveModelId = id;
-                        return;
-                    }
-                }
-                var extId = Path.GetFileNameWithoutExtension(App.Config.ModelPath);
-                _installed[extId] = new InstalledModelEntry
-                {
-                    Id = extId,
-                    FilePath = App.Config.ModelPath,
-                    Version = "unknown",
-                    InstalledAt = DateTime.MinValue,
-                    SizeBytes = TryGetFileSize(App.Config.ModelPath)
-                };
-                ActiveModelId = extId;
-                SaveRegistry();
-                return;
-            }
-
-            // Config ModelPath doesn't exist – clear it to prevent future crashes
             if (!string.IsNullOrWhiteSpace(App.Config.ModelPath))
             {
+                // Check if ModelPath points to a directory (Florence-2 multi-file) or a file
+                if (Directory.Exists(App.Config.ModelPath))
+                {
+                    // Directory-based model
+                    var dirName = Path.GetFileName(App.Config.ModelPath);
+                    if (_installed.TryGetValue(dirName, out var dirEntry))
+                    {
+                        ActiveModelId = dirName;
+                        return;
+                    }
+                    // Register it if not yet tracked
+                    _installed[dirName] = new InstalledModelEntry
+                    {
+                        Id = dirName,
+                        FilePath = App.Config.ModelPath,
+                        Version = "unknown",
+                        InstalledAt = DateTime.MinValue,
+                        SizeBytes = 0
+                    };
+                    ActiveModelId = dirName;
+                    SaveRegistry();
+                    return;
+                }
+                else if (File.Exists(App.Config.ModelPath))
+                {
+                    // Legacy single-file model
+                    foreach (var (id, entry) in _installed)
+                    {
+                        if (entry.FilePath == App.Config.ModelPath)
+                        {
+                            ActiveModelId = id;
+                            return;
+                        }
+                    }
+                    var extId = Path.GetFileNameWithoutExtension(App.Config.ModelPath);
+                    _installed[extId] = new InstalledModelEntry
+                    {
+                        Id = extId,
+                        FilePath = App.Config.ModelPath,
+                        Version = "unknown",
+                        InstalledAt = DateTime.MinValue,
+                        SizeBytes = TryGetFileSize(App.Config.ModelPath)
+                    };
+                    ActiveModelId = extId;
+                    SaveRegistry();
+                    return;
+                }
+
+                // Config ModelPath doesn't exist – clear it
                 App.Config.ModelPath = "";
                 App.Config.Save();
             }
@@ -463,7 +625,29 @@ public class ModelManager
             var toRemove = new List<string>();
             foreach (var (id, entry) in _installed)
             {
-                if (!File.Exists(entry.FilePath)) toRemove.Add(id);
+                // Directory-based models: check directory exists
+                if (entry.Files != null && entry.Files.Count > 0)
+                {
+                    if (!Directory.Exists(entry.FilePath))
+                    {
+                        toRemove.Add(id);
+                        continue;
+                    }
+                    // Check that at least the first file exists
+                    foreach (var file in entry.Files)
+                    {
+                        if (!File.Exists(Path.Combine(entry.FilePath, file)))
+                        {
+                            toRemove.Add(id);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // Legacy single-file model
+                    if (!File.Exists(entry.FilePath)) toRemove.Add(id);
+                }
             }
             foreach (var id in toRemove) _installed.Remove(id);
             if (toRemove.Count > 0) SaveRegistry();
@@ -491,6 +675,21 @@ public class ModelManager
     }
 }
 
+/// <summary>
+/// Manifest file written to each model directory after successful download.
+/// Contains metadata about the downloaded model tier.
+/// </summary>
+public class ModelManifest
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Version { get; set; } = "";
+    public string Tier { get; set; } = "";
+    public string Quantization { get; set; } = "";
+    public List<string> Files { get; set; } = new();
+    public DateTime InstalledAt { get; set; }
+}
+
 public class ModelCatalogEntry
 {
     public string Id { get; set; } = "";
@@ -504,13 +703,33 @@ public class ModelCatalogEntry
     public int MinRamGb { get; set; } = 16;
     public string Tier { get; set; } = "stark";
     public string Version { get; set; } = "1.0.0";
+
+    /// <summary>
+    /// ONNX file names to download from HuggingFace.
+    /// Each file is downloaded from BaseUrl + filename.
+    /// </summary>
+    public List<string> Files { get; set; } = new();
+
+    /// <summary>
+    /// HuggingFace base URL for downloading model files.
+    /// Each file in Files is appended to this URL.
+    /// </summary>
+    public string BaseUrl { get; set; } = "";
 }
 
 public class InstalledModelEntry
 {
     public string Id { get; set; } = "";
+    /// <summary>
+    /// Path to the model directory (not a single file).
+    /// For legacy single-file models, this points to the .onnx file.
+    /// </summary>
     public string FilePath { get; set; } = "";
     public string Version { get; set; } = "";
     public DateTime InstalledAt { get; set; }
     public long SizeBytes { get; set; }
+    /// <summary>
+    /// List of ONNX files that should be present in the model directory.
+    /// </summary>
+    public List<string> Files { get; set; } = new();
 }

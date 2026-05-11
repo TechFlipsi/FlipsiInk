@@ -460,7 +460,7 @@ public partial class MainWindow : Window
 
     private void DockToolbarTop(object sender, RoutedEventArgs e)
     {
-        FloatingToolbar.Margin = new Thickness(300, 0, 0, 0);
+        FloatingToolbar.Margin = new Thickness(150, 0, 0, 0);
         FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Left;
         FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
     }
@@ -481,7 +481,7 @@ public partial class MainWindow : Window
 
     private void ResetToolbarPosition(object sender, RoutedEventArgs e)
     {
-        FloatingToolbar.Margin = new Thickness(300, 0, 0, 0);
+        FloatingToolbar.Margin = new Thickness(150, 0, 0, 0);
         FloatingToolbar.HorizontalAlignment = HorizontalAlignment.Left;
         FloatingToolbar.VerticalAlignment = VerticalAlignment.Top;
     }
@@ -489,7 +489,7 @@ public partial class MainWindow : Window
     private void PositionFloatingToolbar()
     {
         // Position toolbar at default location after layout loads
-        FloatingToolbar.Margin = new Thickness(300, 8, 0, 0);
+        FloatingToolbar.Margin = new Thickness(150, 8, 0, 0);
     }
 
     // ── Floating Toolbar Button Handlers ──
@@ -681,7 +681,7 @@ public partial class MainWindow : Window
             TabBar.Visibility = Visibility.Collapsed;
             FloatingToolbar.Visibility = Visibility.Collapsed;
             BtnZenMode.Content = "\u25D0"; // circle outline
-            StatusText.Text = "Zen-Modus: Ein (ESC zum Beenden)";
+            StatusText.Text = "Zen-Modus: Ein (ESC oder F11 zum Beenden)";
         }
         else
         {
@@ -1109,12 +1109,24 @@ public partial class MainWindow : Window
         TopBar.Background = new SolidColorBrush(colors.TopBarBg);
         LeftToolbar.Background = new SolidColorBrush(colors.PanelBg);
         RightPanel.Background = new SolidColorBrush(colors.PanelBg);
+        CanvasScroll.Background = new SolidColorBrush(colors.Background);
         AppTitle.Foreground = new SolidColorBrush(colors.Foreground);
         ZoomLabel.Foreground = new SolidColorBrush(colors.Foreground);
 
         // Canvas background: for Blank template, use theme-aware color; for templates, use template brush
         var templateBrush = PageTemplate.GetBackgroundBrush(_currentTemplate);
-        MainCanvas.Background = templateBrush ?? new SolidColorBrush(colors.CanvasBg);
+        // For Blank template (no brush), use the theme's CanvasBg color
+        if (templateBrush == null)
+        {
+            // Dark theme CanvasBg is white (for writing), Light theme also white.
+            // For a true dark canvas, use a dark paper color instead.
+            var paperColor = colors.CanvasBg;
+            MainCanvas.Background = new SolidColorBrush(paperColor);
+        }
+        else
+        {
+            MainCanvas.Background = templateBrush;
+        }
 
         // Update all ToolButtons
         foreach (var btn in FindVisualChildren<Button>(this))
@@ -3162,6 +3174,21 @@ public partial class MainWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+
+        // ESC: Exit zen mode
+        if (e.Key == Key.Escape && _zenModeActive)
+        {
+            ToggleZenMode(this, new RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+        // F11: Toggle zen mode
+        if (e.Key == Key.F11 && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            ToggleZenMode(this, new RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
 
         if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {

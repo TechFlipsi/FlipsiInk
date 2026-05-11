@@ -37,11 +37,11 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,8,8,4">
-            <TextBlock x:Name="HeaderLabel" Text="Seitenuersicht" FontWeight="SemiBold" Foreground="White" FontSize="14" VerticalAlignment="Center"/>
+            <TextBlock x:Name="HeaderLabel" Text="Seitenübersicht" FontWeight="SemiBold" Foreground="White" FontSize="14" VerticalAlignment="Center"/>
             <TextBlock x:Name="PageCountLabel" Text="(1)" Foreground="#888" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0"/>
             <Button x:Name="BtnClose" Content="&#x2715;" HorizontalAlignment="Right" Margin="8,0,0,0"
                     Style="{StaticResource ToolButton}" Width="24" Height="24" FontSize="12"
-                    ToolTip="Schliessen" Click="BtnClose_Click"/>
+                    ToolTip="Schließen" Click="BtnClose_Click"/>
         </StackPanel>
 
         <!-- Filter bar -->

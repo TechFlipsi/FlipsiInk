@@ -171,7 +171,7 @@
             </Popup>
 
             <!-- ═══ MAIN CANVAS AREA ═══ -->
-            <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#000000">
+            <ScrollViewer x:Name="CanvasScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#1E1E1E">
                 <Grid x:Name="CanvasGrid">
                     <Image x:Name="CanvasBackgroundImage" Stretch="Uniform" Visibility="Collapsed"/>
                     <InkCanvas x:Name="MainCanvas" Background="White" Width="1200" Height="1600"/>
@@ -199,7 +199,7 @@
                 Background="#DD252525" 
                 CornerRadius="20"
                 Padding="8,4"
-                Margin="300,0,0,0"
+                Margin="150,0,0,0"
                 MouseLeftButtonDown="FloatingToolbar_MouseLeftButtonDown"
                 MouseLeftButtonUp="FloatingToolbar_MouseLeftButtonUp"
                 MouseMove="FloatingToolbar_MouseMove"
@@ -307,7 +307,7 @@
                         <Button Style="{StaticResource ColorSwatchButton}" Background="#008080" Click="ColorSwatch_Click" Tag="Teal"/>
                         <Button Style="{StaticResource ColorSwatchButton}" Background="#FF69B4" Click="ColorSwatch_Click" Tag="HotPink"/>
                         <Button Style="{StaticResource ColorSwatchButton}" Background="#808000" Click="ColorSwatch_Click" Tag="Olive"/>
-                        <Button Style="{StaticResource ColorSwatchButton}" Background="White" Click="ColorSwatch_Click" Tag="White"/>
+                        <Button Style="{StaticResource ColorSwatchButton}" Background="White" Click="ColorSwatch_Click" Tag="White" BorderBrush="#888"/>
                     </UniformGrid>
                     <Button x:Name="BtnCustomColor_F" Content="Benutzerdefiniert..." Click="BtnCustomColor_Click" Foreground="#CCC" Background="#333" BorderBrush="#555" BorderThickness="1" Padding="4,6" Margin="0,6,0,0" FontSize="11" Cursor="Hand"/>
                 </StackPanel>
@@ -389,7 +389,7 @@
                 Margin="0,0,12,64"
                 Width="36" Height="36"
                 Style="{StaticResource ToolButton}"
-                ToolTip="Seitenuebersicht"
+                ToolTip="Seitenübersicht"
                 Click="TogglePageOverview" FontSize="16" FontWeight="Bold"/>
 
         <!-- ═══════════════════════════════════════════════════════
@@ -442,7 +442,7 @@
                     <Button Style="{StaticResource ColorSwatchButton}" Background="#008080" Click="ColorSwatch_Click" Tag="Teal"/>
                     <Button Style="{StaticResource ColorSwatchButton}" Background="#FF69B4" Click="ColorSwatch_Click" Tag="HotPink"/>
                     <Button Style="{StaticResource ColorSwatchButton}" Background="#808000" Click="ColorSwatch_Click" Tag="Olive"/>
-                    <Button Style="{StaticResource ColorSwatchButton}" Background="White" Click="ColorSwatch_Click" Tag="White"/>
+                    <Button Style="{StaticResource ColorSwatchButton}" Background="White" Click="ColorSwatch_Click" Tag="White" BorderBrush="#888"/>
                 </UniformGrid>
             </Border>
         </Popup>

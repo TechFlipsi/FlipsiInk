@@ -145,8 +145,10 @@ public partial class ModelManagerWindow : Window
         // RAM warning
         if (!ModelManager.HasEnoughRam(catalog.MinRamGb))
         {
+            // Show user-friendly RAM requirement (tier RAM = MinRamGb + 1, per 1GB buffer rule)
+            var requiredRamDisplay = catalog.MinRamGb + 1;
             var result = MessageBox.Show(
-                $"Dieses Modell erfordert mindestens {catalog.MinRamGb} GB RAM. Ihr System hat ~{ModelManager.GetTotalRamMb() / 1024:F0} GB.\n\nTrotzdem herunterladen?",
+                $"Dieses Modell erfordert mindestens {requiredRamDisplay} GB RAM. Ihr System hat ca. {ModelManager.GetTotalRamMb() / 1024:F0} GB.\n\nTrotzdem herunterladen?",
                 "RAM-Warnung", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes) return;
         }
@@ -154,10 +156,20 @@ public partial class ModelManagerWindow : Window
         SetDownloading(true);
         try
         {
+            var totalFiles = catalog.Files?.Count ?? 1;
+            var currentFile = 0;
             await _manager.DownloadModelAsync(catalog, new Progress<double>(p =>
             {
                 DownloadProgress.Value = p * 100;
-                StatusLabel.Text = $"Lade {catalog.Name} herunter... {p:P0}";
+                if (totalFiles > 1)
+                {
+                    currentFile = (int)(p * totalFiles) + 1;
+                    StatusLabel.Text = $"Lade {catalog.Name} herunter... ({currentFile}/{totalFiles}) {p:P0}";
+                }
+                else
+                {
+                    StatusLabel.Text = $"Lade {catalog.Name} herunter... {p:P0}";
+                }
             }));
             StatusLabel.Text = $"{catalog.Name} heruntergeladen!";
         }
@@ -187,13 +199,13 @@ public partial class ModelManagerWindow : Window
         var name = catalog?.Name ?? id;
 
         var result = MessageBox.Show(
-            $"'{name}' wirklich loeschen?", "Modell loeschen",
+            $"'{name}' wirklich löschen?", "Modell löschen",
             MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
         if (result != MessageBoxResult.Yes) return;
 
         _manager.DeleteModel(id);
-        StatusLabel.Text = $"{name} geloescht.";
+        StatusLabel.Text = $"{name} gelöscht.";
         RefreshList();
     }
 
@@ -201,7 +213,7 @@ public partial class ModelManagerWindow : Window
     {
         if (sender is not System.Windows.Controls.Button btn || btn.Tag is not string id) return;
         _manager.SetActiveModel(id);
-        StatusLabel.Text = "Aktives Modell geaendert - OCR wird beim naechsten Erkennen neu geladen.";
+        StatusLabel.Text = "Aktives Modell geändert – OCR wird beim nächsten Erkennen neu geladen.";
         RefreshList();
     }
 

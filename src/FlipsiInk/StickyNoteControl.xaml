@@ -21,7 +21,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header bar -->
-            <Grid x:Name="HeaderBar" Grid.Row="0" Height="24" Background="#00000020"
+            <Grid x:Name="HeaderBar" Grid.Row="0" Height="24" Background="#FFFFFF10"
                   MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown"
                   MouseMove="HeaderBar_MouseMove"
                   MouseLeftButtonUp="HeaderBar_MouseLeftButtonUp">
@@ -33,7 +33,7 @@
 
                 <TextBlock x:Name="HeaderTitle" Grid.Column="0"
                            Text="Klebezettel" FontSize="11" FontWeight="Bold"
-                           Foreground="#333" VerticalAlignment="Center" Margin="6,0,0,0"
+                           Foreground="#DDDDDD" VerticalAlignment="Center" Margin="6,0,0,0"
                            IsHitTestVisible="False"/>
 
                 <!-- Minimize button -->
@@ -63,7 +63,7 @@
                 <!-- Editable text with link detection -->
                 <TextBox x:Name="NoteText" Grid.Row="0"
                          AcceptsReturn="True" TextWrapping="Wrap"
-                         Background="Transparent" Foreground="#222"
+                         Background="Transparent" Foreground="#EEEEEE"
                          BorderThickness="0" FontSize="13"
                          Padding="8,4" MinHeight="40"
                          VerticalScrollBarVisibility="Auto"

@@ -24,6 +24,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Runtime.InteropServices;
 using System.Windows.Ink;
 using System.Windows.Input;
 
@@ -413,9 +414,6 @@ public class NoteFileManager : IDisposable
             var w = bitmap.Width;
             var h = bitmap.Height;
 
-            // PNG-Daten einlesen
-            var pngBytes = File.ReadAllBytes(pngFile);
-
             // Page-Objekt
             int pageObjNum = pageObjectNumbers[i];
             int imgObjNum = pageObjNum + 1;
@@ -428,12 +426,48 @@ public class NoteFileManager : IDisposable
                 $"/Resources << /XObject << /Img {imgObjNum} 0 R >> >> >>\nendobj\n"));
 
             // Image-Objekt
+            // NOTE: PNG is not directly usable in PDF without proper decoding.
+            // We decode PNG to raw RGB pixels first, then use FlateDecode compression.
+            byte[] rawRgbPixels;
+            int stride;
+            {
+                // Convert to 24bpp RGB (no alpha) for PDF DeviceRGB
+                using var rgbBmp = new DBitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                using (var g = DGraphics.FromImage(rgbBmp))
+                    g.DrawImage(bitmap, 0, 0, bitmap.Width, bitmap.Height);
+                stride = rgbBmp.Width * 3;
+                if (stride % 4 != 0) stride = (stride + 3) & ~3; // 4-byte align
+                var bmpData = rgbBmp.LockBits(new DRectangle(0, 0, rgbBmp.Width, rgbBmp.Height),
+                    ImageLockMode.ReadOnly, rgbBmp.PixelFormat);
+                rawRgbPixels = new byte[stride * rgbBmp.Height];
+                for (int row = 0; row < rgbBmp.Height; row++)
+                {
+                    var srcPtr = bmpData.Scan0 + row * bmpData.Stride;
+                    var dstOffset = row * stride;
+                    System.Runtime.InteropServices.Marshal.Copy(srcPtr, rawRgbPixels, dstOffset,
+                        Math.Min(bmpData.Stride, stride));
+                }
+                rgbBmp.UnlockBits(bmpData);
+            }
+
+            // FlateDecode compress the raw pixels
+            byte[] compressedPixels;
+            using (var compressStream = new System.IO.MemoryStream())
+            {
+                using (var deflateStream = new System.IO.Compression.DeflateStream(compressStream,
+                    System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+                {
+                    deflateStream.Write(rawRgbPixels, 0, rawRgbPixels.Length);
+                }
+                compressedPixels = compressStream.ToArray();
+            }
+
             offsets.Add(ms.Position);
             writer.Write(System.Text.Encoding.ASCII.GetBytes(
                 $"{imgObjNum} 0 obj\n<< /Type /XObject /Subtype /Image " +
                 $"/Width {w} /Height {h} /ColorSpace /DeviceRGB " +
-                $"/BitsPerComponent 8 /Filter /FlateDecode /Length {pngBytes.Length} >>\nstream\n"));
-            writer.Write(pngBytes);
+                $"/BitsPerComponent 8 /Filter /FlateDecode /Length {compressedPixels.Length} >>\nstream\n"));
+            writer.Write(compressedPixels);
             writer.Write(System.Text.Encoding.ASCII.GetBytes("\nendstream\nendobj\n"));
 
             // Content-Stream-Objekt

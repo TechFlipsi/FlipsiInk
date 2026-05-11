@@ -36,6 +36,15 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="13"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Background" Value="#252525"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="Padding" Value="8,4"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="SettingsTextBox" TargetType="TextBox">
             <Setter Property="Background" Value="#252525"/>
@@ -49,6 +58,7 @@
             <Setter Property="Foreground" Value="#CCCCCC"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Padding" Value="4,0,0,0"/>
         </Style>
         <Style x:Key="SettingsSlider" TargetType="Slider">
             <Setter Property="Minimum" Value="0"/>
