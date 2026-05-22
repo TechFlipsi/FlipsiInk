@@ -245,7 +245,7 @@ public class ExportManager
             // Clean up temp files
             foreach (var f in tempFiles)
             {
-                try { if (File.Exists(f)) File.Delete(f); } catch { }
+                try { if (File.Exists(f)) File.Delete(f); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] Temp cleanup: {ex.Message}"); }
             }
         }
     }
@@ -484,7 +484,7 @@ public class ExportManager
     /// Shares a file using the Windows Share API (DataTransferManager).
     /// Requires Windows 10 1803+ and runs on UI thread.
     /// </summary>
-    public static async void ShareFileAsync(string filePath, string title)
+    public static async Task ShareFileAsync(string filePath, string title)
     {
         // Windows Share API requires DataTransferManager from Windows.ApplicationModel.DataTransfer
         // This is only available in UWP. For WPF, we use a workaround via Process.Start
@@ -510,7 +510,7 @@ public class ExportManager
                     UseShellExecute = true
                 });
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] ShareFileAsync fallback: {ex.Message}"); }
         }
     }
 }

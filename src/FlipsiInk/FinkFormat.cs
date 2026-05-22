@@ -132,7 +132,7 @@ public static class FinkFormat
             {
                 var strokesEntry = zip.CreateEntry(entry.StrokesFile, CompressionLevel.Optimal);
                 using var stream = strokesEntry.Open();
-                page.Strokes.Save(stream);
+                page.Strokes!.Save(stream);
             }
             else if (hasBase64)
             {

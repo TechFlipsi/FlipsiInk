@@ -18,6 +18,7 @@ namespace FlipsiInk;
 /// Recognizes geometric shapes (circles, lines, rectangles, triangles)
 /// from freehand strokes for auto-straightening.
 /// v0.4.0: Enhanced with configurable confidence thresholds.
+/// v0.5.0: Added Circle-to-Lasso, Scratch-to-Erase, Fill, Rotation helpers.
 /// </summary>
 public class ShapeRecognizer
 {
@@ -247,7 +248,8 @@ public class ShapeRecognizer
             {
                 Type = ShapeType.Circle, Confidence = confidence,
                 Points = new[] { center },
-                BoundingBox = new System.Windows.Rect(center.X - avgRadius, center.Y - avgRadius, avgRadius * 2, avgRadius * 2)
+                BoundingBox = new System.Windows.Rect(center.X - avgRadius, center.Y - avgRadius, avgRadius * 2, avgRadius * 2),
+                IsClosedShape = true
             };
         }
         return null;
@@ -285,10 +287,90 @@ public class ShapeRecognizer
             return new RecognizedShape
             {
                 Type = ShapeType.Ellipse, Confidence = confidence,
-                Points = new[] { new System.Windows.Point(cx, cy) }, BoundingBox = bbox
+                Points = new[] { new System.Windows.Point(cx, cy) }, BoundingBox = bbox,
+                IsClosedShape = true
             };
         }
         return null;
+    }
+
+    #endregion
+
+    #region Circle-to-Lasso & Scratch-to-Erase Helpers
+
+    /// <summary>
+    /// Checks if a stroke forms a closed circle/ellipse loop (start near end).
+    /// Returns the circle bounding box if closed, null otherwise.
+    /// </summary>
+    public System.Windows.Rect? GetEnclosingCircleBounds(Stroke stroke)
+    {
+        var points = GetPointsFromStroke(stroke);
+        if (points.Length < 10) return null;
+        double closeDistance = Distance(points[0], points[points.Length - 1]);
+        var bbox = GetBoundingBox(points);
+        double maxDim = Math.Max(bbox.Width, bbox.Height);
+        if (closeDistance > maxDim * 0.3) return null;
+        if (maxDim < 20) return null;
+        return bbox;
+    }
+
+    /// <summary>
+    /// Returns strokes whose bounds are fully inside the given rectangle.
+    /// </summary>
+    public StrokeCollection GetStrokesInsideBounds(StrokeCollection allStrokes, System.Windows.Rect bounds, Stroke? excludeStroke = null)
+    {
+        var result = new StrokeCollection();
+        foreach (Stroke stroke in allStrokes)
+        {
+            if (stroke == excludeStroke) continue;
+            var sb = stroke.GetBounds();
+            if (bounds.Contains(sb))
+                result.Add(stroke);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Returns strokes that are crossed by the given stroke (intersecting bounds).
+    /// </summary>
+    public StrokeCollection GetCrossedStrokes(Stroke scratchStroke, StrokeCollection allStrokes)
+    {
+        var result = new StrokeCollection();
+        var scratchBounds = scratchStroke.GetBounds();
+        foreach (Stroke stroke in allStrokes)
+        {
+            if (stroke == scratchStroke) continue;
+            if (scratchBounds.IntersectsWith(stroke.GetBounds()))
+                result.Add(stroke);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Checks if a stroke is a quick scratch (small, fast, roughly horizontal/diagonal).
+    /// </summary>
+    public bool IsScratchStroke(Stroke stroke)
+    {
+        var points = GetPointsFromStroke(stroke);
+        if (points.Length < 4) return false;
+        var bbox = GetBoundingBox(points);
+        // Scratch: total extent < 150px, at least 30px long
+        double totalExtent = Math.Max(bbox.Width, bbox.Height);
+        if (totalExtent > 150 || totalExtent < 30) return false;
+        // Must be relatively straight (high directionality)
+        var start = points[0];
+        var end = points[points.Length - 1];
+        double dx = end.X - start.X;
+        double dy = end.Y - start.Y;
+        double length = Math.Sqrt(dx * dx + dy * dy);
+        if (length < 20) return false;
+        // Check that most points are near the straight line
+        double totalDeviation = 0;
+        foreach (var pt in points)
+            totalDeviation += PointToLineDistance(pt, start, end);
+        double avgDeviation = totalDeviation / points.Length;
+        // Must be relatively straight for a scratch gesture
+        return avgDeviation < 15.0;
     }
 
     #endregion
@@ -385,4 +467,8 @@ public class RecognizedShape
     public System.Windows.Point[] Points { get; set; } = Array.Empty<System.Windows.Point>();
     public System.Windows.Rect BoundingBox { get; set; } = System.Windows.Rect.Empty;
     public Stroke? StraightenedStroke { get; set; }
+    /// <summary>Rotation angle in degrees for shape rotation feature.</summary>
+    public double RotationAngle { get; set; } = 0.0;
+    /// <summary>Whether this shape is a closed circle/ellipse (for Circle-to-Lasso).</summary>
+    public bool IsClosedShape { get; set; }
 }

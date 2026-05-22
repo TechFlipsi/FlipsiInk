@@ -206,7 +206,7 @@ public class AudioRecorder
             if (dataRate > 0)
                 return TimeSpan.FromSeconds((double)(fileSize - 36) / dataRate);
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] AudioRecorder GetDuration: {ex.Message}"); }
 
         // TODO: NAudio Duration
         // using var reader = new AudioFileReader(filePath);

@@ -290,7 +290,7 @@ public partial class ExportDialog : Window
         {
             var strokes = _pageManager.LoadPage(pn);
             var page = _pageManager.GetPage(pn);
-            var bg = page != null ? PageTemplate.GetBackgroundBrush(page.Template) : _canvas.Background;
+            var bg = page != null ? PageTemplate.GetBackgroundBrush(page.Template) ?? _canvas.Background : _canvas.Background;
             return (Strokes: strokes, Background: bg);
         }).ToList();
 
@@ -402,7 +402,7 @@ public partial class ExportDialog : Window
                     break;
             }
 
-            ExportManager.ShareFileAsync(tempFile, _notebookName ?? "FlipsiInk Export");
+            _ = ExportManager.ShareFileAsync(tempFile, _notebookName ?? "FlipsiInk Export");
         }
         catch (Exception ex)
         {

@@ -61,6 +61,8 @@ namespace FlipsiInk
 
         /// <summary>
         /// Erzeugt einen <see cref="DrawingBrush"/> für die gewünschte Seitenvorlage.
+        /// Paper color is ALWAYS white — Dark mode changes the UI, NOT the paper.
+        /// This matches GoodNotes/Notewise/Notability behavior.
         /// </summary>
         /// <param name="type">Die gewünschte Seitenvorlage.</param>
         /// <param name="lineWidth">Linienstärke (Standard: 1).</param>
@@ -68,17 +70,9 @@ namespace FlipsiInk
         /// <returns>Ein kachelbarer <see cref="DrawingBrush"/> oder <c>null</c> für Blanko.</returns>
         public static Brush? GetBackgroundBrush(PageTemplateType type, double lineWidth = 1, string? lineColor = null)
         {
-            // Auto-detect theme for line colors
-            bool isDarkTheme = false;
-            try
-            {
-                var colors = ThemeManager.GetCurrentColors(Theme.System);
-                isDarkTheme = colors.Foreground == System.Windows.Media.Colors.White;
-            }
-            catch { }
-
-            var gridColor = lineColor ?? (isDarkTheme ? "#3A3A3A" : "#E0E0E0");
-            var linedColor = lineColor ?? (isDarkTheme ? "#3A5070" : "#C0D8F0");
+            // Paper is ALWAYS white — independent of theme (like all major note apps)
+            var gridColor = lineColor ?? "#E0E0E0";
+            var linedColor = lineColor ?? "#C0D8F0";
 
             return type switch
             {
@@ -270,20 +264,9 @@ namespace FlipsiInk
             return brush;
         }
         /// <summary>
-        /// Gibt die Papierfarbe als Hex-String zurück, abhängig vom aktuellen Theme.
+        /// Gibt die Papierfarbe als Hex-String zurück. Paper is ALWAYS white.
+        /// Dark mode changes the UI chrome, NOT the paper (GoodNotes/Notewise behavior).
         /// </summary>
-        private static string GetPaperColor()
-        {
-            try
-            {
-                var colors = ThemeManager.GetCurrentColors(Theme.System);
-                bool isDark = colors.Foreground == System.Windows.Media.Colors.White;
-                return isDark ? "#1E1E1E" : "#FFFFFF";
-            }
-            catch
-            {
-                return "#FFFFFF";
-            }
-        }
+        private static string GetPaperColor() => "#FFFFFF";
     }
 }

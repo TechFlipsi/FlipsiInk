@@ -50,7 +50,6 @@ public partial class PageThumbnailControl : UserControl
     private int _currentPageIndex; // 0-based
 
     // Drag-and-drop state
-    private int _dragSourceIndex = -1;
     private bool _isDragging;
 
     public PageThumbnailControl()
@@ -201,7 +200,6 @@ public partial class PageThumbnailControl : UserControl
             ReorderPages?.Invoke(sourceIndex, targetIndex);
         }
 
-        _dragSourceIndex = -1;
         _dragBorder = null;
     }
 
