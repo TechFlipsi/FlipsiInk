@@ -585,7 +585,7 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         PenSizeSlider.Value = 1;
         BtnPen_F.Content = "✎";
-        UpdateToolButtonHighlight(BtnPen_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Fineliner (1px)";
     }
 
@@ -599,7 +599,7 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Ellipse;
         PenSizeSlider.Value = 2.5;
         BtnPen_F.Content = "✎";
-        UpdateToolButtonHighlight(BtnPen_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Füller (2.5px)";
     }
 
@@ -613,7 +613,7 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Ellipse;
         PenSizeSlider.Value = 4;
         BtnPen_F.Content = "✎";
-        UpdateToolButtonHighlight(BtnPen_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Bleistift (4px)";
     }
 
@@ -627,7 +627,7 @@ public partial class MainWindow : Window
     {
         ShapeSubtypePopup.IsOpen = false;
         _currentShapeTool = ShapeToolType.Line;
-        UpdateToolButtonHighlight(BtnShape_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Form: Linie";
     }
 
@@ -635,7 +635,7 @@ public partial class MainWindow : Window
     {
         ShapeSubtypePopup.IsOpen = false;
         _currentShapeTool = ShapeToolType.Arrow;
-        UpdateToolButtonHighlight(BtnShape_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Form: Pfeil";
     }
 
@@ -643,7 +643,7 @@ public partial class MainWindow : Window
     {
         ShapeSubtypePopup.IsOpen = false;
         _currentShapeTool = ShapeToolType.Rectangle;
-        UpdateToolButtonHighlight(BtnShape_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Form: Rechteck";
     }
 
@@ -651,7 +651,7 @@ public partial class MainWindow : Window
     {
         ShapeSubtypePopup.IsOpen = false;
         _currentShapeTool = ShapeToolType.Circle;
-        UpdateToolButtonHighlight(BtnShape_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Form: Kreis";
     }
 
@@ -659,7 +659,7 @@ public partial class MainWindow : Window
     {
         ShapeSubtypePopup.IsOpen = false;
         _currentShapeTool = ShapeToolType.Triangle;
-        UpdateToolButtonHighlight(BtnShape_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Form: Dreieck";
     }
 
@@ -667,7 +667,7 @@ public partial class MainWindow : Window
     {
         ShapeSubtypePopup.IsOpen = false;
         _currentShapeTool = ShapeToolType.Freehand;
-        UpdateToolButtonHighlight(BtnShape_F);
+        UpdateToolButtonHighlight();
         StatusText.Text = "✓ Form: Freihand";
     }
 
@@ -684,33 +684,6 @@ public partial class MainWindow : Window
     private async void BtnRecognize_F_Click(object sender, RoutedEventArgs e)
     {
         await RecognizeAndCalculate();
-    }
-
-    private void QuickSize1_Click(object sender, MouseButtonEventArgs e)
-    {
-        _currentSize = 1;
-        MainCanvas.DefaultDrawingAttributes.Width = 1;
-        MainCanvas.DefaultDrawingAttributes.Height = 1;
-        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        UpdateQuickSizeDots();
-    }
-
-    private void QuickSize2_Click(object sender, MouseButtonEventArgs e)
-    {
-        _currentSize = 2.5;
-        MainCanvas.DefaultDrawingAttributes.Width = 2.5;
-        MainCanvas.DefaultDrawingAttributes.Height = 2.5;
-        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        UpdateQuickSizeDots();
-    }
-
-    private void QuickSize3_Click(object sender, MouseButtonEventArgs e)
-    {
-        _currentSize = 5;
-        MainCanvas.DefaultDrawingAttributes.Width = 5;
-        MainCanvas.DefaultDrawingAttributes.Height = 5;
-        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        UpdateQuickSizeDots();
     }
 
     private void BtnCustomColor_Click(object sender, RoutedEventArgs e)
@@ -784,12 +757,7 @@ public partial class MainWindow : Window
 
     private void UpdateQuickSizeDots()
     {
-        // Visual feedback for selected size – use bright accent for active
-        var activeBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
-        var inactiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x99, 0x99, 0x99));
-        if (QuickSize1 != null) QuickSize1.Fill = _currentSize <= 1.5 ? activeBrush : inactiveBrush;
-        if (QuickSize2 != null) QuickSize2.Fill = _currentSize > 1.5 && _currentSize < 4 ? activeBrush : inactiveBrush;
-        if (QuickSize3 != null) QuickSize3.Fill = _currentSize >= 4 ? activeBrush : inactiveBrush;
+        // Size is now controlled by PenSizeSlider — no dots to update
     }
 
     private void SetColorFromSwatch(System.Windows.Media.Color color)
