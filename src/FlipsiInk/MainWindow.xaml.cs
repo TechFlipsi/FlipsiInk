@@ -881,7 +881,6 @@ public partial class MainWindow : Window
 
         try
         {
-            bool handled = false;
             Dispatcher.Invoke(() =>
             {
                 // Re-check if stroke is still on canvas
@@ -938,7 +937,7 @@ public partial class MainWindow : Window
                 }
             });
         }
-        catch { /* ignore failures */ }
+        catch (Exception ex) { Debug.WriteLine($"[FlipsiInk] DrawHold error: {ex.Message}"); }
 
         // Resume timer
         _drawHoldTimer?.Change(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
