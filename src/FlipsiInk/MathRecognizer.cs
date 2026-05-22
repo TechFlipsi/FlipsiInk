@@ -392,7 +392,7 @@ public class MathRecognizer
             if (sym.Y < baselineY - superscriptThreshold && i > 0)
             {
                 latexParts.Add("^{" + sym.LatexCode + "}");
-                plainParts.Add(sym.Symbol == sym.PlainText ? "^" + sym.Symbol : $"^{sym.Symbol}");
+                plainParts.Add($"^{sym.Symbol}");
             }
             // Detect fraction line (horizontal stroke between two groups)
             else if (sym.Symbol == "-" && i > 0 && i < symbols.Count - 1)
