@@ -585,7 +585,7 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
         PenSizeSlider.Value = 1;
         BtnPen_F.Content = "✎";
-        UpdateActiveTool(BtnPen_F);
+        UpdateToolButtonHighlight(BtnPen_F);
         StatusText.Text = "✓ Fineliner (1px)";
     }
 
@@ -596,10 +596,10 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = 2.5;
         MainCanvas.DefaultDrawingAttributes.Height = 2.5;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Illuminated;
+        MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Ellipse;
         PenSizeSlider.Value = 2.5;
         BtnPen_F.Content = "✎";
-        UpdateActiveTool(BtnPen_F);
+        UpdateToolButtonHighlight(BtnPen_F);
         StatusText.Text = "✓ Füller (2.5px)";
     }
 
@@ -610,10 +610,10 @@ public partial class MainWindow : Window
         MainCanvas.DefaultDrawingAttributes.Width = 4;
         MainCanvas.DefaultDrawingAttributes.Height = 4;
         MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
-        MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Illuminated;
+        MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Ellipse;
         PenSizeSlider.Value = 4;
         BtnPen_F.Content = "✎";
-        UpdateActiveTool(BtnPen_F);
+        UpdateToolButtonHighlight(BtnPen_F);
         StatusText.Text = "✓ Bleistift (4px)";
     }
 
@@ -626,48 +626,48 @@ public partial class MainWindow : Window
     private void BtnShapeLine_Click(object sender, RoutedEventArgs e)
     {
         ShapeSubtypePopup.IsOpen = false;
-        _currentShapeToolType = ShapeToolTypeType.Line;
-        UpdateActiveTool(BtnShape_F);
+        _currentShapeTool = ShapeToolType.Line;
+        UpdateToolButtonHighlight(BtnShape_F);
         StatusText.Text = "✓ Form: Linie";
     }
 
     private void BtnShapeArrow_Click(object sender, RoutedEventArgs e)
     {
         ShapeSubtypePopup.IsOpen = false;
-        _currentShapeToolType = ShapeToolTypeType.Arrow;
-        UpdateActiveTool(BtnShape_F);
+        _currentShapeTool = ShapeToolType.Arrow;
+        UpdateToolButtonHighlight(BtnShape_F);
         StatusText.Text = "✓ Form: Pfeil";
     }
 
     private void BtnShapeRect_Click(object sender, RoutedEventArgs e)
     {
         ShapeSubtypePopup.IsOpen = false;
-        _currentShapeToolType = ShapeToolTypeType.Rectangle;
-        UpdateActiveTool(BtnShape_F);
+        _currentShapeTool = ShapeToolType.Rectangle;
+        UpdateToolButtonHighlight(BtnShape_F);
         StatusText.Text = "✓ Form: Rechteck";
     }
 
     private void BtnShapeCircle_Click(object sender, RoutedEventArgs e)
     {
         ShapeSubtypePopup.IsOpen = false;
-        _currentShapeToolType = ShapeToolTypeType.Circle;
-        UpdateActiveTool(BtnShape_F);
+        _currentShapeTool = ShapeToolType.Circle;
+        UpdateToolButtonHighlight(BtnShape_F);
         StatusText.Text = "✓ Form: Kreis";
     }
 
     private void BtnShapeTriangle_Click(object sender, RoutedEventArgs e)
     {
         ShapeSubtypePopup.IsOpen = false;
-        _currentShapeToolType = ShapeToolTypeType.Triangle;
-        UpdateActiveTool(BtnShape_F);
+        _currentShapeTool = ShapeToolType.Triangle;
+        UpdateToolButtonHighlight(BtnShape_F);
         StatusText.Text = "✓ Form: Dreieck";
     }
 
     private void BtnShapeFree_Click(object sender, RoutedEventArgs e)
     {
         ShapeSubtypePopup.IsOpen = false;
-        _currentShapeToolType = ShapeToolTypeType.Freehand;
-        UpdateActiveTool(BtnShape_F);
+        _currentShapeTool = ShapeToolType.Freehand;
+        UpdateToolButtonHighlight(BtnShape_F);
         StatusText.Text = "✓ Form: Freihand";
     }
 
