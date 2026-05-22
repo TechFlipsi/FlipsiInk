@@ -197,7 +197,7 @@ public static class MathEvaluator
             if (result is int ii) return (double)ii;
             if (result is long l) return (double)l;
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] MathEvaluator evalParamFunc: {ex.Message}"); }
         return null;
     }
 
@@ -409,14 +409,14 @@ public static class MathEvaluator
             if (result is float f)
                 return (double)f;
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] MathEvaluator evalNCalc: {ex.Message}"); }
 
         // Fallback: Eigener simpler Parser für grundlegende Arithmetik
         try
         {
             return SimpleEval(expr);
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] MathEvaluator simpleEval: {ex.Message}"); }
 
         return null;
     }
@@ -566,7 +566,7 @@ public static class MathEvaluator
             if (result is int i) return (double)i;
             if (result is long l) return (double)l;
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] MathEvaluator evalConvert: {ex.Message}"); }
         return null;
     }
 

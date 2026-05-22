@@ -120,7 +120,7 @@ public class ZoomManager
 
     private void OnManipulationStarting(object? sender, ManipulationStartingEventArgs e)
     {
-        e.ManipulationContainer = (FrameworkElement)sender;
+        e.ManipulationContainer = (FrameworkElement)sender!;
         e.Handled = true;
     }
 

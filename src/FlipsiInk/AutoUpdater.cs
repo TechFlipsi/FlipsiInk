@@ -19,7 +19,10 @@ namespace FlipsiInk;
 public class AutoUpdater
 {
     private const string RepoApiUrl = "https://api.github.com/repos/TechFlipsi/FlipsiInk/releases";
-    private static readonly HttpClient _http = new();
+    private static readonly HttpClient _http = new()
+    {
+        Timeout = TimeSpan.FromMinutes(5)
+    };
 
     static AutoUpdater()
     {

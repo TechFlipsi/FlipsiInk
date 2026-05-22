@@ -79,7 +79,7 @@ public partial class StickyNoteControl : UserControl
     public event EventHandler<LinkNavigationEventArgs>? LinkClicked;
 
     /// <summary>Raised when the text content changes (for link index updates).</summary>
-    public new event EventHandler? Changed;
+    public event EventHandler? Changed;
 
     /// <summary>Raised when the user clicks the delete button.</summary>
     public event EventHandler? DeleteRequested;
@@ -294,7 +294,7 @@ public partial class StickyNoteControl : UserControl
             return;
         }
 
-        _linkAutocompleteList.ItemsSource = filtered;
+        _linkAutocompleteList!.ItemsSource = filtered;
         _linkAutocompleteList.SelectedIndex = 0;
         _linkAutocompleteList.MouseLeftButtonUp += (s, e) =>
         {

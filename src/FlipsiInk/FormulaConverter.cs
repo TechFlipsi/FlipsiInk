@@ -179,7 +179,7 @@ public static class FormulaConverter
             if (result is long l)
                 return FormatNumber((double)l);
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] FormulaConverter: {ex.Message}"); }
 
         return null;
     }

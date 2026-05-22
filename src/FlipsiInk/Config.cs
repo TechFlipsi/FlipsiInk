@@ -64,6 +64,18 @@ public class Config
     public string StartupBehavior { get; set; } = "blank";
     public bool RightPanelVisible { get; set; } = false;
 
+    // ─── Shape Features ─────────────────────────────────────────────
+    /// <summary>Draw+Hold: auto-straighten shape after holding still for ~500ms.</summary>
+    public bool DrawHoldEnabled { get; set; } = true;
+    /// <summary>Fill recognized shapes with semi-transparent color.</summary>
+    public bool ShapeFillEnabled { get; set; } = true;
+    /// <summary>Enable rotation handles on recognized shapes.</summary>
+    public bool ShapeRotationEnabled { get; set; } = true;
+    /// <summary>Circle-to-Lasso: closed circle selects enclosed strokes.</summary>
+    public bool CircleToLassoEnabled { get; set; } = true;
+    /// <summary>Scratch-to-Erase: quick scratch lines delete crossed strokes.</summary>
+    public bool ScratchToEraseEnabled { get; set; } = true;
+
     // ─── Datenspeicherung (Storage) ─────────────────────────────────
     public string NotesFolderPath { get; set; } = "";
     public string ModelsFolderPath { get; set; } = "";

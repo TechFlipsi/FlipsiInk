@@ -415,7 +415,7 @@ public partial class SettingsWindow : Window
                 ? System.IO.Path.GetFileNameWithoutExtension(App.Config.ModelPath)
                 : "(nicht geladen)";
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] ManageModels: {ex.Message}"); }
     }
 
     private void BrowseNotesFolder_Click(object sender, RoutedEventArgs e)
@@ -450,7 +450,7 @@ public partial class SettingsWindow : Window
             if (dialog.ShowDialog() == true)
                 target.Text = System.IO.Path.GetDirectoryName(dialog.FileName) ?? dialog.FileName;
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] BrowseFolder: {ex.Message}"); }
     }
 
     private void GitHubLink_Click(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -459,6 +459,6 @@ public partial class SettingsWindow : Window
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] GitHubLink: {ex.Message}"); }
     }
 }

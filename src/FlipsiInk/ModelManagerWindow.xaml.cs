@@ -132,11 +132,13 @@ public partial class ModelManagerWindow : Window
                     ModelList.ItemsSource = _viewModels;
                 }
             }
-            catch { /* ignore */ }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[FlipsiInk] RefreshList: {ex.Message}"); /* ignore */ }
         }
     }
 
-    private async void Download_Click(object sender, RoutedEventArgs e)
+    private void Download_Click(object sender, RoutedEventArgs e) => _ = DownloadAsync(sender, e);
+
+    private async Task DownloadAsync(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn || btn.Tag is not string id) return;
         var catalog = _manager.GetCatalog().Find(c => c.Id == id);
@@ -185,11 +187,13 @@ public partial class ModelManagerWindow : Window
         }
     }
 
-    private async void Update_Click(object sender, RoutedEventArgs e)
+    private void Update_Click(object sender, RoutedEventArgs e) => _ = UpdateAsync(sender, e);
+
+    private async Task UpdateAsync(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn || btn.Tag is not string id) return;
         _manager.DeleteModel(id);
-        Download_Click(sender, e);
+        await DownloadAsync(sender, e);
     }
 
     private void Delete_Click(object sender, RoutedEventArgs e)

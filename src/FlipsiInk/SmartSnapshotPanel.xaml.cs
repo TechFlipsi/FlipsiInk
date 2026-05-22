@@ -274,11 +274,11 @@ public partial class SmartSnapshotPanel : UserControl
                 UseShellExecute = true
             });
 
-            StatusText.Text = "✓ Termin als .ics exportiert";
+            StatusText!.Text = "✓ Termin als .ics exportiert";
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"✗ Fehler beim Export: {ex.Message}";
+            StatusText!.Text = $"✗ Fehler beim Export: {ex.Message}";
         }
     }
 
