@@ -94,6 +94,7 @@ public partial class MainWindow : Window
 
     // OCR
     private OcrEngine? _ocrEngine;
+    private MathRecognitionResult? _lastMathResult;
     private bool _modelLoaded = false;
 
     // KI-Modell-Management
@@ -101,6 +102,7 @@ public partial class MainWindow : Window
 
     // ShapeRecognizer für Auto-Tidy (Issue #34) + v0.4.0 auto shape recognition
     private readonly ShapeRecognizer _shapeRecognizer = new();
+    private readonly MathRecognizer _mathRecognizer = new();
 
     // Kontext-Aktionsleiste (Issue #35)
     private ContextActionBar? _contextActionBar;
@@ -121,8 +123,9 @@ public partial class MainWindow : Window
     private NoteSearchIndex _searchIndex = new();
 
     // ═══ v0.4.0: Shape Drawing Tool ═══
-    private enum ShapeTool { None, Line, Rectangle, Circle }
-    private ShapeTool _activeShapeTool = ShapeTool.None;
+    private enum ShapeToolType { None, Line, Arrow, Rectangle, Circle, Triangle, Freehand }
+    private ShapeToolType _currentShapeTool = ShapeToolType.None;
+    private ShapeToolType _activeShapeTool { get => _currentShapeTool; set => _currentShapeTool = value; }
     private bool _isDrawingShape = false;
     private Point _shapeStartPoint;
     private Stroke? _previewShapeStroke;
@@ -228,7 +231,7 @@ public partial class MainWindow : Window
     #region Shape Drawing Tools (v0.4.0)
 
     /// <summary>Activates a shape tool (Line, Rectangle, Circle).</summary>
-    private void ActivateShapeTool(ShapeTool shape)
+    private void ActivateShapeTool(ShapeToolType shape)
     {
         _activeShapeTool = shape;
         MainCanvas.EditingMode = InkCanvasEditingMode.Ink;
@@ -243,7 +246,7 @@ public partial class MainWindow : Window
 
     private void DeactivateShapeTool()
     {
-        _activeShapeTool = ShapeTool.None;
+        _activeShapeTool = ShapeToolType.None;
         _isDrawingShape = false;
         if (_previewShapeStroke != null)
         {
@@ -265,9 +268,9 @@ public partial class MainWindow : Window
         // Highlight active tool
         Button? activeBtn = _activeShapeTool switch
         {
-            ShapeTool.Line => _currentLayout == "modern" ? BtnLine_M : BtnLine,
-            ShapeTool.Rectangle => _currentLayout == "modern" ? BtnRect_M : BtnRect,
-            ShapeTool.Circle => _currentLayout == "modern" ? BtnCircle_M : BtnCircle,
+            ShapeToolType.Line => _currentLayout == "modern" ? BtnLine_M : BtnLine,
+            ShapeToolType.Rectangle => _currentLayout == "modern" ? BtnRect_M : BtnRect,
+            ShapeToolType.Circle => _currentLayout == "modern" ? BtnCircle_M : BtnCircle,
             _ => null
         };
 
@@ -277,7 +280,7 @@ public partial class MainWindow : Window
 
     private void Canvas_StylusDown(object sender, StylusDownEventArgs e)
     {
-        if (_activeShapeTool == ShapeTool.None) return;
+        if (_activeShapeTool == ShapeToolType.None) return;
         e.Handled = true;
         StartShapeDraw(e.GetPosition(MainCanvas));
     }
@@ -299,7 +302,7 @@ public partial class MainWindow : Window
     private void Canvas_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         // Only handle if not stylus (mouse fallback)
-        if (_activeShapeTool == ShapeTool.None || e.StylusDevice != null) return;
+        if (_activeShapeTool == ShapeToolType.None || e.StylusDevice != null) return;
         if (e.LeftButton != MouseButtonState.Pressed) return;
         e.Handled = true;
         StartShapeDraw(e.GetPosition(MainCanvas));
@@ -377,13 +380,13 @@ public partial class MainWindow : Window
 
         switch (_activeShapeTool)
         {
-            case ShapeTool.Line:
+            case ShapeToolType.Line:
                 // Simple straight line from start to end
                 points.Add(new StylusPoint(start.X, start.Y));
                 points.Add(new StylusPoint(end.X, end.Y));
                 break;
 
-            case ShapeTool.Rectangle:
+            case ShapeToolType.Rectangle:
             {
                 // Four corners of the rectangle
                 var x1 = Math.Min(start.X, end.X);
@@ -398,7 +401,7 @@ public partial class MainWindow : Window
                 break;
             }
 
-            case ShapeTool.Circle:
+            case ShapeToolType.Circle:
             {
                 // Approximate circle/ellipse with 32 points
                 var cx = (start.X + end.X) / 2;
@@ -560,6 +563,127 @@ public partial class MainWindow : Window
     private void QuickColor3_Click(object sender, MouseButtonEventArgs e)
     {
         SetColorFromSwatch(_recentColors.Count > 2 ? _recentColors[2] : Colors.Red);
+    }
+
+    private void QuickColor4_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetColorFromSwatch(_recentColors.Count > 3 ? _recentColors[3] : (Color)ColorConverter.ConvertFromString("#0078D7"));
+    }
+
+    private void QuickColor5_Click(object sender, MouseButtonEventArgs e)
+    {
+        SetColorFromSwatch(_recentColors.Count > 4 ? _recentColors[4] : Colors.Green);
+    }
+
+    // ═══ Pen Sub-Types ═══
+    private void BtnPenFineliner_Click(object sender, RoutedEventArgs e)
+    {
+        PenSubtypePopup.IsOpen = false;
+        _currentSize = 1;
+        MainCanvas.DefaultDrawingAttributes.Width = 1;
+        MainCanvas.DefaultDrawingAttributes.Height = 1;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
+        PenSizeSlider.Value = 1;
+        BtnPen_F.Content = "✎";
+        UpdateActiveTool(BtnPen_F);
+        StatusText.Text = "✓ Fineliner (1px)";
+    }
+
+    private void BtnPenFountain_Click(object sender, RoutedEventArgs e)
+    {
+        PenSubtypePopup.IsOpen = false;
+        _currentSize = 2.5;
+        MainCanvas.DefaultDrawingAttributes.Width = 2.5;
+        MainCanvas.DefaultDrawingAttributes.Height = 2.5;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
+        MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Illuminated;
+        PenSizeSlider.Value = 2.5;
+        BtnPen_F.Content = "✎";
+        UpdateActiveTool(BtnPen_F);
+        StatusText.Text = "✓ Füller (2.5px)";
+    }
+
+    private void BtnPenPencil_Click(object sender, RoutedEventArgs e)
+    {
+        PenSubtypePopup.IsOpen = false;
+        _currentSize = 4;
+        MainCanvas.DefaultDrawingAttributes.Width = 4;
+        MainCanvas.DefaultDrawingAttributes.Height = 4;
+        MainCanvas.DefaultDrawingAttributes.IsHighlighter = false;
+        MainCanvas.DefaultDrawingAttributes.StylusTip = System.Windows.Ink.StylusTip.Illuminated;
+        PenSizeSlider.Value = 4;
+        BtnPen_F.Content = "✎";
+        UpdateActiveTool(BtnPen_F);
+        StatusText.Text = "✓ Bleistift (4px)";
+    }
+
+    // ═══ Shape Drawing Tools ═══
+    private void BtnShape_F_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = true;
+    }
+
+    private void BtnShapeLine_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = false;
+        _currentShapeToolType = ShapeToolTypeType.Line;
+        UpdateActiveTool(BtnShape_F);
+        StatusText.Text = "✓ Form: Linie";
+    }
+
+    private void BtnShapeArrow_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = false;
+        _currentShapeToolType = ShapeToolTypeType.Arrow;
+        UpdateActiveTool(BtnShape_F);
+        StatusText.Text = "✓ Form: Pfeil";
+    }
+
+    private void BtnShapeRect_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = false;
+        _currentShapeToolType = ShapeToolTypeType.Rectangle;
+        UpdateActiveTool(BtnShape_F);
+        StatusText.Text = "✓ Form: Rechteck";
+    }
+
+    private void BtnShapeCircle_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = false;
+        _currentShapeToolType = ShapeToolTypeType.Circle;
+        UpdateActiveTool(BtnShape_F);
+        StatusText.Text = "✓ Form: Kreis";
+    }
+
+    private void BtnShapeTriangle_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = false;
+        _currentShapeToolType = ShapeToolTypeType.Triangle;
+        UpdateActiveTool(BtnShape_F);
+        StatusText.Text = "✓ Form: Dreieck";
+    }
+
+    private void BtnShapeFree_Click(object sender, RoutedEventArgs e)
+    {
+        ShapeSubtypePopup.IsOpen = false;
+        _currentShapeToolType = ShapeToolTypeType.Freehand;
+        UpdateActiveTool(BtnShape_F);
+        StatusText.Text = "✓ Form: Freihand";
+    }
+
+    // ═══ Pen Size Slider ═══
+    private void PenSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (MainCanvas == null) return;
+        _currentSize = e.NewValue;
+        MainCanvas.DefaultDrawingAttributes.Width = e.NewValue;
+        MainCanvas.DefaultDrawingAttributes.Height = e.NewValue;
+    }
+
+    // ═══ AI Recognition Button ═══
+    private async void BtnRecognize_F_Click(object sender, RoutedEventArgs e)
+    {
+        await RecognizeAndCalculate();
     }
 
     private void QuickSize1_Click(object sender, MouseButtonEventArgs e)
@@ -1423,18 +1547,18 @@ public partial class MainWindow : Window
         BtnHighlighter.Click += (s, e) => SetHighlighter(BtnHighlighter);
         BtnEraser.Click += (s, e) => SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser);
         BtnSelect.Click += (s, e) => SetTool(InkCanvasEditingMode.Select, BtnSelect);
-        BtnLine.Click += (s, e) => ActivateShapeTool(ShapeTool.Line);
-        BtnRect.Click += (s, e) => ActivateShapeTool(ShapeTool.Rectangle);
-        BtnCircle.Click += (s, e) => ActivateShapeTool(ShapeTool.Circle);
+        BtnLine.Click += (s, e) => ActivateShapeTool(ShapeToolType.Line);
+        BtnRect.Click += (s, e) => ActivateShapeTool(ShapeToolType.Rectangle);
+        BtnCircle.Click += (s, e) => ActivateShapeTool(ShapeToolType.Circle);
 
         // Modern tools (duplicate buttons with _M suffix)
         BtnPen_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Ink, BtnPen_M);
         BtnHighlighter_M.Click += (s, e) => SetHighlighter(BtnHighlighter_M);
         BtnEraser_M.Click += (s, e) => SetTool(InkCanvasEditingMode.EraseByStroke, BtnEraser_M);
         BtnSelect_M.Click += (s, e) => SetTool(InkCanvasEditingMode.Select, BtnSelect_M);
-        BtnLine_M.Click += (s, e) => ActivateShapeTool(ShapeTool.Line);
-        BtnRect_M.Click += (s, e) => ActivateShapeTool(ShapeTool.Rectangle);
-        BtnCircle_M.Click += (s, e) => ActivateShapeTool(ShapeTool.Circle);
+        BtnLine_M.Click += (s, e) => ActivateShapeTool(ShapeToolType.Line);
+        BtnRect_M.Click += (s, e) => ActivateShapeTool(ShapeToolType.Rectangle);
+        BtnCircle_M.Click += (s, e) => ActivateShapeTool(ShapeToolType.Circle);
 
         // Color picker – both layouts
         BtnColorPicker.Click += (s, e) => ColorPopup.IsOpen = true;
@@ -1474,8 +1598,8 @@ public partial class MainWindow : Window
     private void SetTool(InkCanvasEditingMode mode, Button activeBtn)
     {
         // Deactivate shape tool if switching to a different tool
-        if (mode != InkCanvasEditingMode.Ink || _activeShapeTool != ShapeTool.None)
-            _activeShapeTool = ShapeTool.None;
+        if (mode != InkCanvasEditingMode.Ink || _activeShapeTool != ShapeToolType.None)
+            _activeShapeTool = ShapeToolType.None;
 
         MainCanvas.EditingMode = mode;
         if (mode == InkCanvasEditingMode.Ink)
@@ -1701,10 +1825,27 @@ public partial class MainWindow : Window
             // Smart-Detection: E-Mail, Telefon, URL erkennen (Issue #30)
             UpdateSmartLinks(text);
 
+            // MathRecognizer: Stroke-based math recognition (works without model)
+            try
+            {
+                var strokeResult = _mathRecognizer.Recognize(MainCanvas.Strokes);
+                if (strokeResult != null && strokeResult.Confidence > 0.5 && !string.IsNullOrWhiteSpace(strokeResult.PlainText))
+                {
+                    MathResult.Text = strokeResult.PlainText;
+                    _lastMathResult = strokeResult;
+                }
+            }
+            catch (Exception ex) { Debug.WriteLine($"[FlipsiInk] MathRecognizer in RecognizeStrokes: {ex.Message}"); }
+
             // Formel-Konverter: Mathematische Ausdrücke erkennen (Issue #30)
             var formulaResult = FormulaConverter.ConvertAndCalculate(text);
             if (!string.IsNullOrEmpty(formulaResult))
-                MathResult.Text = formulaResult;
+            {
+                if (string.IsNullOrEmpty(MathResult.Text))
+                    MathResult.Text = formulaResult;
+                else
+                    MathResult.Text += "\n= " + formulaResult;
+            }
 
             StatusText.Text = $"✓ {text.Length} Zeichen erkannt";
         }
@@ -1728,23 +1869,57 @@ public partial class MainWindow : Window
         }
         StatusText.Text = "Erkenne und berechne...";
         MathResult.Text = "";
+        _lastMathResult = null; // Reset previous math result
         try
         {
+            // Step 1: Stroke-based math recognition (MathRecognizer)
+            // This works WITHOUT a loaded model — uses geometric heuristics
+            MathRecognitionResult? strokeResult = null;
+            try
+            {
+                strokeResult = _mathRecognizer.Recognize(MainCanvas.Strokes);
+                Debug.WriteLine($"[FlipsiInk] MathRecognizer: {strokeResult.PlainText} (LaTeX: {strokeResult.Latex}, confidence: {strokeResult.Confidence:P0})");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FlipsiInk] MathRecognizer failed (non-fatal): {ex.Message}");
+            }
+
+            // Step 2: OCR-based text recognition
             var bitmap = RenderStrokesToBitmap();
             var text = await Task.Run(() => _ocrEngine.Recognize(bitmap));
             RecognizedText.Text = text;
+
+            // Step 3: Math evaluation from OCR text
             var results = MathEvaluator.Evaluate(text);
-            // Zusätzlich: Formel-Konverter für komplexere Ausdrücke (Issue #30)
             var formulaResult = FormulaConverter.ConvertAndCalculate(text);
-            if (!string.IsNullOrEmpty(formulaResult))
-                MathResult.Text = string.IsNullOrEmpty(results) ? formulaResult : results + "\n" + formulaResult;
+            var ocrMathText = !string.IsNullOrEmpty(formulaResult)
+                ? (string.IsNullOrEmpty(results) ? formulaResult : results + "\n" + formulaResult)
+                : results;
+
+            // Step 4: Combine results — prioritize stroke-based recognition if confidence is high
+            if (strokeResult != null && strokeResult.Confidence > 0.5 && !string.IsNullOrWhiteSpace(strokeResult.PlainText))
+            {
+                // High-confidence stroke recognition — show both
+                var combined = strokeResult.PlainText;
+                if (!string.IsNullOrEmpty(ocrMathText))
+                    combined += "\n= " + ocrMathText;
+                MathResult.Text = combined;
+                _lastMathResult = strokeResult;
+            }
             else
-                MathResult.Text = results;
+            {
+                // Fallback to OCR-based math
+                MathResult.Text = ocrMathText;
+                if (strokeResult != null)
+                    _lastMathResult = strokeResult;
+            }
 
             // Smart-Detection (Issue #30)
             UpdateSmartLinks(text);
 
-            StatusText.Text = string.IsNullOrEmpty(results) && string.IsNullOrEmpty(formulaResult) ? "Kein Mathe-Ausdruck gefunden" : "✓ Berechnet";
+            var hasResult = !string.IsNullOrEmpty(MathResult.Text);
+            StatusText.Text = hasResult ? "✓ Berechnet" : "Kein Mathe-Ausdruck gefunden";
         }
         catch (Exception ex)
         {
@@ -2145,7 +2320,102 @@ public partial class MainWindow : Window
 
     private void BtnExportRecognizedText_Click(object sender, RoutedEventArgs e)
     {
+        // If we have a math result with LaTeX, offer LaTeX export too
+        if (_lastMathResult != null && !string.IsNullOrWhiteSpace(_lastMathResult.Latex))
+        {
+            var choice = MessageBox.Show(
+                "Erkannten Text als .txt exportieren?\n\nJa = Nur Text\nNein = Als LaTeX-Dokument (.tex)\nAbbrechen = LaTeX in Zwischenablage kopieren",
+                "Export-Format",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            switch (choice)
+            {
+                case MessageBoxResult.Yes:
+                    ExportRecognizedTextToFile();
+                    return;
+                case MessageBoxResult.No:
+                    ExportLaTeXToFile();
+                    return;
+                case MessageBoxResult.Cancel:
+                    LaTeXExporter.CopyToClipboard(_lastMathResult.Latex);
+                    StatusText.Text = "✓ LaTeX in Zwischenablage kopiert";
+                    return;
+            }
+        }
+
         ExportRecognizedTextToFile();
+    }
+
+    /// <summary>
+    /// Exports recognized math as a complete LaTeX document.
+    /// </summary>
+    private void ExportLaTeXToFile()
+    {
+        if (_lastMathResult == null || string.IsNullOrWhiteSpace(_lastMathResult.Latex))
+        {
+            MessageBox.Show("Kein Mathe-Ergebnis zum LaTeX-Export verfügbar.", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Als LaTeX exportieren",
+            Filter = "LaTeX-Dateien|*.tex|Alle Dateien|*.*",
+            FileName = SanitizeFilename(_currentNotebook.Name) + "_math"
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var latexExprs = new List<string> { _lastMathResult!.Latex };
+            // Also include plain text recognition if available
+            var text = RecognizedText?.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                var ocrLatex = LaTeXExporter.PlainTextToLatex(text);
+                if (!string.IsNullOrWhiteSpace(ocrLatex) && ocrLatex != _lastMathResult.Latex)
+                    latexExprs.Add(ocrLatex);
+            }
+
+            var document = LaTeXExporter.ExportMathResults(
+                new List<MathRecognitionResult> { _lastMathResult },
+                dialog.FileName,
+                SanitizeFilename(_currentNotebook.Name) + " — Mathe-Export");
+
+            StatusText.Text = $"✓ LaTeX exportiert: {Path.GetFileName(dialog.FileName)}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"LaTeX-Export fehlgeschlagen:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Copies the LaTeX representation of the last math recognition to clipboard.
+    /// </summary>
+    private void BtnCopyLatex_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lastMathResult != null && !string.IsNullOrWhiteSpace(_lastMathResult.Latex))
+        {
+            LaTeXExporter.CopyToClipboard(_lastMathResult.Latex);
+            StatusText.Text = "✓ LaTeX kopiert";
+        }
+        else
+        {
+            var mathText = MathResult?.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(mathText))
+            {
+                var latex = LaTeXExporter.PlainTextToLatex(mathText);
+                LaTeXExporter.CopyToClipboard(latex);
+                StatusText.Text = "✓ LaTeX kopiert (aus Text konvertiert)";
+            }
+            else
+            {
+                StatusText.Text = "✕ Kein Mathe-Ergebnis zum Kopieren";
+            }
+        }
     }
 
     #endregion
