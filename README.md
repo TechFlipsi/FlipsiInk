@@ -57,5 +57,15 @@
 | Ctrl+Shift+R | Text erkennen |
 | Ctrl+Shift+M | Mathe berechnen |
 
+## Credits
+- **Idee:** Fabian Kirchweger
+- **Entwicklung:** J.A.R.V.I.S. (Hermes Agent)
+
+### Verwendete KI-Modelle
+| Modell | Rolle | Aufgaben |
+|---|---|---|
+| **GLM-5.1** | Hauptmodell | Architektur, Code, Debugging |
+| **MiniMax M3** | Sub-Agenten | Tests, Audits |
+
 ## Lizenz
-GPL v3 – Copyright © 2026 Fabian Kirchweger
+|GPL v3 – Copyright © 2026 Fabian Kirchweger

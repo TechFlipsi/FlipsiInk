@@ -113,4 +113,4 @@ Alle Prozesse laufen lokal. Keine Daten verlassen den Rechner. Kein Cloud-Upload
 
 ---
 
-*FlipsiInk – Geschrieben in C# / .NET 8 | Idee: Fabian Kirchweger | Code: GLM-5.1 (via OpenClaw)*
+*FlipsiInk – Geschrieben in C# / .NET 8 | Idee: Fabian Kirchweger | Code: J.A.R.V.I.S. (Hermes Agent)*

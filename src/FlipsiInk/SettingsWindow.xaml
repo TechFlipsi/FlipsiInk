@@ -489,7 +489,7 @@
                         <TextBlock x:Name="AboutVersion" Text="FlipsiInk v0.4.0" FontWeight="Bold" Foreground="White" FontSize="16" Margin="0,0,0,8"/>
                         <TextBlock Text="AI-powered Handwriting &amp; Math Notes App" Foreground="#AAA" FontSize="12" Margin="0,0,0,8"/>
                         <TextBlock Text="Idee: Fabian Kirchweger" Foreground="#CCC" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBlock Text="Code: GLM-5.1 (via OpenClaw)" Foreground="#CCC" FontSize="12" Margin="0,0,0,8"/>
+                        <TextBlock Text="Code: J.A.R.V.I.S. (Hermes Agent)" Foreground="#CCC" FontSize="12" Margin="0,0,0,8"/>
                         <TextBlock Foreground="#4CAF50" FontSize="12" Margin="0,0,0,4">
                             <Hyperlink NavigateUri="https://github.com/TechFlipsi/FlipsiInk" RequestNavigate="GitHubLink_Click">github.com/TechFlipsi/FlipsiInk</Hyperlink>
                         </TextBlock>

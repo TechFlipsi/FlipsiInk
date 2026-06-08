@@ -55,5 +55,15 @@
 | Ctrl+Shift+R | Recognize text |
 | Ctrl+Shift+M | Calculate math |
 
+## Credits
+- **Idea:** Fabian Kirchweger
+- **Development:** J.A.R.V.I.S. (Hermes Agent)
+
+### AI Models Used
+| Model | Role | Tasks |
+|---|---|---|
+| **GLM-5.1** | Main model | Architecture, Code, Debugging |
+| **MiniMax M3** | Sub-agents | Tests, Audits |
+
 ## License
-GPL v3 – Copyright © 2026 Fabian Kirchweger
+|GPL v3 – Copyright © 2026 Fabian Kirchweger
