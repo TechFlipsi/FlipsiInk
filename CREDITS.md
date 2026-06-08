@@ -12,10 +12,10 @@
 Der gesamte Code (Architektur, Implementierung, Debugging, Tests) wurde durch J.A.R.V.I.S. (Hermes Agent) entwickelt. Fabian steuert die Vision, entscheidet über Features und testet die Ergebnisse. Die Zusammenarbeit funktioniert so: Fabian liefert die Idee, die KI setzt sie um.
 
 ## Verwendete KI-Modelle
-| Modell | Rolle | Aufgaben |
-|---|---|---|
-| **GLM-5.1** | Hauptmodell | Architektur, Code, Debugging |
-| **MiniMax M3** | Sub-Agenten | Tests, Audits |
+| Modell | Rolle |
+|---|---|
+| **GLM-5.1** | Hauptmodell |
+| **DeepSeek V4 Pro** | Sub-Agenten |
 
 ## Dokumentation
 - **Deutsch** (Original): Fabian Kirchweger & J.A.R.V.I.S. (Hermes Agent)
